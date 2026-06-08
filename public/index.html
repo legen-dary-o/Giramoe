@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giramoe</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+</head>
+<body>
+  <!-- Video Screen -->
+  <div id="video-screen" class="screen">
+    <video id="intro-video" autoplay muted playsinline>
+      <source src="/assets/trailer.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- Start Button Screen -->
+  <div id="start-screen" class="screen hidden">
+    <button class="glass-button" id="start-btn" disabled>Inizia</button>
+  </div>
+
+  <!-- Lobby Screen -->
+  <div id="lobby-screen" class="screen hidden">
+    <div class="lobby-container">
+      <div class="qr-container glass-panel">
+        <canvas id="qr-canvas"></canvas>
+      </div>
+      <div class="player-slots" id="player-slots">
+        <div class="player-slot" id="slot-0">—</div>
+        <div class="player-slot" id="slot-1">—</div>
+        <div class="player-slot" id="slot-2">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game-screen" class="screen hidden">
+    <div class="game-container">
+      <div class="players-bar" id="players-bar"></div>
+      <div class="wheel-container" id="main-wheel-container">
+        <div class="wheel-indicator"></div>
+        <canvas id="main-wheel-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="result-overlay" id="result-overlay">
+      <div class="result-text" id="result-text"></div>
+    </div>
+  </div>
+
+  <!-- Disconnect Overlay -->
+  <div class="disconnect-overlay" id="disconnect-overlay">
+    <p>In attesa di riconnessione...</p>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/wheel.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>
