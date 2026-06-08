@@ -200,6 +200,18 @@ html, body {
   justify-content: center;
 }
 
+/* Main screen (PC/TV): large wheel that fills the display */
+#main-wheel-container {
+  width: min(78vh, 88vw);
+  height: min(78vh, 88vw);
+}
+
+/* Player phone: wheel fills most of the screen width */
+#player-wheel-container {
+  width: min(82vw, 62vh);
+  height: min(82vw, 62vh);
+}
+
 .wheel-indicator {
   position: absolute;
   top: -20px;
