@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Giramoe — Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Pre-game -->
+  <div id="admin-pregame" class="screen">
+    <div class="mobile-container">
+      <img src="/assets/logo.png" alt="Giramoe" style="width: 120px; margin-bottom: 16px;">
+      <h1 style="font-size: 22px; font-weight: 700; margin-bottom: 24px;">Game Master</h1>
+      <button class="glass-button" id="btn-inizia">Inizia</button>
+    </div>
+  </div>
+
+  <!-- Lobby -->
+  <div id="admin-lobby" class="screen hidden">
+    <div class="admin-container">
+      <h1>Giramoe</h1>
+      <div class="admin-section">
+        <h2>Giocatori</h2>
+        <div class="admin-player-list" id="admin-players">
+          <div class="admin-player-item glass-panel" id="ap-0"><span>In attesa...</span><span class="status-dot disconnected"></span></div>
+          <div class="admin-player-item glass-panel" id="ap-1"><span>In attesa...</span><span class="status-dot disconnected"></span></div>
+          <div class="admin-player-item glass-panel" id="ap-2"><span>In attesa...</span><span class="status-dot disconnected"></span></div>
+        </div>
+      </div>
+      <button class="glass-button" id="btn-avvia" disabled>Avvia partita</button>
+    </div>
+  </div>
+
+  <!-- Game -->
+  <div id="admin-game" class="screen hidden">
+    <div class="admin-container">
+      <h1>Giramoe</h1>
+      <div class="admin-section">
+        <h2>Turno</h2>
+        <div class="glass-panel" style="padding: 16px; text-align: center;">
+          <span id="admin-turn-name" style="font-size: 20px; font-weight: 600;">—</span>
+        </div>
+      </div>
+      <div class="admin-section">
+        <h2>Giocatori</h2>
+        <div class="admin-player-list" id="admin-game-players"></div>
+      </div>
+      <div class="admin-section">
+        <h2>Punteggi</h2>
+        <div class="glass-panel" style="padding: 16px; text-align: center; color: #aaa;">
+          Prossimamente...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>
