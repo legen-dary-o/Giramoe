@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Giramoe — Player</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Join Form -->
+  <div id="join-screen" class="screen">
+    <div class="mobile-container">
+      <img src="/assets/logo.png" alt="Giramoe" style="width: 100px; margin-bottom: 16px;">
+      <div class="join-form">
+        <input type="text" id="nick-input" class="glass-input" placeholder="Il tuo nome" maxlength="12" autocomplete="off">
+        <button class="glass-button" id="btn-join">Entra</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Waiting Lobby -->
+  <div id="wait-screen" class="screen hidden">
+    <div class="mobile-container">
+      <h2 style="font-size: 20px; font-weight: 600; color: #aaa;">In attesa dell'inizio...</h2>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="player-game-screen" class="screen hidden">
+    <div class="mobile-container">
+      <div class="turn-message" id="turn-message">Attendi il tuo turno</div>
+      <div class="wheel-container" id="player-wheel-container">
+        <div class="wheel-indicator"></div>
+        <canvas id="player-wheel-canvas"></canvas>
+      </div>
+      <div class="player-nick" id="player-nick-display"></div>
+    </div>
+  </div>
+
+  <!-- Disconnect Overlay -->
+  <div class="disconnect-overlay" id="disconnect-overlay">
+    <p>In attesa di riconnessione...</p>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/wheel.js"></script>
+  <script src="/js/player.js"></script>
+</body>
+</html>
