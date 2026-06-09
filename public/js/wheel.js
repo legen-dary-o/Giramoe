@@ -13,6 +13,15 @@ const SPECIAL_STYLE = {
   raddoppia:  { base: '#ffd24a', edge: '#e0a200', text: '#5a3d00', glow: 'rgba(255,236,150,0.95)', symbol: '×2', word: 'RADDOPPIA' }
 };
 
+// Lighten (pct > 0) or darken (pct < 0) a #rrggbb color.
+function shade(hex, pct) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  if (pct >= 0) { r += (255 - r) * pct; g += (255 - g) * pct; b += (255 - b) * pct; }
+  else { r *= 1 + pct; g *= 1 + pct; b *= 1 + pct; }
+  return `rgb(${r | 0},${g | 0},${b | 0})`;
+}
+
 class Wheel {
   constructor(canvas, options = {}) {
     this.canvas = canvas;
@@ -78,7 +87,12 @@ class Wheel {
         g.addColorStop(1, special.edge);
         ctx.fillStyle = g;
       } else {
-        ctx.fillStyle = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+        const c = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+        const g = ctx.createRadialGradient(0, 0, segR * 0.12, 0, 0, segR);
+        g.addColorStop(0, shade(c, 0.42));
+        g.addColorStop(0.55, c);
+        g.addColorStop(1, shade(c, -0.16));
+        ctx.fillStyle = g;
       }
       ctx.fill();
 
@@ -129,9 +143,10 @@ class Wheel {
           ctx.fillText(w, segR * 0.58, 0);
         } else {
           ctx.fillStyle = '#ffffff';
-          ctx.font = `bold ${segR * 0.092}px -apple-system, "SF Pro Display", sans-serif`;
-          ctx.shadowColor = 'rgba(0,0,0,0.45)';
-          ctx.shadowBlur = 3;
+          ctx.font = `800 ${segR * 0.092}px -apple-system, "SF Pro Display", sans-serif`;
+          ctx.shadowColor = 'rgba(0,0,0,0.5)';
+          ctx.shadowBlur = 5;
+          ctx.shadowOffsetY = 1.5;
           ctx.fillText(String(label).toUpperCase(), segR * 0.9, 0);
         }
         ctx.restore();
@@ -153,6 +168,13 @@ class Wheel {
     ctx.fillStyle = topSheen;
     ctx.fillRect(-segR, -segR, 2 * segR, segR * 1.1);
     ctx.restore();
+
+    // Contact shadow where the face meets the bezel
+    ctx.beginPath();
+    ctx.arc(0, 0, segR - 2.5, 0, 2 * Math.PI);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(30, 50, 90, 0.10)';
+    ctx.stroke();
 
     // Glass bezel ring
     const rm = (segR + r) / 2;

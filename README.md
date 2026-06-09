@@ -16,6 +16,25 @@ Main screen: http://192.168.1.72:3000
 Admin:       http://192.168.1.72:3000/admin.html
 ```
 
+Con `npm start` tutti i dispositivi devono essere sulla **stessa rete Wi‑Fi**.
+
+## Giocare da reti diverse (online)
+
+Se i giocatori non sono sulla tua stessa rete (es. rete dati), avvia in modalità online:
+
+```bash
+npm run online
+```
+
+Questo apre un tunnel Cloudflare verso il tuo Mac e usa l'URL pubblico
+(`https://xxx.trycloudflare.com`) nel QR code: i giocatori entrano da qualsiasi rete.
+Tu apri main screen e admin come al solito (in locale), il resto non cambia.
+
+Richiede `cloudflared` (una sola volta): `brew install cloudflared`.
+
+Note: l'URL è casuale e cambia a ogni avvio; chiunque lo abbia può aprirlo finché il
+tunnel è attivo, ma la lobby resta comunque limitata a 3 giocatori.
+
 ## Come si gioca
 
 1. **Schermo principale (PC/TV):** apri `http://<IP>:3000/` — parte il video introduttivo a tutto schermo.

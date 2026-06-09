@@ -133,7 +133,8 @@ io.on('connection', (socket) => {
     state.phase = 'lobby';
     state.roomCode = generateRoomCode();
     state.lobby = [];
-    const url = `http://${getLocalIP()}:${PORT}/play.html?room=${state.roomCode}`;
+    const base = process.env.GIRAMOE_PUBLIC_URL || `http://${getLocalIP()}:${PORT}`;
+    const url = `${base}/play.html?room=${state.roomCode}`;
     io.to('main').emit('main:showLobby', { roomCode: state.roomCode, url, players: [] });
     io.to('admin').emit('admin:state', adminView());
   });
@@ -264,6 +265,9 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('Giramoe server running!');
   console.log(`Main screen: http://${ip}:${PORT}`);
   console.log(`Admin:       http://${ip}:${PORT}/admin.html`);
+  if (process.env.GIRAMOE_PUBLIC_URL) {
+    console.log(`Online:      ${process.env.GIRAMOE_PUBLIC_URL} (QR per i giocatori)`);
+  }
 });
 
 module.exports = { app, server };

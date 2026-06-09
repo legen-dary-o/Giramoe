@@ -172,9 +172,12 @@ function renderScores(scores, currentTurn) {
   scores.forEach((s, i) => {
     const el = document.createElement('div');
     el.className = 'player-name glass-panel' + (i === currentTurn ? ' active' : '');
-    el.innerHTML = `<div class="pn-name">${s.name}</div>
-      <div class="pn-score">Turno: ${s.roundPoints}</div>
-      <div class="pn-bank">Banca: ${s.bank}</div>`;
+    el.innerHTML = `<div class="pn-avatar">${s.name.charAt(0).toUpperCase()}</div>
+      <div class="pn-info">
+        <div class="pn-name">${s.name}</div>
+        <div class="pn-score">Turno: ${s.roundPoints}</div>
+        <div class="pn-bank">Banca: ${s.bank}</div>
+      </div>`;
     bar.appendChild(el);
   });
 }
