@@ -28,12 +28,28 @@
   <!-- Game Screen -->
   <div id="player-game-screen" class="screen hidden">
     <div class="mobile-container">
+      <div class="score-row">
+        <span class="score-pill">Turno: <b id="round-points">0</b></span>
+        <span class="score-pill">Banca: <b id="bank-points">0</b></span>
+      </div>
       <div class="turn-message" id="turn-message">Attendi il tuo turno</div>
       <div class="wheel-container" id="player-wheel-container">
         <div class="wheel-indicator"></div>
         <canvas id="player-wheel-canvas"></canvas>
       </div>
+      <button class="glass-button" id="btn-spin">Gira la ruota</button>
+      <div class="keyboard" id="keyboard"></div>
+      <button class="glass-button" id="btn-vowel" disabled>Compra vocale (500)</button>
+      <div class="vowel-picker hidden" id="vowel-picker"></div>
       <div class="player-nick" id="player-nick-display"></div>
+    </div>
+  </div>
+
+  <!-- Match End -->
+  <div id="player-matchend" class="screen hidden">
+    <div class="mobile-container">
+      <h2 class="matchend-title">Fine partita!</h2>
+      <div class="standings" id="player-standings"></div>
     </div>
   </div>
 
