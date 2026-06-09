@@ -5,6 +5,12 @@ const SEGMENT_COLORS = [
   '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4'
 ];
 
+const SPECIAL_STYLE = {
+  bancarotta: { fill: '#161616', text: '#ffffff' },
+  next:       { fill: '#9ca3af', text: '#ffffff' },
+  raddoppia:  { fill: '#f5b301', text: '#ffffff' }
+};
+
 class Wheel {
   constructor(canvas, options = {}) {
     this.canvas = canvas;
@@ -23,7 +29,7 @@ class Wheel {
 
   resize() {
     const container = this.canvas.parentElement;
-    const size = Math.min(container.clientWidth, container.clientHeight) * 0.85;
+    const size = Math.min(container.clientWidth, container.clientHeight) * 0.96;
     const dpr = window.devicePixelRatio || 1;
     this.canvas.width = size * dpr;
     this.canvas.height = size * dpr;
@@ -57,7 +63,9 @@ class Wheel {
       ctx.moveTo(0, 0);
       ctx.arc(0, 0, r, startAngle, endAngle);
       ctx.closePath();
-      ctx.fillStyle = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+      const label = this.labels[i];
+      const special = SPECIAL_STYLE[label];
+      ctx.fillStyle = special ? special.fill : SEGMENT_COLORS[i % SEGMENT_COLORS.length];
       ctx.fill();
 
       // Segment border
@@ -78,21 +86,21 @@ class Wheel {
       ctx.fill();
 
       // Label text
-      if (this.showLabels && this.labels[i]) {
+      if (this.showLabels && this.labels[i] != null) {
         ctx.save();
         const midAngle = startAngle + segAngle / 2;
         ctx.rotate(midAngle);
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${Math.max(11, r * 0.07)}px -apple-system, sans-serif`;
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillStyle = special ? special.text : '#ffffff';
+        const text = String(this.labels[i]).toUpperCase();
+        const isWord = !!special;
+        ctx.font = `bold ${Math.max(10, r * (isWord ? 0.05 : 0.08))}px -apple-system, sans-serif`;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
         ctx.shadowBlur = 3;
-
-        const text = this.labels[i];
-        const maxWidth = r * 0.55;
+        const maxWidth = r * 0.62;
         const truncated = this.truncateText(ctx, text, maxWidth);
-        ctx.fillText(truncated, r * 0.88, 0);
+        ctx.fillText(truncated, r * 0.92, 0);
         ctx.restore();
       }
     }

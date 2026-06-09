@@ -37,15 +37,28 @@
   <!-- Game Screen -->
   <div id="game-screen" class="screen hidden">
     <div class="game-container">
-      <div class="players-bar" id="players-bar"></div>
+      <div class="board-meta">
+        <span class="board-counter" id="board-counter"></span>
+      </div>
       <div class="wheel-container" id="main-wheel-container">
         <div class="wheel-indicator"></div>
         <canvas id="main-wheel-canvas"></canvas>
       </div>
+      <div class="category-banner glass-panel" id="category-banner"></div>
+      <div class="board-grid" id="board-grid"></div>
+      <div class="players-bar" id="players-bar"></div>
     </div>
 
     <div class="result-overlay" id="result-overlay">
       <div class="result-text" id="result-text"></div>
+    </div>
+  </div>
+
+  <!-- Match End Screen -->
+  <div id="matchend-screen" class="screen hidden">
+    <div class="game-container">
+      <h1 class="matchend-title">Classifica finale</h1>
+      <div class="standings" id="standings"></div>
     </div>
   </div>
 
