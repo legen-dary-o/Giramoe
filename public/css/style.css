@@ -555,3 +555,12 @@ html, body {
   max-width: 280px;
 }
 .vowel-picker.hidden { display: none; }
+
+/* === ADMIN GAME === */
+.board-error { color: #e23a5e; font-size: 13px; margin-top: 6px; min-height: 16px; }
+.admin-actions { display: flex; gap: 10px; }
+.admin-actions .glass-button { flex: 1; padding: 14px 12px; font-size: 16px; }
+.turn-state-tag { font-size: 12px; font-weight: 500; color: #4facfe; }
+.admin-scorenums { font-size: 14px; color: #555; }
+.admin-scorenums b { color: #4facfe; }
+.admin-player-item.winner { box-shadow: 0 0 16px rgba(245,179,1,0.5); border: 1px solid rgba(245,179,1,0.7); }

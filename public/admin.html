@@ -37,21 +37,28 @@
     <div class="admin-container">
       <h1>Giramoe</h1>
       <div class="admin-section">
-        <h2>Turno</h2>
-        <div class="glass-panel" style="padding: 16px; text-align: center;">
-          <span id="admin-turn-name" style="font-size: 20px; font-weight: 600;">—</span>
-        </div>
+        <h2 id="admin-board-counter">Tabellone</h2>
+        <input type="text" id="cat-input" class="glass-input" placeholder="Categoria" autocomplete="off">
+        <input type="text" id="phrase-input" class="glass-input" placeholder="Frase" autocomplete="off" style="margin-top:8px;">
+        <button class="glass-button" id="btn-set-board" style="margin-top:8px;">Avvia tabellone</button>
+        <div class="board-error" id="board-error"></div>
       </div>
       <div class="admin-section">
-        <h2>Giocatori</h2>
-        <div class="admin-player-list" id="admin-game-players"></div>
+        <h2>Turno: <span id="admin-turn-name">—</span> <span id="admin-turn-state" class="turn-state-tag"></span></h2>
+        <div class="admin-player-list" id="admin-scores"></div>
       </div>
-      <div class="admin-section">
-        <h2>Punteggi</h2>
-        <div class="glass-panel" style="padding: 16px; text-align: center; color: #aaa;">
-          Prossimamente...
-        </div>
+      <div class="admin-section admin-actions">
+        <button class="glass-button" id="btn-solve">Frase indovinata</button>
+        <button class="glass-button" id="btn-pass">Passa turno</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Match End -->
+  <div id="admin-matchend" class="screen hidden">
+    <div class="admin-container">
+      <h1>Fine partita</h1>
+      <div class="admin-player-list" id="admin-standings"></div>
     </div>
   </div>
 
