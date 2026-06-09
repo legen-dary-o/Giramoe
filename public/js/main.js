@@ -55,8 +55,6 @@ socket.on('main:startGame', () => { currentPhase = 'playing'; applyPhaseScreen()
 socket.on('main:gameState', (g) => {
   currentPhase = 'playing';
   if (!wheel) initMainWheel(g.segments);
-  document.getElementById('board-counter').textContent =
-    `Tabellone ${g.boardNumber} / ${g.totalBoards}`;
   document.getElementById('category-banner').textContent = g.board.category;
   renderBoard(g.board.grid);
   renderScores(g.scores, g.currentTurn);
