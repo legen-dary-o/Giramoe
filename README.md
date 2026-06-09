@@ -53,10 +53,15 @@ node server.js & sleep 2 && node --test tests/integration.test.js
 - `public/admin.html` + `js/admin.js` — console admin (telefono)
 - `public/play.html` + `js/player.js` — vista giocatore (telefono)
 - `public/js/wheel.js` — disegno e animazione della ruota (Canvas)
+- `public/js/audio.js` — effetti sonori del main display
 - `public/css/style.css` — stile liquid glass condiviso
+- `public/assets/` — logo, video e i 4 file audio
 - `tests/` — test unitari (board, game) e di integrazione (socket)
 
 ## Note
 
+- **Audio:** l'audio (video iniziale + effetti) parte **solo dal main display** e si attiva al primo tocco sulla schermata "Tocca per iniziare" (i browser bloccano l'audio senza un click). I 4 suoni sono in `public/assets/`.
+- Quando un giocatore indovina una lettera presente, le sue occorrenze si scoprono **una alla volta** sul tabellone, con un suono per ognuna.
+- L'animazione della ruota e l'audio girano solo con la scheda del main display **in primo piano** (limite del browser su `requestAnimationFrame`/autoplay).
 - La libreria QR è inclusa localmente (`public/js/qrcode.min.js`), quindi funziona anche senza internet.
 - Servono sempre 3 giocatori: se uno si disconnette la partita si mette in pausa e attende la riconnessione.
