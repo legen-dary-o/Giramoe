@@ -1,5 +1,7 @@
 const socket = io();
 let wheel = null;
+let started = false;
+let currentPhase = 'video';
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -10,57 +12,87 @@ const video = document.getElementById('intro-video');
 video.addEventListener('ended', () => showScreen('start-screen'));
 video.addEventListener('error', () => showScreen('start-screen'));
 
+// --- Tap to start: unlock audio, play the intro video with sound ---
+document.getElementById('tap-start-btn').addEventListener('click', startMainDisplay);
+function startMainDisplay() {
+  if (started) return;
+  started = true;
+  Sfx.unlock();
+  if (currentPhase === 'video') {
+    showScreen('video-screen');
+    video.muted = false;
+    video.play().catch(() => showScreen('start-screen'));
+  } else {
+    applyPhaseScreen();
+  }
+}
+
+function applyPhaseScreen() {
+  if (!started) return; // stay on the tap screen until the user taps
+  if (currentPhase === 'video') showScreen('video-screen');
+  else if (currentPhase === 'lobby') showScreen('lobby-screen');
+  else if (currentPhase === 'playing') showScreen('game-screen');
+  else if (currentPhase === 'matchEnd') showScreen('matchend-screen');
+}
+
 socket.emit('main:init');
 
-socket.on('main:state', ({ phase }) => {
-  if (phase === 'video') showScreen('video-screen');
-  else if (phase === 'lobby') showScreen('lobby-screen');
-  else if (phase === 'playing') showScreen('game-screen');
-  else if (phase === 'matchEnd') showScreen('matchend-screen');
-});
+socket.on('main:state', ({ phase }) => { currentPhase = phase; applyPhaseScreen(); });
 
 socket.on('main:showLobby', ({ url, players }) => {
-  showScreen('lobby-screen');
+  currentPhase = 'lobby';
   QRCode.toCanvas(document.getElementById('qr-canvas'), url, {
     width: 220, margin: 2, color: { dark: '#1a1a1a', light: '#ffffff' }
   });
   updatePlayerSlots(players);
+  applyPhaseScreen();
 });
 
 socket.on('main:playerJoined', ({ players }) => updatePlayerSlots(players));
 
-socket.on('main:startGame', () => {
-  showScreen('game-screen');
-});
+socket.on('main:startGame', () => { currentPhase = 'playing'; applyPhaseScreen(); });
 
 socket.on('main:gameState', (g) => {
-  showScreen('game-screen');
+  currentPhase = 'playing';
   if (!wheel) initMainWheel(g.segments);
   document.getElementById('board-counter').textContent =
     `Tabellone ${g.boardNumber} / ${g.totalBoards}`;
   document.getElementById('category-banner').textContent = g.board.category;
   renderBoard(g.board.grid);
   renderScores(g.scores, g.currentTurn);
+  applyPhaseScreen();
 });
+
+socket.on('main:scores', ({ scores, currentTurn }) => renderScores(scores, currentTurn));
 
 socket.on('main:spin', ({ totalAngle, value }) => {
   if (!wheel) return;
-  wheel.onSpinEnd = () => showResult(String(value).toUpperCase());
+  Sfx.startSpin();
+  wheel.onSpinEnd = () => { Sfx.stopSpin(); showResult(String(value).toUpperCase()); };
   wheel.spinTo(totalAngle, 6000);
+  setTimeout(() => Sfx.stopSpin(), 6500); // fallback if rAF was throttled
 });
 
-socket.on('main:reveal', () => { /* board re-render arrives via main:gameState */ });
+socket.on('main:revealLetter', ({ positions }) => revealSequence(positions));
+
+socket.on('main:solved', () => Sfx.play('correct'));
+
+socket.on('main:wrong', () => Sfx.play('wrong'));
 
 socket.on('main:matchEnd', ({ standings }) => {
-  showScreen('matchend-screen');
-  const el = document.getElementById('standings');
-  el.innerHTML = '';
-  standings.forEach((s, i) => {
-    const row = document.createElement('div');
-    row.className = 'standing-row glass-panel' + (i === 0 ? ' winner' : '');
-    row.innerHTML = `<span>${i + 1}. ${s.name}</span><span>${s.bank}</span>`;
-    el.appendChild(row);
-  });
+  // Delay so the solved phrase + correct sound register before the standings.
+  setTimeout(() => {
+    currentPhase = 'matchEnd';
+    showScreen('matchend-screen');
+    const el = document.getElementById('standings');
+    el.innerHTML = '';
+    standings.forEach((s, i) => {
+      const row = document.createElement('div');
+      row.className = 'standing-row glass-panel' + (i === 0 ? ' winner' : '');
+      row.innerHTML = `<span>${i + 1}. ${s.name}</span><span>${s.bank}</span>`;
+      el.appendChild(row);
+    });
+  }, 3000);
 });
 
 socket.on('main:playerDisconnected', () =>
@@ -87,10 +119,14 @@ function initMainWheel(segments) {
 function renderBoard(grid) {
   const el = document.getElementById('board-grid');
   el.innerHTML = '';
-  for (const row of grid) {
-    for (const cell of row) {
+  grid.forEach((row, r) => {
+    row.forEach((cell, c) => {
       const div = document.createElement('div');
-      if (cell.type === 'blocked') {
+      div.dataset.row = r;
+      div.dataset.col = c;
+      if (cell.type === 'edge') {
+        div.className = 'cell edge';
+      } else if (cell.type === 'blocked') {
         div.className = 'cell blocked';
       } else if (cell.revealed) {
         div.className = 'cell letter revealed';
@@ -99,8 +135,27 @@ function renderBoard(grid) {
         div.className = 'cell letter';
       }
       el.appendChild(div);
-    }
-  }
+    });
+  });
+}
+
+function cellAt(row, col) {
+  return document.querySelector(`#board-grid .cell[data-row="${row}"][data-col="${col}"]`);
+}
+
+// Reveal each occurrence one at a time (TL->BR), with the flip sound.
+function revealSequence(positions) {
+  positions.forEach((pos, i) => {
+    setTimeout(() => {
+      const cell = cellAt(pos.row, pos.col);
+      if (cell) {
+        cell.classList.add('letter', 'revealed');
+        cell.classList.remove('blocked', 'edge');
+        cell.textContent = pos.letter;
+      }
+      Sfx.play('letter');
+    }, i * 420);
+  });
 }
 
 function renderScores(scores, currentTurn) {
