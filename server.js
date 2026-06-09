@@ -45,11 +45,12 @@ function publicScores() {
 function boardView() {
   return {
     category: state.g.board.category,
-    grid: state.g.board.grid.map(row => row.map(cell =>
-      cell.type === 'letter'
-        ? { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null }
-        : { type: 'blocked' }
-    ))
+    grid: state.g.board.grid.map(row => row.map(cell => {
+      if (cell.type === 'letter') {
+        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null };
+      }
+      return { type: cell.type }; // 'blocked' or 'edge'
+    }))
   };
 }
 
@@ -91,12 +92,27 @@ function playerView(playerIndex) {
   };
 }
 
-function broadcastPlaying() {
-  io.to('main').emit('main:gameState', mainGameView());
+function mainScoresView() {
+  return { scores: publicScores(), currentTurn: state.g.currentTurnIndex };
+}
+
+function broadcastAdminPlayers() {
   io.to('admin').emit('admin:state', adminView());
   state.g.players.forEach((p, i) => {
     io.to(state.lobby[i].socketId).emit('player:turnState', playerView(i));
   });
+}
+
+// Routine update: scores/turn only — never redraws the main board.
+function broadcastScores() {
+  io.to('main').emit('main:scores', mainScoresView());
+  broadcastAdminPlayers();
+}
+
+// Full board redraw on the main display (new board / reconnect).
+function broadcastBoard() {
+  io.to('main').emit('main:gameState', mainGameView());
+  broadcastAdminPlayers();
 }
 
 // --- Socket handlers ---
@@ -150,7 +166,7 @@ io.on('connection', (socket) => {
     const startIndex = (state.g.boardNumber - 1) % state.g.players.length;
     const r = game.startBoard(state.g, category, phrase, startIndex, state.g.boardNumber);
     if (!r.ok) return io.to('admin').emit('admin:boardError', r.error);
-    broadcastPlaying();
+    broadcastBoard();
   });
 
   socket.on('player:spin', () => {
@@ -168,7 +184,7 @@ io.on('connection', (socket) => {
     io.to('main').emit('main:spin', spinData);
     io.to(socket.id).emit('player:spinResult', spinData);
 
-    setTimeout(() => broadcastPlaying(), SPIN_MS + 200);
+    setTimeout(() => broadcastScores(), SPIN_MS + 200);
   });
 
   socket.on('player:pickConsonant', ({ letter }) => {
@@ -176,8 +192,9 @@ io.on('connection', (socket) => {
     if (socket.playerIndex !== state.g.currentTurnIndex) return;
     const res = game.applyConsonant(state.g, letter);
     if (!res.ok) return;
-    io.to('main').emit('main:reveal', { letter: String(letter).toUpperCase(), present: res.present, count: res.count });
-    broadcastPlaying();
+    if (res.present) io.to('main').emit('main:revealLetter', { positions: res.positions });
+    else io.to('main').emit('main:wrong');
+    broadcastScores();
   });
 
   socket.on('player:buyVowel', ({ letter }) => {
@@ -185,14 +202,16 @@ io.on('connection', (socket) => {
     if (socket.playerIndex !== state.g.currentTurnIndex) return;
     const res = game.applyVowel(state.g, letter);
     if (!res.ok) return;
-    io.to('main').emit('main:reveal', { letter: String(letter).toUpperCase(), present: res.present, count: res.count });
-    broadcastPlaying();
+    if (res.present) io.to('main').emit('main:revealLetter', { positions: res.positions });
+    else io.to('main').emit('main:wrong');
+    broadcastScores();
   });
 
   socket.on('admin:solve', () => {
     if (state.phase !== 'playing' || !state.g) return;
     game.applySolve(state.g);
-    io.to('main').emit('main:reveal', { letter: null, present: true, count: 0 });
+    io.to('main').emit('main:gameState', mainGameView()); // fully-revealed board
+    io.to('main').emit('main:solved');
 
     if (state.g.boardNumber >= TOTAL_BOARDS) {
       state.phase = 'matchEnd';
@@ -204,7 +223,7 @@ io.on('connection', (socket) => {
       state.lobby.forEach(p => io.to(p.socketId).emit('player:matchEnd', { standings }));
     } else {
       state.g.boardNumber += 1;
-      broadcastPlaying();
+      broadcastAdminPlayers();
       io.to('admin').emit('admin:boardSolved', { boardNumber: state.g.boardNumber });
     }
   });
@@ -212,7 +231,8 @@ io.on('connection', (socket) => {
   socket.on('admin:passTurn', () => {
     if (state.phase !== 'playing' || !state.g) return;
     game.passTurn(state.g);
-    broadcastPlaying();
+    io.to('main').emit('main:wrong');
+    broadcastScores();
   });
 
   socket.on('disconnect', () => {
