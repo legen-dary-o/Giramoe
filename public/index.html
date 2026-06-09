@@ -8,9 +8,17 @@
   <script src="/js/qrcode.min.js"></script>
 </head>
 <body>
+  <!-- Tap-to-start (unlocks audio, plays the intro video with sound) -->
+  <div id="start-tap-screen" class="screen">
+    <div class="mobile-container">
+      <img src="/assets/logo.png" alt="Giramoe" style="width: 220px; margin-bottom: 28px;">
+      <button class="glass-button" id="tap-start-btn">Tocca per iniziare</button>
+    </div>
+  </div>
+
   <!-- Video Screen -->
-  <div id="video-screen" class="screen">
-    <video id="intro-video" autoplay muted playsinline>
+  <div id="video-screen" class="screen hidden">
+    <video id="intro-video" playsinline>
       <source src="/assets/trailer.mp4" type="video/mp4">
     </video>
   </div>
@@ -68,6 +76,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/audio.js"></script>
   <script src="/js/wheel.js"></script>
   <script src="/js/main.js"></script>
 </body>

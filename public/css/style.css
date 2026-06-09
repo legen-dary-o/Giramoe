@@ -564,3 +564,22 @@ html, body {
 .admin-scorenums { font-size: 14px; color: #555; }
 .admin-scorenums b { color: #4facfe; }
 .admin-player-item.winner { box-shadow: 0 0 16px rgba(245,179,1,0.5); border: 1px solid rgba(245,179,1,0.7); }
+
+/* === BOARD EDGE CELLS (short rows render as 14 centered squares) === */
+.cell.edge {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* Reveal pop when a letter flips */
+.cell.letter.revealed {
+  animation: cellPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes cellPop {
+  0% { transform: scale(0.55); }
+  100% { transform: scale(1); }
+}
+
+/* Tap-to-start */
+#start-tap-screen .glass-button { font-size: 24px; padding: 18px 56px; }
