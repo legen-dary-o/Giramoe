@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const os = require('os');
+const game = require('./game');
+const board = require('./board');
 
 const app = express();
 const server = http.createServer(app);
@@ -10,234 +12,238 @@ const io = new Server(server);
 app.use(express.static('public'));
 
 const PORT = 3000;
+const TOTAL_BOARDS = 3;
+const SPIN_MS = 6000; // wheel animation duration (must match client)
 
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name]) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
-      }
+      if (iface.family === 'IPv4' && !iface.internal) return iface.address;
     }
   }
   return 'localhost';
 }
 
-// --- Game State ---
-
-let game = {
-  phase: 'video',        // video | lobby | playing
+let state = {
+  phase: 'video',     // video | lobby | playing | matchEnd
   roomCode: null,
-  players: [],            // [{ id, name, socketId, connected }]
-  currentTurnIndex: 0,
-  segments: [
-    'Spicchio 1', 'Spicchio 2', 'Spicchio 3', 'Spicchio 4',
-    'Spicchio 5', 'Spicchio 6', 'Spicchio 7', 'Spicchio 8',
-    'Spicchio 9', 'Spicchio 10', 'Spicchio 11', 'Spicchio 12',
-    'Spicchio 13', 'Spicchio 14', 'Spicchio 15', 'Spicchio 16'
-  ],
-  spinning: false
+  lobby: [],          // [{ name, socketId, connected }]
+  g: null             // game object once playing
 };
 
 function generateRoomCode() {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
 }
 
-function resetGame() {
-  game.phase = 'video';
-  game.roomCode = null;
-  game.players = [];
-  game.currentTurnIndex = 0;
-  game.spinning = false;
+// --- Serialization for clients ---
+
+function publicScores() {
+  return state.g.players.map(p => ({ id: p.id, name: p.name, roundPoints: p.roundPoints, bank: p.bank }));
 }
 
-function allPlayersConnected() {
-  return game.players.length === 3 && game.players.every(p => p.connected);
+function boardView() {
+  return {
+    category: state.g.board.category,
+    grid: state.g.board.grid.map(row => row.map(cell =>
+      cell.type === 'letter'
+        ? { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null }
+        : { type: 'blocked' }
+    ))
+  };
 }
 
-// --- Socket.IO Events ---
+function mainGameView() {
+  return {
+    board: boardView(),
+    scores: publicScores(),
+    currentTurn: state.g.currentTurnIndex,
+    boardNumber: state.g.boardNumber,
+    totalBoards: TOTAL_BOARDS,
+    segments: state.g.segments
+  };
+}
+
+function adminView() {
+  return {
+    phase: state.phase,
+    roomCode: state.roomCode,
+    players: state.phase === 'playing' || state.phase === 'matchEnd'
+      ? publicScores()
+      : state.lobby.map((p, i) => ({ id: i, name: p.name, connected: p.connected })),
+    boardNumber: state.g ? state.g.boardNumber : 0,
+    totalBoards: TOTAL_BOARDS,
+    currentTurn: state.g ? state.g.currentTurnIndex : 0,
+    turnState: state.g ? state.g.turnState : null
+  };
+}
+
+function playerView(playerIndex) {
+  const p = state.g.players[playerIndex];
+  return {
+    isMyTurn: state.g.currentTurnIndex === playerIndex,
+    turnState: state.g.turnState,
+    roundPoints: p.roundPoints,
+    bank: p.bank,
+    usedLetters: state.g.usedLetters,
+    canBuyVowel: state.g.currentTurnIndex === playerIndex && game.canBuyVowel(state.g),
+    currentTurnName: state.g.players[state.g.currentTurnIndex].name
+  };
+}
+
+function broadcastPlaying() {
+  io.to('main').emit('main:gameState', mainGameView());
+  io.to('admin').emit('admin:state', adminView());
+  state.g.players.forEach((p, i) => {
+    io.to(state.lobby[i].socketId).emit('player:turnState', playerView(i));
+  });
+}
+
+// --- Socket handlers ---
 
 io.on('connection', (socket) => {
-  console.log(`Connected: ${socket.id}`);
-
-  // ADMIN EVENTS
-
   socket.on('admin:init', () => {
     socket.join('admin');
-    socket.emit('admin:state', game);
+    socket.emit('admin:state', adminView());
   });
-
-  socket.on('admin:inizia', () => {
-    game.phase = 'lobby';
-    game.roomCode = generateRoomCode();
-    const ip = getLocalIP();
-    const url = `http://${ip}:${PORT}/play.html?room=${game.roomCode}`;
-    io.to('main').emit('main:showLobby', { roomCode: game.roomCode, url, players: game.players });
-    socket.emit('admin:state', game);
-  });
-
-  socket.on('admin:startGame', () => {
-    if (game.players.length === 3) {
-      game.phase = 'playing';
-      game.currentTurnIndex = 0;
-      io.to('main').emit('main:startGame', {
-        players: game.players.map(p => p.name),
-        currentTurn: 0,
-        segments: game.segments
-      });
-      game.players.forEach(p => {
-        io.to(p.socketId).emit('player:gameStarted', {
-          currentTurn: 0,
-          playerIndex: game.players.indexOf(p),
-          players: game.players.map(pp => pp.name)
-        });
-      });
-      io.to('admin').emit('admin:state', game);
-    }
-  });
-
-  // MAIN SCREEN EVENTS
 
   socket.on('main:init', () => {
     socket.join('main');
-    socket.emit('main:state', game);
+    socket.emit('main:state', { phase: state.phase });
+    if (state.phase === 'playing') socket.emit('main:gameState', mainGameView());
   });
 
-  // PLAYER EVENTS
+  socket.on('admin:inizia', () => {
+    state.phase = 'lobby';
+    state.roomCode = generateRoomCode();
+    state.lobby = [];
+    const url = `http://${getLocalIP()}:${PORT}/play.html?room=${state.roomCode}`;
+    io.to('main').emit('main:showLobby', { roomCode: state.roomCode, url, players: [] });
+    io.to('admin').emit('admin:state', adminView());
+  });
 
   socket.on('player:join', ({ roomCode, name }) => {
-    if (game.roomCode !== roomCode) {
-      socket.emit('player:error', 'Codice stanza non valido');
-      return;
-    }
-    if (game.players.length >= 3) {
-      socket.emit('player:error', 'Lobby piena');
-      return;
-    }
-    if (game.phase !== 'lobby') {
-      socket.emit('player:error', 'La partita non accetta giocatori');
-      return;
-    }
+    if (state.roomCode !== roomCode) return socket.emit('player:error', 'Codice stanza non valido');
+    if (state.phase !== 'lobby') return socket.emit('player:error', 'La partita non accetta giocatori');
+    if (state.lobby.length >= 3) return socket.emit('player:error', 'Lobby piena');
 
-    const playerIndex = game.players.length;
-    game.players.push({
-      id: playerIndex,
-      name,
-      socketId: socket.id,
-      connected: true
-    });
-
-    socket.join('players');
+    const playerIndex = state.lobby.length;
+    state.lobby.push({ name, socketId: socket.id, connected: true });
     socket.playerIndex = playerIndex;
-    socket.roomCode = roomCode;
-
     socket.emit('player:joined', { playerIndex, name });
-    io.to('main').emit('main:playerJoined', { players: game.players.map(p => ({ name: p.name, connected: p.connected })) });
-    io.to('admin').emit('admin:state', game);
+    io.to('main').emit('main:playerJoined', { players: state.lobby.map(p => ({ name: p.name, connected: p.connected })) });
+    io.to('admin').emit('admin:state', adminView());
+  });
+
+  socket.on('admin:startGame', () => {
+    if (state.lobby.length !== 3) return;
+    state.g = game.createGame(state.lobby.map((p, i) => ({ id: i, name: p.name })));
+    state.phase = 'playing';
+    io.to('main').emit('main:startGame');
+    state.lobby.forEach(p => io.to(p.socketId).emit('player:gameStarted'));
+    io.to('admin').emit('admin:state', adminView());
+  });
+
+  socket.on('admin:setBoard', ({ category, phrase }) => {
+    if (state.phase !== 'playing' && state.phase !== 'lobby') return;
+    if (!state.g) return;
+    const startIndex = (state.g.boardNumber - 1) % state.g.players.length;
+    const r = game.startBoard(state.g, category, phrase, startIndex, state.g.boardNumber);
+    if (!r.ok) return io.to('admin').emit('admin:boardError', r.error);
+    broadcastPlaying();
   });
 
   socket.on('player:spin', () => {
-    if (game.phase !== 'playing') return;
-    if (game.spinning) return;
-    const playerIndex = socket.playerIndex;
-    if (playerIndex === undefined || playerIndex !== game.currentTurnIndex) return;
+    if (state.phase !== 'playing' || !state.g || !state.g.board) return;
+    const pi = socket.playerIndex;
+    if (pi !== state.g.currentTurnIndex) return;
+    if (state.g.turnState !== 'MUST_SPIN' && state.g.turnState !== 'CONTINUE') return;
 
-    game.spinning = true;
     const winningSegment = Math.floor(Math.random() * 16);
-    const extraRotations = 5 + Math.floor(Math.random() * 3); // 5-7 full rotations
-    const totalAngle = extraRotations * 360 + (360 - (winningSegment * 22.5) - 11.25); // land on center of segment
+    const extra = 5 + Math.floor(Math.random() * 3);
+    const totalAngle = extra * 360 + (360 - winningSegment * 22.5 - 11.25);
+    const result = game.applySpin(state.g, winningSegment);
 
-    const spinData = {
-      winningSegment,
-      totalAngle,
-      segmentText: game.segments[winningSegment],
-      playerIndex
-    };
-
+    const spinData = { winningSegment, totalAngle, value: state.g.segments[winningSegment], result };
     io.to('main').emit('main:spin', spinData);
     io.to(socket.id).emit('player:spinResult', spinData);
-    io.to('admin').emit('admin:spinning', spinData);
 
-    // After spin animation + display time (6s spin + 3s display = 9s)
-    setTimeout(() => {
-      game.spinning = false;
-      game.currentTurnIndex = (game.currentTurnIndex + 1) % 3;
-
-      const turnData = {
-        currentTurn: game.currentTurnIndex,
-        players: game.players.map(p => p.name)
-      };
-
-      io.to('main').emit('main:nextTurn', turnData);
-      game.players.forEach(p => {
-        io.to(p.socketId).emit('player:turnUpdate', {
-          currentTurn: game.currentTurnIndex,
-          playerIndex: p.id
-        });
-      });
-      io.to('admin').emit('admin:state', game);
-    }, 9000);
+    setTimeout(() => broadcastPlaying(), SPIN_MS + 200);
   });
 
-  // DISCONNECTION
+  socket.on('player:pickConsonant', ({ letter }) => {
+    if (state.phase !== 'playing' || !state.g || !state.g.board) return;
+    if (socket.playerIndex !== state.g.currentTurnIndex) return;
+    const res = game.applyConsonant(state.g, letter);
+    if (!res.ok) return;
+    io.to('main').emit('main:reveal', { letter: String(letter).toUpperCase(), present: res.present, count: res.count });
+    broadcastPlaying();
+  });
+
+  socket.on('player:buyVowel', ({ letter }) => {
+    if (state.phase !== 'playing' || !state.g || !state.g.board) return;
+    if (socket.playerIndex !== state.g.currentTurnIndex) return;
+    const res = game.applyVowel(state.g, letter);
+    if (!res.ok) return;
+    io.to('main').emit('main:reveal', { letter: String(letter).toUpperCase(), present: res.present, count: res.count });
+    broadcastPlaying();
+  });
+
+  socket.on('admin:solve', () => {
+    if (state.phase !== 'playing' || !state.g) return;
+    game.applySolve(state.g);
+    io.to('main').emit('main:reveal', { letter: null, present: true, count: 0 });
+
+    if (state.g.boardNumber >= TOTAL_BOARDS) {
+      state.phase = 'matchEnd';
+      const standings = state.g.players
+        .map(p => ({ name: p.name, bank: p.bank }))
+        .sort((a, b) => b.bank - a.bank);
+      io.to('main').emit('main:matchEnd', { standings });
+      io.to('admin').emit('admin:state', adminView());
+      state.lobby.forEach(p => io.to(p.socketId).emit('player:matchEnd', { standings }));
+    } else {
+      state.g.boardNumber += 1;
+      broadcastPlaying();
+      io.to('admin').emit('admin:boardSolved', { boardNumber: state.g.boardNumber });
+    }
+  });
+
+  socket.on('admin:passTurn', () => {
+    if (state.phase !== 'playing' || !state.g) return;
+    game.passTurn(state.g);
+    broadcastPlaying();
+  });
 
   socket.on('disconnect', () => {
-    console.log(`Disconnected: ${socket.id}`);
-    const player = game.players.find(p => p.socketId === socket.id);
-    if (player) {
-      player.connected = false;
-      io.to('main').emit('main:playerDisconnected', {
-        playerIndex: player.id,
-        players: game.players.map(p => ({ name: p.name, connected: p.connected }))
-      });
-      game.players.forEach(p => {
-        if (p.socketId !== socket.id) {
-          io.to(p.socketId).emit('player:waitReconnect', { disconnectedPlayer: player.name });
-        }
-      });
-      io.to('admin').emit('admin:state', game);
+    const p = state.lobby.find(pl => pl.socketId === socket.id);
+    if (p) {
+      p.connected = false;
+      io.to('main').emit('main:playerDisconnected', { players: state.lobby.map(x => ({ name: x.name, connected: x.connected })) });
+      io.to('admin').emit('admin:state', adminView());
     }
   });
 
-  // RECONNECTION (player rejoins with same name)
-
   socket.on('player:reconnect', ({ roomCode, name }) => {
-    const player = game.players.find(p => p.name === name && !p.connected);
-    if (!player) {
-      socket.emit('player:error', 'Impossibile riconnettersi');
-      return;
+    const p = state.lobby.find(pl => pl.name === name && !pl.connected);
+    if (!p) return socket.emit('player:error', 'Impossibile riconnettersi');
+    p.socketId = socket.id;
+    p.connected = true;
+    socket.playerIndex = state.lobby.indexOf(p);
+    socket.emit('player:reconnected', { playerIndex: socket.playerIndex, name, phase: state.phase });
+    if (state.phase === 'playing' && state.g) {
+      socket.emit('player:turnState', playerView(socket.playerIndex));
     }
-    player.socketId = socket.id;
-    player.connected = true;
-    socket.playerIndex = player.id;
-    socket.roomCode = roomCode;
-    socket.join('players');
-
-    socket.emit('player:reconnected', {
-      playerIndex: player.id,
-      name: player.name,
-      phase: game.phase,
-      currentTurn: game.currentTurnIndex
-    });
-
-    io.to('main').emit('main:playerReconnected', {
-      players: game.players.map(p => ({ name: p.name, connected: p.connected }))
-    });
-    game.players.forEach(p => {
-      if (p.socketId !== socket.id) {
-        io.to(p.socketId).emit('player:resumeGame', {
-          currentTurn: game.currentTurnIndex,
-          playerIndex: p.id
-        });
-      }
-    });
-    io.to('admin').emit('admin:state', game);
+    io.to('main').emit('main:playerReconnected', { players: state.lobby.map(x => ({ name: x.name, connected: x.connected })) });
+    io.to('admin').emit('admin:state', adminView());
   });
 });
 
 server.listen(PORT, '0.0.0.0', () => {
   const ip = getLocalIP();
-  console.log(`Giramoe server running!`);
+  console.log('Giramoe server running!');
   console.log(`Main screen: http://${ip}:${PORT}`);
   console.log(`Admin:       http://${ip}:${PORT}/admin.html`);
 });
+
+module.exports = { app, server };
