@@ -19,13 +19,17 @@ test('createBoard places a short phrase, no word split, letters hidden', () => {
   assert.deepStrictEqual(letterCells.map(c => c.letter), ['S', 'O', 'L', 'E']);
 });
 
-test('row capacities are 14/16/16/14 with blocked corners on rows 0 and 3', () => {
+test('short rows (0 and 3) have edge corners; full rows (1,2) do not', () => {
   const res = board.createBoard('X', 'A');
   const grid = res.board.grid;
-  assert.strictEqual(grid[0][0].type, 'blocked');
-  assert.strictEqual(grid[0][15].type, 'blocked');
-  assert.strictEqual(grid[3][0].type, 'blocked');
-  assert.strictEqual(grid[3][15].type, 'blocked');
+  // rows 0 and 3 are 14-wide: their first and last cells are structural edges
+  assert.strictEqual(grid[0][0].type, 'edge');
+  assert.strictEqual(grid[0][15].type, 'edge');
+  assert.strictEqual(grid[3][0].type, 'edge');
+  assert.strictEqual(grid[3][15].type, 'edge');
+  // rows 1 and 2 are 16-wide: no edge cells at all
+  assert.ok(grid[1].every(c => c.type !== 'edge'));
+  assert.ok(grid[2].every(c => c.type !== 'edge'));
 });
 
 test('words never split across rows; long phrase wraps', () => {
@@ -87,4 +91,32 @@ test('isVowel / isConsonant classify A-Z correctly', () => {
   assert.strictEqual(board.isConsonant('B'), true);
   assert.strictEqual(board.isConsonant('A'), false);
   assert.strictEqual(board.isConsonant('1'), false);
+});
+
+test('interior empty cells are blocked (red), not edge', () => {
+  // "AB CD" on row 0: the separator space between words is an interior blocked cell
+  const res = board.createBoard('X', 'AB CD');
+  const row0 = res.board.grid[0];
+  const types = row0.map(c => c.type);
+  assert.ok(types.includes('blocked'), 'has an interior blocked cell');
+  assert.ok(types.includes('letter'), 'has letter cells');
+});
+
+test('letterPositions returns unrevealed matches in top-left to bottom-right order', () => {
+  const { board: b } = board.createBoard('X', 'CECE');
+  const pos = board.letterPositions(b.grid, 'C');
+  assert.strictEqual(pos.length, 2);
+  // row-major order: earlier row first, then earlier column
+  for (let i = 1; i < pos.length; i++) {
+    const a = pos[i - 1], c = pos[i];
+    assert.ok(a.row < c.row || (a.row === c.row && a.col < c.col), 'ordered TL->BR');
+  }
+  assert.ok(pos.every(p => p.letter === 'C'));
+  assert.deepStrictEqual(board.letterPositions(b.grid, 'Z'), []);
+});
+
+test('letterPositions skips already-revealed cells', () => {
+  const { board: b } = board.createBoard('X', 'CECE');
+  board.revealLetter(b.grid, 'C');
+  assert.deepStrictEqual(board.letterPositions(b.grid, 'C'), []);
 });

@@ -43,8 +43,8 @@ function layoutPhrase(phrase) {
 }
 
 // Build a 4x16 grid of cells from packed rows.
-// Each row's joined content is centered within its usable width; rows 0 and 3
-// have one permanently-blocked cell on each side.
+// Cells outside a short row's usable width are structural `edge` cells (drawn
+// transparent); interior non-letter cells are `blocked` (red); letters are `letter`.
 function buildGrid(rows) {
   const grid = [];
   for (let r = 0; r < 4; r++) {
@@ -55,11 +55,12 @@ function buildGrid(rows) {
     const cells = [];
     for (let c = 0; c < GRID_WIDTH; c++) {
       const usableCol = c - sideBlocked;
-      let ch = null;
-      if (usableCol >= 0 && usableCol < cap) {
-        const idx = usableCol - pad;
-        if (idx >= 0 && idx < content.length) ch = content[idx];
+      if (usableCol < 0 || usableCol >= cap) {
+        cells.push({ type: 'edge' });
+        continue;
       }
+      const idx = usableCol - pad;
+      const ch = (idx >= 0 && idx < content.length) ? content[idx] : null;
       if (ch && ch !== ' ') {
         cells.push({ type: 'letter', letter: ch, revealed: false });
       } else {
@@ -99,6 +100,19 @@ function revealLetter(grid, letter) {
   return n;
 }
 
+// Positions of currently-unrevealed cells matching `letter`, in row-major
+// (top-left -> bottom-right) order.
+function letterPositions(grid, letter) {
+  const out = [];
+  for (let r = 0; r < grid.length; r++)
+    for (let c = 0; c < grid[r].length; c++) {
+      const cell = grid[r][c];
+      if (cell.type === 'letter' && cell.letter === letter && !cell.revealed)
+        out.push({ row: r, col: c, letter });
+    }
+  return out;
+}
+
 function isSolved(grid) {
   for (const row of grid)
     for (const cell of row)
@@ -122,6 +136,6 @@ function isConsonant(letter) {
 
 module.exports = {
   normalize, layoutPhrase, buildGrid, createBoard,
-  countOccurrences, revealLetter, isSolved, revealAll, isVowel, isConsonant,
+  countOccurrences, revealLetter, letterPositions, isSolved, revealAll, isVowel, isConsonant,
   VOWELS, ROW_CAPACITIES, GRID_WIDTH
 };
