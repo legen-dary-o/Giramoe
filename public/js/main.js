@@ -55,6 +55,7 @@ socket.on('main:startGame', () => { currentPhase = 'playing'; applyPhaseScreen()
 socket.on('main:gameState', (g) => {
   currentPhase = 'playing';
   if (!wheel) initMainWheel(g.segments);
+  document.getElementById('main-wheel-indicator').style.display = '';
   document.getElementById('category-banner').textContent = g.board.category;
   renderBoard(g.board.grid);
   renderScores(g.scores, g.currentTurn);
@@ -65,11 +66,20 @@ socket.on('main:scores', ({ scores, currentTurn }) => renderScores(scores, curre
 
 socket.on('main:spin', ({ totalAngle, value }) => {
   if (!wheel) return;
+  setWheelZoom(true);
   Sfx.startSpin();
-  wheel.onSpinEnd = () => { Sfx.stopSpin(); showResult(String(value).toUpperCase()); };
+  wheel.onSpinEnd = () => {
+    Sfx.stopSpin();
+    setWheelZoom(false); // back to the board once the wheel stops
+    showResult(String(value).toUpperCase());
+  };
   wheel.spinTo(totalAngle, 6000);
-  setTimeout(() => Sfx.stopSpin(), 6500); // fallback if rAF was throttled
+  setTimeout(() => { Sfx.stopSpin(); setWheelZoom(false); }, 6800); // fallback if rAF was throttled
 });
+
+function setWheelZoom(on) {
+  document.querySelector('#game-screen .game-container').classList.toggle('wheel-zoom', on);
+}
 
 socket.on('main:revealLetter', ({ positions }) => revealSequence(positions));
 

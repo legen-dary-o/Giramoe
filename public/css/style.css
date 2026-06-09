@@ -622,3 +622,22 @@ html, body {
 /* Player phone: smaller wheel so the keyboard + buttons fit on screen */
 #player-wheel-container { width: min(68vw, 33vh); height: min(68vw, 33vh); }
 .mobile-container { gap: clamp(8px, 1.6vh, 18px); }
+
+/* === SPIN ZOOM (wheel grows during the spin; board fades back in at stop) === */
+#main-wheel-container {
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 5;
+}
+#game-screen .category-banner,
+#game-screen .board-grid,
+#game-screen .players-bar {
+  transition: opacity 0.45s ease;
+}
+#game-screen .game-container.wheel-zoom #main-wheel-container {
+  transform: translateY(19vh) scale(1.75);
+}
+#game-screen .game-container.wheel-zoom .category-banner,
+#game-screen .game-container.wheel-zoom .board-grid,
+#game-screen .game-container.wheel-zoom .players-bar {
+  opacity: 0;
+}
