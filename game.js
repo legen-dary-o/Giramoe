@@ -75,12 +75,12 @@ function applyConsonant(game, letter) {
   if (game.turnState !== 'PICK_CONSONANT' && game.turnState !== 'PICK_CONSONANT_DOUBLE') {
     return { ok: false };
   }
-  const doubling = game.turnState === 'PICK_CONSONANT_DOUBLE';
-  if ((!doubling && !board.isConsonant(letter)) || game.usedLetters.includes(letter)) {
+  if (!board.isConsonant(letter) || game.usedLetters.includes(letter)) {
     return { ok: false };
   }
   const count = board.countOccurrences(game.board.grid, letter);
   const p = currentPlayer(game);
+  const doubling = game.turnState === 'PICK_CONSONANT_DOUBLE';
 
   if (count > 0) {
     board.revealLetter(game.board.grid, letter);

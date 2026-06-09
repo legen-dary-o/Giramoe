@@ -83,15 +83,26 @@ test('bancarotta wipes round points AND bank of current player, passes turn', ()
 });
 
 test('raddoppia doubles round points when consonant present', () => {
-  const g = newGame('CECE');
-  game.applySpin(g, 0); game.applyConsonant(g, 'C'); // 2000
-  assert.strictEqual(g.players[0].roundPoints, 2000);
+  const g = newGame('BARCA'); // consonants B, R, C ; vowels A, A
+  game.applySpin(g, 0); // 1000
+  game.applyConsonant(g, 'B'); // one B -> +1000
+  assert.strictEqual(g.players[0].roundPoints, 1000);
   game.applySpin(g, 2); // 'raddoppia'
   assert.strictEqual(g.turnState, 'PICK_CONSONANT_DOUBLE');
-  const res = game.applyConsonant(g, 'E');
+  const res = game.applyConsonant(g, 'R'); // present consonant
   assert.strictEqual(res.present, true);
-  assert.strictEqual(g.players[0].roundPoints, 4000);
+  assert.strictEqual(g.players[0].roundPoints, 2000); // doubled
   assert.strictEqual(g.turnState, 'CONTINUE');
+});
+
+test('raddoppia rejects a vowel (must be a consonant)', () => {
+  const g = newGame('BARCA');
+  game.applySpin(g, 0); game.applyConsonant(g, 'B'); // +1000
+  game.applySpin(g, 2); // raddoppia -> PICK_CONSONANT_DOUBLE
+  const res = game.applyConsonant(g, 'A'); // vowel, not allowed here
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(g.players[0].roundPoints, 1000); // unchanged
+  assert.strictEqual(g.turnState, 'PICK_CONSONANT_DOUBLE'); // still waiting
 });
 
 test('raddoppia with absent consonant passes the turn', () => {
