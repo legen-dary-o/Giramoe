@@ -583,3 +583,42 @@ html, body {
 
 /* Tap-to-start */
 #start-tap-screen .glass-button { font-size: 24px; padding: 18px 56px; }
+
+/* === FIT-TO-SCREEN SIZING (everything visible without scrolling) === */
+.game-container { gap: clamp(6px, 1.4vh, 16px); padding: 1.2vh 0; }
+.board-meta { margin-bottom: 0; }
+.board-counter { font-size: clamp(13px, 1.8vh, 18px); }
+
+/* Main screen (PC/TV): wheel bounded so it shares the height with the board */
+#main-wheel-container { width: min(44vh, 42vw); height: min(44vh, 42vw); }
+
+.category-banner {
+  font-size: clamp(15px, 2.3vh, 26px);
+  padding: clamp(3px, 0.8vh, 10px) clamp(16px, 3vw, 32px);
+  letter-spacing: 1.5px;
+}
+
+/* Board sized by a viewport-relative cell so its height stays bounded */
+.board-grid {
+  --cell: min(4.9vw, 5.2vh);
+  grid-template-columns: repeat(16, var(--cell));
+  gap: calc(var(--cell) * 0.09);
+  width: auto;
+}
+.cell {
+  aspect-ratio: auto;
+  width: var(--cell);
+  height: var(--cell);
+  font-size: calc(var(--cell) * 0.52);
+  border-radius: calc(var(--cell) * 0.14);
+}
+
+.players-bar { gap: clamp(8px, 1.6vw, 24px); }
+.player-name { min-width: clamp(94px, 11vw, 150px); padding: clamp(5px, 0.9vh, 10px) clamp(12px, 1.6vw, 28px); }
+.player-name .pn-name { font-size: clamp(14px, 1.9vh, 20px); }
+.player-name .pn-score { font-size: clamp(11px, 1.5vh, 15px); }
+.player-name .pn-bank { font-size: clamp(10px, 1.4vh, 14px); }
+
+/* Player phone: smaller wheel so the keyboard + buttons fit on screen */
+#player-wheel-container { width: min(68vw, 33vh); height: min(68vw, 33vh); }
+.mobile-container { gap: clamp(8px, 1.6vh, 18px); }
