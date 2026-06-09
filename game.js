@@ -83,6 +83,7 @@ function applyConsonant(game, letter) {
   const doubling = game.turnState === 'PICK_CONSONANT_DOUBLE';
 
   if (count > 0) {
+    const positions = board.letterPositions(game.board.grid, letter);
     board.revealLetter(game.board.grid, letter);
     game.usedLetters.push(letter);
     if (doubling) {
@@ -92,10 +93,10 @@ function applyConsonant(game, letter) {
     }
     game.hasScoredConsonant = true;
     game.turnState = 'CONTINUE';
-    return { ok: true, present: true, count, solved: board.isSolved(game.board.grid) };
+    return { ok: true, present: true, count, positions, solved: board.isSolved(game.board.grid) };
   }
   passTurn(game);
-  return { ok: true, present: false, count: 0 };
+  return { ok: true, present: false, count: 0, positions: [] };
 }
 
 function canBuyVowel(game) {
@@ -111,13 +112,14 @@ function applyVowel(game, letter) {
   p.roundPoints -= 500;
   const count = board.countOccurrences(game.board.grid, letter);
   if (count > 0) {
+    const positions = board.letterPositions(game.board.grid, letter);
     board.revealLetter(game.board.grid, letter);
     game.usedLetters.push(letter);
     game.turnState = 'CONTINUE';
-    return { ok: true, present: true, count, solved: board.isSolved(game.board.grid) };
+    return { ok: true, present: true, count, positions, solved: board.isSolved(game.board.grid) };
   }
   passTurn(game);
-  return { ok: true, present: false, count: 0 };
+  return { ok: true, present: false, count: 0, positions: [] };
 }
 
 function applySolve(game) {

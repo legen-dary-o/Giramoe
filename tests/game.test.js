@@ -182,3 +182,29 @@ test('startBoard rejects an overflow phrase without mutating the active board', 
   const r = game.startBoard(g, 'CAT', 'PAROLA '.repeat(30), 0, 2);
   assert.strictEqual(r.ok, false);
 });
+
+test('applyConsonant includes ordered positions for a present letter', () => {
+  const g = newGame('CECE');
+  game.applySpin(g, 3); // 200
+  const res = game.applyConsonant(g, 'C');
+  assert.strictEqual(res.present, true);
+  assert.ok(Array.isArray(res.positions));
+  assert.strictEqual(res.positions.length, 2);
+  assert.ok(res.positions.every(p => p.letter === 'C' && typeof p.row === 'number' && typeof p.col === 'number'));
+});
+
+test('applyConsonant returns empty positions for an absent letter', () => {
+  const g = newGame('CECE');
+  game.applySpin(g, 3);
+  const res = game.applyConsonant(g, 'Z');
+  assert.strictEqual(res.present, false);
+  assert.deepStrictEqual(res.positions, []);
+});
+
+test('applyVowel includes positions for a present vowel', () => {
+  const g = newGame('CECE');
+  game.applySpin(g, 0); game.applyConsonant(g, 'C'); // +2000, CONTINUE
+  const res = game.applyVowel(g, 'E');
+  assert.strictEqual(res.present, true);
+  assert.strictEqual(res.positions.length, 2);
+});
