@@ -1,13 +1,17 @@
 {
   "name": "giramoe",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Interactive live party game with spinning wheel",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "express": "^4.21.0",
     "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.0"
   }
 }
