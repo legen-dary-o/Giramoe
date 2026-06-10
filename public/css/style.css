@@ -847,3 +847,10 @@ body::before {
 }
 .kick-btn:hover { transform: scale(1.12); }
 .kick-btn:active { transform: scale(0.9); }
+
+/* Admin: brief highlight when a player's score changes (live feedback) */
+.admin-player-item.score-flash { animation: scoreFlash 0.7s ease; }
+@keyframes scoreFlash {
+  0%   { background: linear-gradient(135deg, rgba(79,172,254,0.45), rgba(168,85,247,0.30)); }
+  100% { background: none; }
+}

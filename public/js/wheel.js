@@ -247,12 +247,21 @@ class Wheel {
     return truncated + '…';
   }
 
-  spinTo(totalAngle, duration = 6000) {
+  // Spin so that `segmentIndex` lands under the top pointer, computed from the
+  // CURRENT rotation (the wheel accumulates rotation across spins). `spins` is the
+  // number of extra full turns for the animation.
+  spinTo(segmentIndex, spins = 6, duration = 6000) {
     if (this.spinning) return;
     this.spinning = true;
 
+    const segDeg = 360 / this.segments;
+    // rotation (deg, mod 360) at which segmentIndex's centre sits under the pointer
+    const targetMod = (((360 - segmentIndex * segDeg - segDeg / 2) % 360) + 360) % 360;
     const startRotation = this.rotation;
-    const targetRotation = startRotation + (totalAngle * Math.PI) / 180;
+    const currentMod = ((((startRotation * 180) / Math.PI) % 360) + 360) % 360;
+    const delta = (((targetMod - currentMod) % 360) + 360) % 360;
+    const totalDeg = spins * 360 + delta;
+    const targetRotation = startRotation + (totalDeg * Math.PI) / 180;
     const startTime = performance.now();
 
     const animate = (now) => {

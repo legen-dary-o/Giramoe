@@ -181,11 +181,12 @@ io.on('connection', (socket) => {
     if (state.g.turnState !== 'MUST_SPIN' && state.g.turnState !== 'CONTINUE') return;
 
     const winningSegment = Math.floor(Math.random() * 16);
-    const extra = 5 + Math.floor(Math.random() * 3);
-    const totalAngle = extra * 360 + (360 - winningSegment * 22.5 - 11.25);
+    const spins = 5 + Math.floor(Math.random() * 3);
     const result = game.applySpin(state.g, winningSegment);
 
-    const spinData = { winningSegment, totalAngle, value: state.g.segments[winningSegment], result };
+    // Each wheel computes the landing rotation from the winning segment + its own
+    // current rotation, so it always stops on the segment that matches the result.
+    const spinData = { winningSegment, spins, value: state.g.segments[winningSegment], result };
     io.to('main').emit('main:spin', spinData);
     io.to(socket.id).emit('player:spinResult', spinData);
 

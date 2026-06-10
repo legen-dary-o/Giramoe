@@ -82,8 +82,8 @@ socket.on('player:reconnected', ({ playerIndex, name, phase }) => {
   }
 });
 
-socket.on('player:spinResult', ({ totalAngle }) => {
-  if (playerWheel) playerWheel.spinTo(totalAngle, 6000);
+socket.on('player:spinResult', ({ winningSegment, spins }) => {
+  if (playerWheel) playerWheel.spinTo(winningSegment, spins, 6000);
 });
 
 socket.on('player:turnState', (st) => {

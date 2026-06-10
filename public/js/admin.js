@@ -88,6 +88,8 @@ const STATE_LABEL = {
   CONTINUE: 'continua/vocale/risolve'
 };
 
+let prevScores = {};
+
 function renderGame(s) {
   document.getElementById('admin-board-counter').textContent =
     `Tabellone ${s.boardNumber} / ${s.totalBoards}`;
@@ -98,8 +100,11 @@ function renderGame(s) {
   const list = document.getElementById('admin-scores');
   list.innerHTML = '';
   s.players.forEach((p, i) => {
+    const prev = prevScores[p.name];
+    const changed = prev && (prev.rp !== p.roundPoints || prev.bank !== p.bank);
+
     const item = document.createElement('div');
-    item.className = 'admin-player-item glass-panel';
+    item.className = 'admin-player-item glass-panel' + (changed ? ' score-flash' : '');
     if (i === s.currentTurn) {
       item.style.border = '1px solid rgba(100, 180, 255, 0.5)';
       item.style.boxShadow = '0 0 12px rgba(100, 180, 255, 0.2)';
@@ -108,6 +113,9 @@ function renderGame(s) {
       <span class="admin-scorenums">T: <b>${p.roundPoints}</b> · B: <b>${p.bank}</b></span>`;
     list.appendChild(item);
   });
+
+  prevScores = {};
+  s.players.forEach(p => { prevScores[p.name] = { rp: p.roundPoints, bank: p.bank }; });
 }
 
 function renderStandings(players) {

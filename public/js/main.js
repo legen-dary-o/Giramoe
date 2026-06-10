@@ -64,7 +64,7 @@ socket.on('main:gameState', (g) => {
 
 socket.on('main:scores', ({ scores, currentTurn }) => renderScores(scores, currentTurn));
 
-socket.on('main:spin', ({ totalAngle, value }) => {
+socket.on('main:spin', ({ winningSegment, spins, value }) => {
   if (!wheel) return;
   setWheelZoom(true);
   Sfx.startSpin();
@@ -73,7 +73,7 @@ socket.on('main:spin', ({ totalAngle, value }) => {
     setWheelZoom(false); // back to the board once the wheel stops
     showResult(String(value).toUpperCase());
   };
-  wheel.spinTo(totalAngle, 6000);
+  wheel.spinTo(winningSegment, spins, 6000);
   setTimeout(() => { Sfx.stopSpin(); setWheelZoom(false); }, 6800); // fallback if rAF was throttled
 });
 
