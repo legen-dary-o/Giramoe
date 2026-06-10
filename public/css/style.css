@@ -811,3 +811,39 @@ body::before {
   border-color: rgba(255, 255, 255, 0.6);
   box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
+
+/* === LOBBY / KICK / RECONNECT === */
+#reconnect-screen h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  animation: waitPulse 1.4s ease-in-out infinite;
+}
+
+/* Main display: a disconnected lobby slot stays visible but dimmed (QR stays up) */
+.player-slot.reconnecting {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+/* Admin lobby rows */
+.admin-player-item .apl-name { font-weight: 600; }
+.admin-player-item .apl-name.empty { color: var(--ink-faint); font-weight: 500; }
+.admin-player-item .apl-right { display: flex; align-items: center; gap: 12px; }
+
+.kick-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  background: linear-gradient(135deg, #ff7a8a, #ef3d61);
+  box-shadow: 0 2px 6px rgba(239, 61, 97, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.kick-btn:hover { transform: scale(1.12); }
+.kick-btn:active { transform: scale(0.9); }

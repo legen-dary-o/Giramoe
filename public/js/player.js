@@ -1,6 +1,7 @@
 const socket = io();
 const params = new URLSearchParams(window.location.search);
 const roomCode = params.get('room');
+const SAVED_KEY = 'giramoe-player';
 
 const CONSONANTS = 'BCDFGHJKLMNPQRSTVWXYZ'.split('');
 const VOWELS = 'AEIOU'.split('');
@@ -8,10 +9,25 @@ const VOWELS = 'AEIOU'.split('');
 let playerWheel = null;
 let myIndex = -1;
 let myName = '';
+let reconnecting = false;
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
+}
+
+// --- Device session (localStorage: survives reloads, tab close, app switch) ---
+function saveSession(name) { try { localStorage.setItem(SAVED_KEY, JSON.stringify({ roomCode, name })); } catch (e) {} }
+function loadSession() { try { const d = JSON.parse(localStorage.getItem(SAVED_KEY)); return (d && d.roomCode === roomCode) ? d : null; } catch (e) { return null; } }
+function clearSession() { try { localStorage.removeItem(SAVED_KEY); } catch (e) {} }
+
+// Auto-reconnect: if this device already joined this room, rejoin without re-typing the name.
+const _saved = loadSession();
+if (_saved) {
+  myName = _saved.name;
+  reconnecting = true;
+  showScreen('reconnect-screen');
+  socket.emit('player:reconnect', { roomCode, name: _saved.name });
 }
 
 // --- Join ---
@@ -19,11 +35,6 @@ document.getElementById('btn-join').addEventListener('click', () => {
   const name = document.getElementById('nick-input').value.trim();
   if (!name) return;
   myName = name;
-  const saved = sessionStorage.getItem('giramoe-player');
-  if (saved) {
-    const data = JSON.parse(saved);
-    if (data.roomCode === roomCode) { socket.emit('player:reconnect', { roomCode, name: data.name }); return; }
-  }
   socket.emit('player:join', { roomCode, name });
 });
 document.getElementById('nick-input').addEventListener('keydown', e => {
@@ -33,24 +44,42 @@ document.getElementById('nick-input').addEventListener('keydown', e => {
 // --- Connection events ---
 socket.on('player:joined', ({ playerIndex, name }) => {
   myIndex = playerIndex; myName = name;
-  sessionStorage.setItem('giramoe-player', JSON.stringify({ roomCode, name }));
+  reconnecting = false;
+  saveSession(name);
   showScreen('wait-screen');
 });
-socket.on('player:error', msg => alert(msg));
+
+socket.on('player:error', msg => {
+  if (reconnecting) { reconnecting = false; clearSession(); showScreen('join-screen'); return; }
+  alert(msg);
+});
+
+socket.on('player:kicked', () => {
+  clearSession();
+  reconnecting = false;
+  showScreen('join-screen');
+  alert('Sei stato rimosso dalla lobby.');
+});
+
 socket.on('player:gameStarted', () => {
   showScreen('player-game-screen');
   document.getElementById('player-nick-display').textContent = myName;
   initWheel();
   buildKeyboard();
 });
+
 socket.on('player:reconnected', ({ playerIndex, name, phase }) => {
   myIndex = playerIndex; myName = name;
+  reconnecting = false;
+  saveSession(name);
   if (phase === 'playing') {
     showScreen('player-game-screen');
     document.getElementById('player-nick-display').textContent = myName;
     initWheel();
     buildKeyboard();
-  } else showScreen('wait-screen');
+  } else {
+    showScreen('wait-screen');
+  }
 });
 
 socket.on('player:spinResult', ({ totalAngle }) => {

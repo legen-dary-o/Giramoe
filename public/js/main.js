@@ -113,8 +113,15 @@ socket.on('main:playerReconnected', () =>
 function updatePlayerSlots(players) {
   for (let i = 0; i < 3; i++) {
     const slot = document.getElementById(`slot-${i}`);
-    if (players[i]) { slot.textContent = players[i].name; slot.classList.add('filled'); }
-    else { slot.textContent = '—'; slot.classList.remove('filled'); }
+    const p = players[i];
+    if (p) {
+      slot.textContent = p.name;
+      slot.classList.add('filled');
+      slot.classList.toggle('reconnecting', p.connected === false);
+    } else {
+      slot.textContent = '—';
+      slot.classList.remove('filled', 'reconnecting');
+    }
   }
 }
 

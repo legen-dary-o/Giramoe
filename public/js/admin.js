@@ -25,7 +25,6 @@ socket.on('admin:state', (s) => {
   else if (s.phase === 'lobby') {
     showScreen('admin-lobby');
     updateLobby(s.players);
-    document.getElementById('btn-avvia').disabled = s.players.length < 3;
   } else if (s.phase === 'playing') {
     showScreen('admin-game');
     renderGame(s);
@@ -44,16 +43,42 @@ socket.on('admin:boardSolved', ({ boardNumber }) => {
 });
 
 function updateLobby(players) {
+  const list = document.getElementById('admin-players');
+  list.innerHTML = '';
   for (let i = 0; i < 3; i++) {
-    const el = document.getElementById(`ap-${i}`);
-    if (players[i]) {
-      el.querySelector('span:first-child').textContent = players[i].name;
-      el.querySelector('.status-dot').classList.remove('disconnected');
+    const p = players[i];
+    const item = document.createElement('div');
+    item.className = 'admin-player-item glass-panel';
+    if (p) {
+      const name = document.createElement('span');
+      name.className = 'apl-name';
+      name.textContent = p.name;
+      const right = document.createElement('span');
+      right.className = 'apl-right';
+      const dot = document.createElement('span');
+      dot.className = 'status-dot' + (p.connected ? '' : ' disconnected');
+      const kick = document.createElement('button');
+      kick.className = 'kick-btn';
+      kick.textContent = '✕';
+      kick.title = 'Rimuovi';
+      kick.addEventListener('click', () => socket.emit('admin:kick', { name: p.name }));
+      right.appendChild(dot);
+      right.appendChild(kick);
+      item.appendChild(name);
+      item.appendChild(right);
     } else {
-      el.querySelector('span:first-child').textContent = 'In attesa...';
-      el.querySelector('.status-dot').classList.add('disconnected');
+      const name = document.createElement('span');
+      name.className = 'apl-name empty';
+      name.textContent = 'In attesa...';
+      const dot = document.createElement('span');
+      dot.className = 'status-dot disconnected';
+      item.appendChild(name);
+      item.appendChild(dot);
     }
+    list.appendChild(item);
   }
+  document.getElementById('btn-avvia').disabled =
+    !(players.length === 3 && players.every(p => p.connected));
 }
 
 const STATE_LABEL = {

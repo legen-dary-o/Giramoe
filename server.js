@@ -96,6 +96,10 @@ function mainScoresView() {
   return { scores: publicScores(), currentTurn: state.g.currentTurnIndex };
 }
 
+function lobbyPlayers() {
+  return state.lobby.map(p => ({ name: p.name, connected: p.connected }));
+}
+
 function broadcastAdminPlayers() {
   io.to('admin').emit('admin:state', adminView());
   state.g.players.forEach((p, i) => {
@@ -153,7 +157,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('admin:startGame', () => {
-    if (state.lobby.length !== 3) return;
+    if (state.lobby.length !== 3 || !state.lobby.every(p => p.connected)) return;
     state.g = game.createGame(state.lobby.map((p, i) => ({ id: i, name: p.name })));
     state.phase = 'playing';
     io.to('main').emit('main:startGame');
@@ -236,17 +240,34 @@ io.on('connection', (socket) => {
     broadcastScores();
   });
 
+  // Admin removes a player during the lobby (frees the slot).
+  socket.on('admin:kick', ({ name }) => {
+    if (state.phase !== 'lobby') return;
+    const idx = state.lobby.findIndex(pl => pl.name === name);
+    if (idx === -1) return;
+    const [removed] = state.lobby.splice(idx, 1);
+    if (removed.connected) io.to(removed.socketId).emit('player:kicked');
+    io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
+    io.to('admin').emit('admin:state', adminView());
+  });
+
   socket.on('disconnect', () => {
     const p = state.lobby.find(pl => pl.socketId === socket.id);
-    if (p) {
-      p.connected = false;
-      io.to('main').emit('main:playerDisconnected', { players: state.lobby.map(x => ({ name: x.name, connected: x.connected })) });
-      io.to('admin').emit('admin:state', adminView());
+    if (!p) return;
+    p.connected = false;
+    if (state.phase === 'playing') {
+      // mid-game: pause the main screen with the reconnect overlay
+      io.to('main').emit('main:playerDisconnected', { players: lobbyPlayers() });
+    } else {
+      // lobby: keep the QR visible, just refresh the slots
+      io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
     }
+    io.to('admin').emit('admin:state', adminView());
   });
 
   socket.on('player:reconnect', ({ roomCode, name }) => {
-    const p = state.lobby.find(pl => pl.name === name && !pl.connected);
+    if (state.roomCode !== roomCode) return socket.emit('player:error', 'Sessione scaduta');
+    const p = state.lobby.find(pl => pl.name === name);
     if (!p) return socket.emit('player:error', 'Impossibile riconnettersi');
     p.socketId = socket.id;
     p.connected = true;
@@ -254,8 +275,10 @@ io.on('connection', (socket) => {
     socket.emit('player:reconnected', { playerIndex: socket.playerIndex, name, phase: state.phase });
     if (state.phase === 'playing' && state.g) {
       socket.emit('player:turnState', playerView(socket.playerIndex));
+      io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
+    } else {
+      io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
     }
-    io.to('main').emit('main:playerReconnected', { players: state.lobby.map(x => ({ name: x.name, connected: x.connected })) });
     io.to('admin').emit('admin:state', adminView());
   });
 });
