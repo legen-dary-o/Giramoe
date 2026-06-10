@@ -5,6 +5,7 @@ const os = require('os');
 const game = require('./game');
 const board = require('./board');
 const triplete = require('./triplete');
+const giramoe = require('./giramoe');
 
 const app = express();
 const server = http.createServer(app);
@@ -38,14 +39,17 @@ function getLocalIP() {
 }
 
 let state = {
-  phase: 'video',     // video | lobby | playing | tripleteReady | triplete | matchEnd
+  phase: 'video',     // video | lobby | playing | tripleteReady | triplete | express | giramoe | matchEnd
   roomCode: null,
   lobby: [],          // [{ name, socketId, connected }]
   g: null,            // game object once playing
-  t: null             // triplete object during the bonus round
+  t: null,            // triplete object during the bonus round
+  gi: null            // giramoe object during the final wheel board
 };
 
-let tripleteTimer = null; // single reveal/flash timer for the bonus round
+let tripleteTimer = null;  // single reveal/flash timer for the bonus round
+let giramoeTimer = null;   // 5s buzz window timer for the giramoe board
+const GIRAMOE_BUZZ_MS = 5000;
 
 function generateRoomCode() {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -81,7 +85,7 @@ function mainGameView() {
 }
 
 function adminView() {
-  const inGame = ['playing', 'express', 'tripleteReady', 'triplete', 'matchEnd'].includes(state.phase);
+  const inGame = ['playing', 'express', 'tripleteReady', 'triplete', 'giramoe', 'matchEnd'].includes(state.phase);
   return {
     phase: state.phase,
     roomCode: state.roomCode,
@@ -102,6 +106,20 @@ function adminView() {
               state: state.t.state,
               buzzedBy: state.t.buzzedBy,
               players: tripleteScores()
+            }
+          : { started: false })
+      : null,
+    giramoe: state.phase === 'giramoe'
+      ? (state.gi
+          ? {
+              started: true,
+              category: state.gi.board.category,
+              multiplier: state.gi.multiplier,
+              state: state.gi.state,
+              currentTurn: state.gi.currentTurnIndex,
+              buzzedBy: state.gi.buzzedBy,
+              currentName: state.gi.players[state.gi.currentTurnIndex].name,
+              players: giramoeScores()
             }
           : { started: false })
       : null
@@ -264,7 +282,7 @@ function advanceWheelBoard() {
     state.phase = 'tripleteReady';
     io.to('admin').emit('admin:state', adminView());
   } else if (state.phase === 'express' && state.g.boardNumber >= TOTAL_BOARDS) {
-    goToMatchEnd(); // TODO: replaced by the GIRAMOE board when phase ② is built
+    startGiramoe();
   } else {
     state.g.boardNumber += 1;
     broadcastAdminPlayers();
@@ -280,6 +298,79 @@ function goToMatchEnd() {
   io.to('main').emit('main:matchEnd', { standings });
   io.to('admin').emit('admin:state', adminView());
   state.lobby.forEach(p => io.to(p.socketId).emit('player:matchEnd', { standings }));
+}
+
+// --- GIRAMOE: the final wheel board (admin spins once; round-robin consonants) ---
+
+function startGiramoe() {
+  state.phase = 'giramoe';
+  state.gi = null;
+  clearGiramoeTimer();
+  io.to('main').emit('main:giramoeStart', { segments: game.GIRAMOE_SEGMENTS });
+  io.to('admin').emit('admin:state', adminView());
+  state.lobby.forEach(p => io.to(p.socketId).emit('player:giramoeIntro'));
+}
+
+function clearGiramoeTimer() {
+  if (giramoeTimer) { clearTimeout(giramoeTimer); giramoeTimer = null; }
+}
+
+function giramoeBoardView() {
+  const b = state.gi.board;
+  return {
+    category: b.category,
+    grid: b.grid.map(row => row.map(cell => {
+      if (cell.type === 'letter') {
+        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null };
+      }
+      return { type: cell.type };
+    }))
+  };
+}
+
+function giramoeScores() {
+  return state.gi.players.map(p => ({ id: p.id, name: p.name, points: p.points }));
+}
+
+function playerGiramoeView(i) {
+  const gi = state.gi;
+  const isMyTurn = gi.currentTurnIndex === i;
+  const canCall = isMyTurn && gi.state === 'PLAYING' && !gi.calledThisTurn;
+  const canBuzz = isMyTurn && gi.state === 'PLAYING' && gi.calledThisTurn;
+  let message;
+  if (gi.state === 'AWAIT_SPIN') message = 'L\'admin sta per girare la ruota…';
+  else if (gi.state === 'BUZZED') message = gi.buzzedBy === i ? 'Di\' la soluzione!' : `${gi.players[gi.buzzedBy].name} risponde…`;
+  else if (!isMyTurn) message = `Turno di ${gi.players[gi.currentTurnIndex].name}`;
+  else if (canCall) message = 'Tocca a te: chiama una consonante';
+  else if (canBuzz) message = 'Prenotati e risolvi, o passa';
+  else message = '';
+  return {
+    isMyTurn, state: gi.state, canCall, canBuzz,
+    buzzedByMe: gi.buzzedBy === i,
+    points: gi.players[i].points,
+    multiplier: gi.multiplier,
+    usedLetters: gi.usedLetters,
+    currentTurnName: gi.players[gi.currentTurnIndex].name,
+    message
+  };
+}
+
+function broadcastGiramoe() {
+  io.to('main').emit('main:giramoeScores', { scores: giramoeScores(), currentTurn: state.gi.currentTurnIndex, multiplier: state.gi.multiplier });
+  io.to('admin').emit('admin:state', adminView());
+  state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:giramoeState', playerGiramoeView(i)));
+}
+
+function startGiramoeBuzzWindow() {
+  clearGiramoeTimer();
+  giramoeTimer = setTimeout(() => {
+    giramoeTimer = null;
+    if (state.phase !== 'giramoe' || !state.gi) return;
+    if (giramoe.timeout(state.gi).ok) {
+      io.to('main').emit('main:giramoeResume');
+      broadcastGiramoe();
+    }
+  }, GIRAMOE_BUZZ_MS);
 }
 
 function playerView(playerIndex) {
@@ -338,6 +429,10 @@ io.on('connection', (socket) => {
     } else if (state.phase === 'triplete' && state.t) {
       socket.emit('main:tripleteBoard', tripleteBoardView());
       socket.emit('main:tripleteScores', { scores: tripleteScores(), buzzedBy: state.t.buzzedBy });
+    } else if (state.phase === 'giramoe' && state.gi && state.gi.board) {
+      socket.emit('main:giramoeStart', { segments: game.GIRAMOE_SEGMENTS });
+      socket.emit('main:giramoeBoard', giramoeBoardView());
+      socket.emit('main:giramoeScores', { scores: giramoeScores(), currentTurn: state.gi.currentTurnIndex, multiplier: state.gi.multiplier });
     }
   });
 
@@ -529,6 +624,73 @@ io.on('connection', (socket) => {
     startTripleteReveal(); // resume from where it left off
   });
 
+  // --- GIRAMOE (final wheel board) ---
+
+  socket.on('admin:giramoeSetBoard', ({ category, phrase }) => {
+    if (state.phase !== 'giramoe' || !state.g) return;
+    const players = state.g.players.map(p => ({ id: p.id, name: p.name }));
+    const r = giramoe.createGiramoe(players, category, phrase);
+    if (!r.ok) return io.to('admin').emit('admin:giramoeError', r.error);
+    state.gi = r.gi;
+    io.to('admin').emit('admin:giramoeError', '');
+    io.to('main').emit('main:giramoeBoard', giramoeBoardView());
+    broadcastGiramoe();
+  });
+
+  // Admin spins the wheel once -> the per-occurrence multiplier, then play opens.
+  socket.on('admin:giramoeSpin', () => {
+    if (state.phase !== 'giramoe' || !state.gi || state.gi.state !== 'AWAIT_SPIN') return;
+    const seg = FORCE_SEGMENT != null ? FORCE_SEGMENT : Math.floor(Math.random() * 16);
+    const spins = 5 + Math.floor(Math.random() * 3);
+    const value = game.GIRAMOE_SEGMENTS[seg];
+    giramoe.setMultiplier(state.gi, value);
+    io.to('main').emit('main:spin', { winningSegment: seg, spins, value, result: { type: 'number', value } });
+    setTimeout(() => { if (state.phase === 'giramoe' && state.gi) broadcastGiramoe(); }, SPIN_MS + 200);
+    io.to('admin').emit('admin:state', adminView());
+  });
+
+  // Current player calls one consonant; the 5s buzz window opens after it.
+  socket.on('player:giramoeLetter', ({ letter }) => {
+    if (state.phase !== 'giramoe' || !state.gi) return;
+    if (socket.playerIndex !== state.gi.currentTurnIndex) return;
+    const res = giramoe.callConsonant(state.gi, letter);
+    if (!res.ok) return;
+    if (res.present) io.to('main').emit('main:revealLetter', { positions: res.positions });
+    startGiramoeBuzzWindow();
+    broadcastGiramoe();
+  });
+
+  socket.on('player:giramoeBuzz', () => {
+    if (state.phase !== 'giramoe' || !state.gi) return;
+    const res = giramoe.buzz(state.gi, socket.playerIndex);
+    if (!res.ok) return;
+    clearGiramoeTimer();
+    const name = state.gi.players[socket.playerIndex].name;
+    io.to('main').emit('main:giramoeBuzzed', { playerIndex: socket.playerIndex, name });
+    broadcastGiramoe();
+  });
+
+  socket.on('admin:giramoeCorrect', () => {
+    if (state.phase !== 'giramoe' || !state.gi) return;
+    const res = giramoe.judgeCorrect(state.gi);
+    if (!res.ok) return;
+    clearGiramoeTimer();
+    giramoe.bankResult(state.gi, state.g.players); // only the winner banks
+    io.to('main').emit('main:giramoeBoard', giramoeBoardView());
+    io.to('main').emit('main:giramoeSolved', { name: res.name, points: res.points });
+    io.to('main').emit('main:solved');
+    goToMatchEnd(); // TODO: replaced by the finalist tie-break / final game when built
+  });
+
+  socket.on('admin:giramoeWrong', () => {
+    if (state.phase !== 'giramoe' || !state.gi) return;
+    const res = giramoe.judgeWrong(state.gi);
+    if (!res.ok) return;
+    clearGiramoeTimer();
+    io.to('main').emit('main:giramoeResume');
+    broadcastGiramoe();
+  });
+
   // Admin removes a player during the lobby (frees the slot).
   socket.on('admin:kick', ({ name }) => {
     if (state.phase !== 'lobby') return;
@@ -544,9 +706,10 @@ io.on('connection', (socket) => {
     const p = state.lobby.find(pl => pl.socketId === socket.id);
     if (!p) return;
     p.connected = false;
-    if (isWheelPhase() || state.phase === 'triplete' || state.phase === 'tripleteReady') {
-      // mid-game: pause the main screen (and the triplete reveal) with the overlay
+    if (isWheelPhase() || state.phase === 'triplete' || state.phase === 'tripleteReady' || state.phase === 'giramoe') {
+      // mid-game: pause the main screen (and any reveal/buzz timer) with the overlay
       if (state.phase === 'triplete') clearTripleteTimer();
+      if (state.phase === 'giramoe') clearGiramoeTimer();
       io.to('main').emit('main:playerDisconnected', { players: lobbyPlayers() });
     } else {
       // lobby: keep the QR visible, just refresh the slots
@@ -572,6 +735,10 @@ io.on('connection', (socket) => {
       io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
       // resume the reveal once everyone is back
       if (state.lobby.every(pl => pl.connected)) startTripleteReveal();
+    } else if (state.phase === 'giramoe' && state.gi) {
+      socket.emit('player:giramoeIntro');
+      socket.emit('player:giramoeState', playerGiramoeView(socket.playerIndex));
+      io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
     } else {
       io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
     }

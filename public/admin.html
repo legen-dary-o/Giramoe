@@ -83,6 +83,29 @@
     </div>
   </div>
 
+  <!-- Giramoe (final wheel board) -->
+  <div id="admin-giramoe" class="screen hidden">
+    <div class="admin-container">
+      <h1>GIRAMOE</h1>
+      <div class="admin-section" id="giramoe-setup">
+        <h2>Tabellone finale</h2>
+        <input type="text" id="gi-cat" class="glass-input" placeholder="Categoria" autocomplete="off">
+        <input type="text" id="gi-phrase" class="glass-input" placeholder="Frase" autocomplete="off" style="margin-top:8px;">
+        <button class="glass-button" id="btn-giramoe-setboard" style="margin-top:8px;">Avvia tabellone</button>
+        <div class="board-error" id="giramoe-error"></div>
+      </div>
+      <div class="admin-section hidden" id="giramoe-live">
+        <button class="glass-button" id="btn-giramoe-spin">Gira la ruota</button>
+        <h2 style="margin-top:12px;">Turno: <span id="gi-turn-name">—</span> <span id="gi-mult-tag" class="turn-state-tag"></span></h2>
+        <div class="admin-player-list" id="giramoe-scores"></div>
+      </div>
+      <div class="admin-section admin-actions hidden" id="giramoe-actions">
+        <button class="glass-button" id="btn-giramoe-correct" disabled>Frase indovinata</button>
+        <button class="glass-button" id="btn-giramoe-wrong" disabled>Frase sbagliata</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Match End -->
   <div id="admin-matchend" class="screen hidden">
     <div class="admin-container">

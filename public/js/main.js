@@ -43,6 +43,7 @@ function applyPhaseScreen() {
   else if (currentPhase === 'lobby') showScreen('lobby-screen');
   else if (currentPhase === 'playing') showScreen('game-screen');
   else if (currentPhase === 'express') showScreen('game-screen');
+  else if (currentPhase === 'giramoe') showScreen('game-screen');
   else if (currentPhase === 'tripleteReady') showScreen('game-screen');
   else if (currentPhase === 'triplete') showScreen(tripleteBoardReady ? 'triplete-screen' : 'triplete-title-screen');
   else if (currentPhase === 'matchEnd') showScreen('matchend-screen');
@@ -246,6 +247,54 @@ socket.on('main:expressBankrupt', () => {
   Sfx.play('wrong');
   showResult('BANCAROTTA');
 });
+
+// --- GIRAMOE (final wheel board) ---
+socket.on('main:giramoeStart', ({ segments }) => {
+  currentPhase = 'giramoe';
+  if (wheel) updateWheelLabels(segments);
+  document.getElementById('main-wheel-indicator').style.display = '';
+  document.getElementById('category-banner').textContent = '';
+  document.getElementById('board-grid').innerHTML = '';
+  playTitleAnimation('GIRAMOE');
+  showScreen('triplete-title-screen');
+  setTimeout(() => { if (currentPhase === 'giramoe') showScreen('game-screen'); }, 2800);
+});
+
+socket.on('main:giramoeBoard', (b) => {
+  currentPhase = 'giramoe';
+  document.getElementById('category-banner').textContent = b.category;
+  renderBoard(b.grid);
+  applyPhaseScreen();
+});
+
+socket.on('main:giramoeScores', ({ scores, currentTurn }) => renderGiramoeScores(scores, currentTurn));
+
+socket.on('main:giramoeBuzzed', ({ name }) => {
+  Sfx.play('buzzer');
+  showBuzz(`🔔 ${name} risponde!`);
+});
+
+socket.on('main:giramoeResume', () => hideBuzz());
+
+socket.on('main:giramoeSolved', ({ name, points }) => {
+  hideBuzz();
+  showResult(`${name} +${points}`);
+});
+
+function renderGiramoeScores(scores, currentTurn) {
+  const bar = document.getElementById('players-bar');
+  bar.innerHTML = '';
+  scores.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'player-name glass-panel' + (i === currentTurn ? ' active' : '');
+    el.innerHTML = `<div class="pn-avatar">${s.name.charAt(0).toUpperCase()}</div>
+      <div class="pn-info">
+        <div class="pn-name">${s.name}</div>
+        <div class="pn-score">Punti: ${s.points}</div>
+      </div>`;
+    bar.appendChild(el);
+  });
+}
 
 socket.on('main:tripleteBoard', (b) => {
   currentPhase = 'triplete';

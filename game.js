@@ -9,6 +9,12 @@ const SEGMENTS = [
 const EXPRESS_SEGMENTS = SEGMENTS.map((s, i) => (s === 'next' && i === 6) ? 'express' : s);
 const EXPRESS_VALUE = 500; // every occurrence of a called consonant is worth 500
 
+// GIRAMOE wheel: same as the initial wheel but the 5 special segments are swapped
+// for point values (no specials in the final wheel board).
+const GIRAMOE_SPECIAL_VALUES = { 1: 900, 2: 600, 6: 250, 11: 800, 15: 350 };
+const GIRAMOE_SEGMENTS = SEGMENTS.map((s, i) =>
+  typeof s === 'number' ? s : GIRAMOE_SPECIAL_VALUES[i]);
+
 function createGame(players) {
   return {
     players: players.map(p => ({ id: p.id, name: p.name, roundPoints: 0, bank: 0 })),
@@ -183,7 +189,7 @@ function applyExpressWrongSolve(game) {
 }
 
 module.exports = {
-  SEGMENTS, EXPRESS_SEGMENTS, EXPRESS_VALUE,
+  SEGMENTS, EXPRESS_SEGMENTS, EXPRESS_VALUE, GIRAMOE_SEGMENTS,
   createGame, currentPlayer, passTurn, startBoard,
   applySpin, applyConsonant, canBuyVowel, applyVowel, applySolve,
   applyExpressLetter, applyExpressWrongSolve, expressBankrupt

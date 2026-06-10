@@ -33,6 +33,19 @@ document.getElementById('btn-triplete-correct').addEventListener('click', () => 
 document.getElementById('btn-triplete-wrong').addEventListener('click', () => socket.emit('admin:tripleteWrong'));
 socket.on('admin:tripleteError', (err) => showTripleteError(err));
 
+// --- Giramoe ---
+document.getElementById('btn-giramoe-setboard').addEventListener('click', () => {
+  const category = document.getElementById('gi-cat').value.trim();
+  const phrase = document.getElementById('gi-phrase').value.trim();
+  if (!category || !phrase) { document.getElementById('giramoe-error').textContent = 'Inserisci categoria e frase'; return; }
+  document.getElementById('giramoe-error').textContent = '';
+  socket.emit('admin:giramoeSetBoard', { category, phrase });
+});
+document.getElementById('btn-giramoe-spin').addEventListener('click', () => socket.emit('admin:giramoeSpin'));
+document.getElementById('btn-giramoe-correct').addEventListener('click', () => socket.emit('admin:giramoeCorrect'));
+document.getElementById('btn-giramoe-wrong').addEventListener('click', () => socket.emit('admin:giramoeWrong'));
+socket.on('admin:giramoeError', (err) => { document.getElementById('giramoe-error').textContent = err; });
+
 socket.on('admin:state', (s) => {
   if (s.phase === 'video') showScreen('admin-pregame');
   else if (s.phase === 'lobby') {
@@ -46,6 +59,9 @@ socket.on('admin:state', (s) => {
   } else if (s.phase === 'triplete') {
     showScreen('admin-triplete');
     renderTriplete(s.triplete);
+  } else if (s.phase === 'giramoe') {
+    showScreen('admin-giramoe');
+    renderGiramoe(s.giramoe);
   } else if (s.phase === 'matchEnd') {
     showScreen('admin-matchend');
     renderStandings(s.players);
@@ -157,6 +173,49 @@ function showBoardError(msg) {
 
 function showTripleteError(msg) {
   document.getElementById('triplete-error').textContent = msg;
+}
+
+function renderGiramoe(gr) {
+  const setup = document.getElementById('giramoe-setup');
+  const live = document.getElementById('giramoe-live');
+  const actions = document.getElementById('giramoe-actions');
+
+  if (!gr || !gr.started) {
+    setup.classList.remove('hidden');
+    live.classList.add('hidden');
+    actions.classList.add('hidden');
+    return;
+  }
+
+  setup.classList.add('hidden');
+  live.classList.remove('hidden');
+  actions.classList.remove('hidden');
+
+  document.getElementById('gi-turn-name').textContent = gr.currentName || '—';
+  document.getElementById('gi-mult-tag').textContent =
+    gr.multiplier ? '×' + gr.multiplier : (gr.state === 'AWAIT_SPIN' ? 'gira la ruota' : '');
+  document.getElementById('btn-giramoe-spin').disabled = gr.state !== 'AWAIT_SPIN';
+
+  const buzzed = gr.buzzedBy != null;
+  document.getElementById('btn-giramoe-correct').disabled = !buzzed;
+  document.getElementById('btn-giramoe-wrong').disabled = !buzzed;
+
+  const list = document.getElementById('giramoe-scores');
+  list.innerHTML = '';
+  gr.players.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'admin-player-item glass-panel';
+    if (p.id === gr.buzzedBy) {
+      item.style.border = '1px solid rgba(245, 179, 1, 0.7)';
+      item.style.boxShadow = '0 0 12px rgba(245, 179, 1, 0.3)';
+    } else if (i === gr.currentTurn) {
+      item.style.border = '1px solid rgba(100, 180, 255, 0.5)';
+    }
+    const tag = p.id === gr.buzzedBy ? ' 🔔' : (i === gr.currentTurn ? ' ▶' : '');
+    item.innerHTML = `<span>${p.name}${tag}</span>
+      <span class="admin-scorenums">P: <b>${p.points}</b></span>`;
+    list.appendChild(item);
+  });
 }
 
 function renderTriplete(tr) {

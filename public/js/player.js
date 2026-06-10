@@ -120,6 +120,49 @@ function applyTripleteState(st) {
   btn.classList.toggle('buzzed', st.buzzedByMe);
 }
 
+// --- Giramoe (final wheel board) ---
+let giKbBuilt = false;
+socket.on('player:giramoeIntro', () => {
+  showScreen('player-giramoe-screen');
+  document.getElementById('gi-nick').textContent = myName;
+  buildGiramoeKeyboard();
+});
+
+socket.on('player:giramoeState', (st) => applyGiramoeState(st));
+
+document.getElementById('btn-gi-buzz').addEventListener('click', () => socket.emit('player:giramoeBuzz'));
+
+function buildGiramoeKeyboard() {
+  if (giKbBuilt) return;
+  giKbBuilt = true;
+  const kb = document.getElementById('gi-keyboard');
+  kb.innerHTML = '';
+  CONSONANTS.forEach(letter => {
+    const b = document.createElement('button');
+    b.className = 'key';
+    b.textContent = letter;
+    b.dataset.letter = letter;
+    b.addEventListener('click', () => socket.emit('player:giramoeLetter', { letter }));
+    kb.appendChild(b);
+  });
+}
+
+function applyGiramoeState(st) {
+  document.getElementById('gi-points').textContent = st.points;
+  document.getElementById('gi-mult').textContent = st.multiplier ? '×' + st.multiplier : '×—';
+  const msg = document.getElementById('gi-message');
+  msg.textContent = st.message;
+  msg.className = 'turn-message ' + (st.isMyTurn ? 'your-turn' : 'waiting');
+  const kb = document.getElementById('gi-keyboard');
+  kb.classList.toggle('disabled', !st.canCall);
+  document.querySelectorAll('#gi-keyboard .key').forEach(b => {
+    b.disabled = !st.canCall || st.usedLetters.includes(b.dataset.letter);
+  });
+  const buzz = document.getElementById('btn-gi-buzz');
+  buzz.disabled = !st.canBuzz;
+  buzz.classList.toggle('armed', st.canBuzz);
+}
+
 socket.on('player:matchEnd', ({ standings }) => {
   showScreen('player-matchend');
   const el = document.getElementById('player-standings');

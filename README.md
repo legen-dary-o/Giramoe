@@ -101,8 +101,21 @@ express (parte l'animazione "EXPRESS"):
 Lato admin, in express i pulsanti diventano **Frase indovinata** / **Frase sbagliata**
 (quest'ultimo = bancarotta).
 
-> Le fasi successive (Giramoe, finale a tempo, buste) sono in arrivo; per ora, finiti i
-> 3 tabelloni express, si va alla classifica finale.
+## GIRAMOE (tabellone finale)
+
+Dopo i 3 tabelloni express → animazione "GIRAMOE" e **un ultimo tabellone**. La ruota
+qui **non ha spicchi speciali** (i 5 speciali sono sostituiti da valori a punti). **Giri
+tu la ruota una sola volta** → moltiplicatore **V**.
+
+- A giro, ogni giocatore di turno chiama **una sola consonante** (niente vocali). Se
+  presente, viene rivelata e vale **V × occorrenze** per quel giocatore.
+- Dopo la consonante ha **5 secondi** per premere **PRENOTATI** e dire la soluzione.
+  Niente prenotazione / scaduto il tempo → passa al successivo (nessuna penalità).
+- **Solo chi indovina** incassa **i propri** punti in banca; gli altri no. Frase
+  sbagliata → passa, senza penalità.
+
+> Le fasi successive (finale a tempo, buste) sono in arrivo; per ora, finito il
+> tabellone Giramoe, si va alla classifica finale.
 
 ## Personalizzare la ruota
 
@@ -111,8 +124,10 @@ I 16 valori degli spicchi sono in `game.js`, nell'array `SEGMENTS`. Categoria e 
 ## Sviluppo e test
 
 ```bash
-node --test tests/board.test.js tests/game.test.js tests/triplete.test.js   # test unitari (logica)
-node --test tests/triplete.integration.test.js tests/express.integration.test.js   # flussi via socket (server interno, ~30s)
+# test unitari (logica):
+node --test tests/board.test.js tests/game.test.js tests/triplete.test.js tests/giramoe.test.js
+# flussi via socket (server interno, ~40s):
+node --test tests/triplete.integration.test.js tests/express.integration.test.js tests/giramoe.integration.test.js
 # test di integrazione del gioco base (richiede il server avviato):
 node server.js & sleep 2 && node --test tests/integration.test.js
 ```
@@ -125,6 +140,7 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 - `board.js` — layout della frase nel tabellone, rivelazione lettere (puro, testato)
 - `game.js` — macchina a stati del turno, punteggi, ciclo dei 3 tabelloni (puro, testato)
 - `triplete.js` — Triplete: 3 tabelloni, prenotazioni/blocchi, bonus 5000 (puro, testato)
+- `giramoe.js` — tabellone finale: giro unico dell'admin, round-robin a consonanti, solo il vincitore incassa (puro, testato)
 - `game.js` include anche la modalità **EXPRESS** (raffica 500/occorrenza, bancarotta totale)
 - `public/index.html` + `js/main.js` — schermo principale (PC/TV)
 - `public/admin.html` + `js/admin.js` — console admin (telefono)

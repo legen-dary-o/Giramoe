@@ -1003,3 +1003,23 @@ body::before {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.04); }
 }
+
+/* Giramoe: PRENOTATI as a wide pill (sits under the consonant keyboard) */
+.buzz-pill {
+  display: block;
+  width: min(86vw, 360px);
+  margin: 16px auto 0;
+  padding: clamp(14px, 2.4vh, 20px);
+  border-radius: var(--r-md);
+  font-size: clamp(20px, 6vw, 30px);
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #fff;
+  background: linear-gradient(150deg, #ffd24a 0%, #f59e0b 55%, #ef4444 100%);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 36px rgba(239, 68, 68, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.6);
+  transition: transform 0.12s ease, filter 0.2s ease;
+}
+.buzz-pill:not(:disabled):active { transform: scale(0.97); }
+.buzz-pill:disabled { opacity: 0.4; filter: grayscale(0.4); }
+.buzz-pill.armed { animation: buzzPulse 0.8s ease-in-out infinite; }
