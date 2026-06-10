@@ -92,6 +92,27 @@ socket.on('player:turnState', (st) => {
   applyTurnState(st);
 });
 
+// --- Triplete ---
+socket.on('player:tripleteIntro', () => {
+  showScreen('player-triplete-screen');
+  document.getElementById('tr-nick').textContent = myName;
+});
+
+socket.on('player:tripleteState', (st) => applyTripleteState(st));
+
+document.getElementById('btn-buzz').addEventListener('click', () => socket.emit('player:tripleteBuzz'));
+
+function applyTripleteState(st) {
+  document.getElementById('tr-points').textContent = st.points;
+  document.getElementById('tr-board').textContent = `Tabellone ${st.boardNumber}/${st.totalBoards}`;
+  const msg = document.getElementById('tr-message');
+  msg.textContent = st.message;
+  msg.className = 'turn-message ' + (st.buzzedByMe ? 'your-turn' : (st.locked ? 'waiting' : ''));
+  const btn = document.getElementById('btn-buzz');
+  btn.disabled = !st.canBuzz;
+  btn.classList.toggle('buzzed', st.buzzedByMe);
+}
+
 socket.on('player:matchEnd', ({ standings }) => {
   showScreen('player-matchend');
   const el = document.getElementById('player-standings');

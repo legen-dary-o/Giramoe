@@ -120,3 +120,24 @@ test('letterPositions skips already-revealed cells', () => {
   board.revealLetter(b.grid, 'C');
   assert.deepStrictEqual(board.letterPositions(b.grid, 'C'), []);
 });
+
+test('hiddenLetterCells lists every unrevealed letter cell, then shrinks as they reveal', () => {
+  const { board: b } = board.createBoard('X', 'CECE');
+  assert.strictEqual(board.hiddenLetterCells(b.grid).length, 4);
+  assert.ok(board.hiddenLetterCells(b.grid).every(c =>
+    typeof c.row === 'number' && typeof c.col === 'number' && typeof c.letter === 'string'));
+  board.revealLetter(b.grid, 'C');
+  assert.strictEqual(board.hiddenLetterCells(b.grid).length, 2);
+  board.revealLetter(b.grid, 'E');
+  assert.deepStrictEqual(board.hiddenLetterCells(b.grid), []);
+});
+
+test('revealCellAt reveals one cell and returns its letter; null off a letter cell', () => {
+  const { board: b } = board.createBoard('X', 'CE');
+  const cell = board.hiddenLetterCells(b.grid)[0];
+  assert.strictEqual(board.revealCellAt(b.grid, cell.row, cell.col), cell.letter);
+  assert.strictEqual(b.grid[cell.row][cell.col].revealed, true);
+  assert.strictEqual(board.hiddenLetterCells(b.grid).length, 1);
+  // an edge corner on row 0 is not a letter cell
+  assert.strictEqual(board.revealCellAt(b.grid, 0, 0), null);
+});

@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const os = require('os');
 const game = require('./game');
 const board = require('./board');
+const triplete = require('./triplete');
 
 const app = express();
 const server = http.createServer(app);
@@ -11,9 +12,16 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-const PORT = 3000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 const TOTAL_BOARDS = 3;
 const SPIN_MS = 6000; // wheel animation duration (must match client)
+
+// --- Triplete (bonus round) timing ---
+const TRIPLETE_REVEAL_MS = 1500; // a cell appears every 1.5s
+const TRIPLETE_FLASH_MS = 1000;  // board 3: a flashed cell stays 1s before vanishing
+const TRIPLETE_FLASH_COUNT = 15; // board 3: flashes before the letters stabilize
+const TRIPLETE_GAP_MS = 2800;    // pause between boards / before the final standings
 
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
@@ -26,11 +34,14 @@ function getLocalIP() {
 }
 
 let state = {
-  phase: 'video',     // video | lobby | playing | matchEnd
+  phase: 'video',     // video | lobby | playing | tripleteReady | triplete | matchEnd
   roomCode: null,
   lobby: [],          // [{ name, socketId, connected }]
-  g: null             // game object once playing
+  g: null,            // game object once playing
+  t: null             // triplete object during the bonus round
 };
+
+let tripleteTimer = null; // single reveal/flash timer for the bonus round
 
 function generateRoomCode() {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -66,17 +77,166 @@ function mainGameView() {
 }
 
 function adminView() {
+  const inGame = ['playing', 'tripleteReady', 'triplete', 'matchEnd'].includes(state.phase);
   return {
     phase: state.phase,
     roomCode: state.roomCode,
-    players: state.phase === 'playing' || state.phase === 'matchEnd'
+    players: inGame
       ? publicScores()
       : state.lobby.map((p, i) => ({ id: i, name: p.name, connected: p.connected })),
     boardNumber: state.g ? state.g.boardNumber : 0,
     totalBoards: TOTAL_BOARDS,
     currentTurn: state.g ? state.g.currentTurnIndex : 0,
-    turnState: state.g ? state.g.turnState : null
+    turnState: state.g ? state.g.turnState : null,
+    triplete: state.phase === 'triplete'
+      ? (state.t
+          ? {
+              started: true,
+              title: state.t.title,
+              boardNumber: state.t.boardIndex + 1,
+              totalBoards: triplete.TOTAL_BOARDS,
+              state: state.t.state,
+              buzzedBy: state.t.buzzedBy,
+              players: tripleteScores()
+            }
+          : { started: false })
+      : null
   };
+}
+
+// --- Triplete serialization ---
+
+function tripleteBoardView() {
+  const b = state.t.boards[state.t.boardIndex];
+  return {
+    category: b.category,
+    boardNumber: state.t.boardIndex + 1,
+    totalBoards: triplete.TOTAL_BOARDS,
+    grid: b.grid.map(row => row.map(cell => {
+      if (cell.type === 'letter') {
+        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null };
+      }
+      return { type: cell.type };
+    }))
+  };
+}
+
+function tripleteScores() {
+  return state.t.players.map((p, i) => ({
+    id: p.id,
+    name: p.name,
+    points: p.points,
+    bank: state.g.players[i] ? state.g.players[i].bank : 0,
+    locked: state.t.lockedOut.includes(p.id),
+    buzzed: state.t.buzzedBy === p.id
+  }));
+}
+
+function playerTripleteView(i) {
+  const t = state.t;
+  const canBuzz = t.state === 'REVEALING' && t.buzzedBy === null && !t.lockedOut.includes(i);
+  let message;
+  if (t.state === 'BUZZED') {
+    message = t.buzzedBy === i ? 'Tocca a te: di\' la frase!' : `Sta rispondendo ${t.players[t.buzzedBy].name}`;
+  } else if (t.lockedOut.includes(i)) {
+    message = 'Hai sbagliato — aspetta il prossimo giro';
+  } else {
+    message = 'Prenotati appena sai la frase!';
+  }
+  return {
+    canBuzz,
+    buzzedByMe: t.buzzedBy === i,
+    locked: t.lockedOut.includes(i),
+    state: t.state,
+    message,
+    points: t.players[i].points,
+    boardNumber: t.boardIndex + 1,
+    totalBoards: triplete.TOTAL_BOARDS
+  };
+}
+
+function emitTripleteBoard() {
+  io.to('main').emit('main:tripleteBoard', tripleteBoardView());
+}
+
+function emitTripleteState() {
+  io.to('main').emit('main:tripleteScores', { scores: tripleteScores(), buzzedBy: state.t.buzzedBy });
+  io.to('admin').emit('admin:state', adminView());
+  state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:tripleteState', playerTripleteView(i)));
+}
+
+// --- Triplete reveal loop (server-driven so all clients stay in sync) ---
+
+function clearTripleteTimer() {
+  if (tripleteTimer) { clearTimeout(tripleteTimer); tripleteTimer = null; }
+}
+
+function scheduleTripleteTick(ms) {
+  clearTripleteTimer();
+  tripleteTimer = setTimeout(tripleteTick, ms);
+}
+
+function startTripleteReveal() {
+  if (state.t && state.t.state === 'REVEALING') scheduleTripleteTick(TRIPLETE_REVEAL_MS);
+}
+
+function tripleteTick() {
+  tripleteTimer = null;
+  const t = state.t;
+  if (!t || t.state !== 'REVEALING') return;
+  const isBoard3 = t.boardIndex === triplete.TOTAL_BOARDS - 1;
+
+  // Board 3, flash phase: a cell appears for 1s then vanishes, no repeats yet.
+  if (isBoard3 && t.flashCount < TRIPLETE_FLASH_COUNT) {
+    const cell = triplete.flashNext(t);
+    if (cell) {
+      io.to('main').emit('main:tripleteFlash', { cell, ms: TRIPLETE_FLASH_MS });
+      scheduleTripleteTick(TRIPLETE_REVEAL_MS);
+    } else {
+      t.flashCount = TRIPLETE_FLASH_COUNT; // nothing new to flash -> stabilize now
+      scheduleTripleteTick(0);
+    }
+    return;
+  }
+
+  // Boards 1-2, and board-3 stabilize phase: reveal one cell and keep it.
+  const cell = triplete.revealNext(t);
+  if (!cell) {
+    onTripleteBoardEnd(triplete.boardFilled(t)); // filled, nobody solved
+    return;
+  }
+  io.to('main').emit('main:tripleteReveal', { cell });
+  scheduleTripleteTick(TRIPLETE_REVEAL_MS);
+}
+
+// Advance to the next board after a short pause, or finish the round.
+function onTripleteBoardEnd(res) {
+  clearTripleteTimer();
+  if (!res || !res.ok) return;
+  if (res.finished) {
+    setTimeout(finishTriplete, TRIPLETE_GAP_MS);
+  } else {
+    setTimeout(() => {
+      if (state.phase !== 'triplete' || !state.t) return;
+      triplete.nextBoard(state.t);
+      emitTripleteBoard();
+      emitTripleteState();
+      startTripleteReveal();
+    }, TRIPLETE_GAP_MS);
+  }
+}
+
+function finishTriplete() {
+  if (!state.t || !state.g) return;
+  clearTripleteTimer();
+  triplete.applyToBank(state.t, state.g.players);
+  state.phase = 'matchEnd';
+  const standings = state.g.players
+    .map(p => ({ name: p.name, bank: p.bank }))
+    .sort((a, b) => b.bank - a.bank);
+  io.to('main').emit('main:matchEnd', { standings });
+  io.to('admin').emit('admin:state', adminView());
+  state.lobby.forEach(p => io.to(p.socketId).emit('player:matchEnd', { standings }));
 }
 
 function playerView(playerIndex) {
@@ -130,7 +290,12 @@ io.on('connection', (socket) => {
   socket.on('main:init', () => {
     socket.join('main');
     socket.emit('main:state', { phase: state.phase });
-    if (state.phase === 'playing') socket.emit('main:gameState', mainGameView());
+    if (state.phase === 'playing' || state.phase === 'tripleteReady') {
+      socket.emit('main:gameState', mainGameView());
+    } else if (state.phase === 'triplete' && state.t) {
+      socket.emit('main:tripleteBoard', tripleteBoardView());
+      socket.emit('main:tripleteScores', { scores: tripleteScores(), buzzedBy: state.t.buzzedBy });
+    }
   });
 
   socket.on('admin:inizia', () => {
@@ -220,13 +385,10 @@ io.on('connection', (socket) => {
     io.to('main').emit('main:solved');
 
     if (state.g.boardNumber >= TOTAL_BOARDS) {
-      state.phase = 'matchEnd';
-      const standings = state.g.players
-        .map(p => ({ name: p.name, bank: p.bank }))
-        .sort((a, b) => b.bank - a.bank);
-      io.to('main').emit('main:matchEnd', { standings });
+      // The 3 wheel boards are done: offer the Triplete bonus round (the main
+      // screen keeps the solved board; admin shows the "IL TRIPLETE" button).
+      state.phase = 'tripleteReady';
       io.to('admin').emit('admin:state', adminView());
-      state.lobby.forEach(p => io.to(p.socketId).emit('player:matchEnd', { standings }));
     } else {
       state.g.boardNumber += 1;
       broadcastAdminPlayers();
@@ -239,6 +401,64 @@ io.on('connection', (socket) => {
     game.passTurn(state.g);
     io.to('main').emit('main:wrong');
     broadcastScores();
+  });
+
+  // --- Triplete (bonus round) ---
+
+  // Admin presses "IL TRIPLETE": play the title animation, then show the content form.
+  socket.on('admin:startTriplete', () => {
+    if (state.phase !== 'tripleteReady' || !state.g) return;
+    state.phase = 'triplete';
+    state.t = null; // created once the admin submits the title + phrases
+    io.to('main').emit('main:tripleteTitle');
+    io.to('admin').emit('admin:state', adminView());
+    state.lobby.forEach(p => io.to(p.socketId).emit('player:tripleteIntro'));
+  });
+
+  // Admin submits the shared title + 3 phrases and the first board starts revealing.
+  socket.on('admin:tripleteStart', ({ title, phrases }) => {
+    if (state.phase !== 'triplete' || !state.g || state.t) return;
+    const players = state.g.players.map(p => ({ id: p.id, name: p.name }));
+    const r = triplete.createTriplete(players, title, phrases);
+    if (!r.ok) return io.to('admin').emit('admin:tripleteError', r.error);
+    state.t = r.t;
+    io.to('admin').emit('admin:tripleteError', '');
+    emitTripleteBoard();
+    emitTripleteState();
+    startTripleteReveal();
+  });
+
+  // A player books in.
+  socket.on('player:tripleteBuzz', () => {
+    if (state.phase !== 'triplete' || !state.t) return;
+    const pi = socket.playerIndex;
+    if (pi == null) return;
+    const res = triplete.buzz(state.t, pi);
+    if (!res.ok) return;
+    clearTripleteTimer(); // freeze the reveal while the player answers
+    const name = state.g.players[pi] ? state.g.players[pi].name : '';
+    io.to('main').emit('main:tripleteBuzzed', { playerIndex: pi, name });
+    emitTripleteState();
+  });
+
+  socket.on('admin:tripleteCorrect', () => {
+    if (state.phase !== 'triplete' || !state.t) return;
+    const res = triplete.judgeCorrect(state.t);
+    if (!res.ok) return;
+    io.to('main').emit('main:tripleteSolved', {
+      board: tripleteBoardView(), playerIndex: res.playerId, name: res.name, points: res.points
+    });
+    emitTripleteState();
+    onTripleteBoardEnd(res);
+  });
+
+  socket.on('admin:tripleteWrong', () => {
+    if (state.phase !== 'triplete' || !state.t) return;
+    const res = triplete.judgeWrong(state.t);
+    if (!res.ok) return;
+    io.to('main').emit('main:tripleteResume', { reset: res.reset });
+    emitTripleteState();
+    startTripleteReveal(); // resume from where it left off
   });
 
   // Admin removes a player during the lobby (frees the slot).
@@ -256,8 +476,9 @@ io.on('connection', (socket) => {
     const p = state.lobby.find(pl => pl.socketId === socket.id);
     if (!p) return;
     p.connected = false;
-    if (state.phase === 'playing') {
-      // mid-game: pause the main screen with the reconnect overlay
+    if (state.phase === 'playing' || state.phase === 'triplete' || state.phase === 'tripleteReady') {
+      // mid-game: pause the main screen (and the triplete reveal) with the overlay
+      if (state.phase === 'triplete') clearTripleteTimer();
       io.to('main').emit('main:playerDisconnected', { players: lobbyPlayers() });
     } else {
       // lobby: keep the QR visible, just refresh the slots
@@ -277,6 +498,12 @@ io.on('connection', (socket) => {
     if (state.phase === 'playing' && state.g) {
       socket.emit('player:turnState', playerView(socket.playerIndex));
       io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
+    } else if (state.phase === 'triplete' && state.t) {
+      socket.emit('player:tripleteIntro');
+      socket.emit('player:tripleteState', playerTripleteView(socket.playerIndex));
+      io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
+      // resume the reveal once everyone is back
+      if (state.lobby.every(pl => pl.connected)) startTripleteReveal();
     } else {
       io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
     }
@@ -294,4 +521,4 @@ server.listen(PORT, '0.0.0.0', () => {
   }
 });
 
-module.exports = { app, server };
+module.exports = { app, server, io };

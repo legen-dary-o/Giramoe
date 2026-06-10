@@ -2,6 +2,15 @@ const socket = io();
 let wheel = null;
 let started = false;
 let currentPhase = 'video';
+let tripleteBoardReady = false;
+
+// Same 16 colours as the wheel segments — reused for the "IL TRIPLETE" title.
+const TRIPLETE_COLORS = [
+  '#22c55e', '#4ade80', '#a3e635', '#eab308',
+  '#f59e0b', '#f97316', '#ef4444', '#f43f5e',
+  '#ec4899', '#d946ef', '#a855f7', '#8b5cf6',
+  '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4'
+];
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -32,6 +41,8 @@ function applyPhaseScreen() {
   if (currentPhase === 'video') showScreen('video-screen');
   else if (currentPhase === 'lobby') showScreen('lobby-screen');
   else if (currentPhase === 'playing') showScreen('game-screen');
+  else if (currentPhase === 'tripleteReady') showScreen('game-screen');
+  else if (currentPhase === 'triplete') showScreen(tripleteBoardReady ? 'triplete-screen' : 'triplete-title-screen');
   else if (currentPhase === 'matchEnd') showScreen('matchend-screen');
 }
 
@@ -192,6 +203,166 @@ function renderScores(scores, currentTurn) {
 function showResult(text) {
   const overlay = document.getElementById('result-overlay');
   document.getElementById('result-text').textContent = text;
+  overlay.classList.add('visible');
+  setTimeout(() => overlay.classList.remove('visible'), 2500);
+}
+
+// ===================== IL TRIPLETE (bonus round) =====================
+
+socket.on('main:tripleteTitle', () => {
+  currentPhase = 'triplete';
+  tripleteBoardReady = false;
+  playTripleteTitle();
+  applyPhaseScreen();
+});
+
+socket.on('main:tripleteBoard', (b) => {
+  currentPhase = 'triplete';
+  tripleteBoardReady = true;
+  document.getElementById('triplete-category').textContent = b.category;
+  document.getElementById('triplete-board-tag').textContent = `IL TRIPLETE · ${b.boardNumber}/${b.totalBoards}`;
+  renderTripleteBoard(b.grid);
+  hideBuzz();
+  applyPhaseScreen();
+});
+
+socket.on('main:tripleteReveal', ({ cell }) => revealTripleteCell(cell));
+socket.on('main:tripleteFlash', ({ cell, ms }) => flashTripleteCell(cell, ms));
+socket.on('main:tripleteScores', ({ scores }) => renderTripleteScores(scores));
+
+socket.on('main:tripleteBuzzed', ({ name }) => {
+  Sfx.play('buzzer');
+  showBuzz(`🔔 ${name} si è prenotato!`);
+});
+
+socket.on('main:tripleteResume', () => {
+  Sfx.play('wrong');
+  hideBuzz();
+});
+
+socket.on('main:tripleteSolved', ({ board, name, points }) => {
+  hideBuzz();
+  renderTripleteBoard(board.grid);
+  Sfx.play('correct');
+  showTripleteResult(`${name} +${points}`);
+});
+
+// --- Title animation: spinning rainbow "spicchi" fan + glass plate + popped-in letters ---
+function playTripleteTitle() {
+  const stage = document.querySelector('#triplete-title-screen .triplete-stage');
+  const fan = document.querySelector('#triplete-title-screen .triplete-fan');
+  const titleEl = document.getElementById('triplete-title');
+
+  const seg = 360 / TRIPLETE_COLORS.length;
+  fan.style.background = 'conic-gradient(from -90deg, ' +
+    TRIPLETE_COLORS.map((c, i) => `${c} ${(i * seg).toFixed(2)}deg ${((i + 1) * seg).toFixed(2)}deg`).join(', ') + ')';
+
+  titleEl.innerHTML = '';
+  let ci = 0;
+  for (const ch of 'IL TRIPLETE') {
+    if (ch === ' ') {
+      const sp = document.createElement('span');
+      sp.className = 'sp';
+      titleEl.appendChild(sp);
+      continue;
+    }
+    const span = document.createElement('span');
+    span.className = 'tl';
+    span.textContent = ch;
+    span.style.color = TRIPLETE_COLORS[(ci * 3) % TRIPLETE_COLORS.length];
+    span.style.animationDelay = (0.5 + ci * 0.085) + 's';
+    titleEl.appendChild(span);
+    ci++;
+  }
+
+  // restart the intro/pop animations
+  stage.classList.remove('play');
+  void stage.offsetWidth;
+  stage.classList.add('play');
+}
+
+function renderTripleteBoard(grid) {
+  const el = document.getElementById('triplete-board-grid');
+  el.innerHTML = '';
+  grid.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      const div = document.createElement('div');
+      div.dataset.row = r;
+      div.dataset.col = c;
+      if (cell.type === 'edge') {
+        div.className = 'cell edge';
+      } else if (cell.type === 'blocked') {
+        div.className = 'cell blocked';
+      } else if (cell.revealed) {
+        div.className = 'cell letter revealed';
+        div.textContent = cell.letter;
+      } else {
+        div.className = 'cell letter';
+      }
+      el.appendChild(div);
+    });
+  });
+}
+
+function tripleteCellAt(row, col) {
+  return document.querySelector(`#triplete-board-grid .cell[data-row="${row}"][data-col="${col}"]`);
+}
+
+// Boards 1-2 and board-3 stabilize: reveal one cell and keep it.
+function revealTripleteCell(cell) {
+  const el = tripleteCellAt(cell.row, cell.col);
+  if (!el) return;
+  el.classList.remove('flash', 'blocked', 'edge');
+  el.classList.add('letter', 'revealed');
+  el.textContent = cell.letter;
+  Sfx.play('letter');
+}
+
+// Board 3 flash phase: pop a cell in for `ms`, then hide it again (unless it has
+// since been permanently revealed).
+function flashTripleteCell(cell, ms) {
+  const el = tripleteCellAt(cell.row, cell.col);
+  if (!el || el.classList.contains('revealed')) return;
+  el.classList.add('letter', 'flash');
+  el.textContent = cell.letter;
+  Sfx.play('letter');
+  setTimeout(() => {
+    if (el.classList.contains('revealed')) return;
+    el.classList.remove('flash');
+    el.textContent = '';
+  }, ms);
+}
+
+function renderTripleteScores(scores) {
+  const bar = document.getElementById('triplete-players-bar');
+  bar.innerHTML = '';
+  scores.forEach((s) => {
+    const el = document.createElement('div');
+    let cls = 'player-name glass-panel';
+    if (s.buzzed) cls += ' buzzed';
+    else if (s.locked) cls += ' locked';
+    el.className = cls;
+    el.innerHTML = `<div class="pn-avatar">${s.name.charAt(0).toUpperCase()}</div>
+      <div class="pn-info">
+        <div class="pn-name">${s.name}</div>
+        <div class="pn-score">Triplete: ${s.points}</div>
+        <div class="pn-bank">Banca: ${s.bank}</div>
+      </div>`;
+    bar.appendChild(el);
+  });
+}
+
+function showBuzz(text) {
+  document.getElementById('buzz-banner-text').textContent = text;
+  document.getElementById('buzz-banner').classList.add('visible');
+}
+function hideBuzz() {
+  document.getElementById('buzz-banner').classList.remove('visible');
+}
+
+function showTripleteResult(text) {
+  const overlay = document.getElementById('triplete-result-overlay');
+  document.getElementById('triplete-result-text').textContent = text;
   overlay.classList.add('visible');
   setTimeout(() => overlay.classList.remove('visible'), 2500);
 }

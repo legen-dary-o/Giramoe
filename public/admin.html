@@ -50,6 +50,39 @@
     </div>
   </div>
 
+  <!-- Triplete: ready (button appears after the 3 wheel boards) -->
+  <div id="admin-tripleteready" class="screen hidden">
+    <div class="admin-container">
+      <h1>Tabelloni finiti!</h1>
+      <p style="margin-bottom: 22px; color: var(--ink-soft);">Pronti per il gioco finale.</p>
+      <button class="glass-button" id="btn-go-triplete">IL TRIPLETE</button>
+    </div>
+  </div>
+
+  <!-- Triplete: control -->
+  <div id="admin-triplete" class="screen hidden">
+    <div class="admin-container">
+      <h1>IL TRIPLETE</h1>
+      <div class="admin-section" id="triplete-setup">
+        <h2>Argomento e 3 frasi</h2>
+        <input type="text" id="tr-title" class="glass-input" placeholder="Titolo / argomento" autocomplete="off">
+        <input type="text" id="tr-phrase-1" class="glass-input" placeholder="Frase 1" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="tr-phrase-2" class="glass-input" placeholder="Frase 2" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="tr-phrase-3" class="glass-input" placeholder="Frase 3" autocomplete="off" style="margin-top:8px;">
+        <button class="glass-button" id="btn-triplete-start" style="margin-top:10px;">Avvia il Triplete</button>
+        <div class="board-error" id="triplete-error"></div>
+      </div>
+      <div class="admin-section hidden" id="triplete-live">
+        <h2 id="triplete-board-counter">Tabellone 1 / 3</h2>
+        <div class="admin-player-list" id="triplete-scores"></div>
+      </div>
+      <div class="admin-section admin-actions hidden" id="triplete-actions">
+        <button class="glass-button" id="btn-triplete-correct" disabled>Frase indovinata</button>
+        <button class="glass-button" id="btn-triplete-wrong" disabled>Frase sbagliata</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Match End -->
   <div id="admin-matchend" class="screen hidden">
     <div class="admin-container">

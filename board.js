@@ -113,6 +113,26 @@ function letterPositions(grid, letter) {
   return out;
 }
 
+// All currently-unrevealed letter cells, in row-major order. Used by the Triplete
+// to pick which cell to reveal/flash next.
+function hiddenLetterCells(grid) {
+  const out = [];
+  for (let r = 0; r < grid.length; r++)
+    for (let c = 0; c < grid[r].length; c++) {
+      const cell = grid[r][c];
+      if (cell.type === 'letter' && !cell.revealed) out.push({ row: r, col: c, letter: cell.letter });
+    }
+  return out;
+}
+
+// Reveal a single cell by position. Returns its letter, or null if it isn't a letter cell.
+function revealCellAt(grid, row, col) {
+  const cell = grid[row] && grid[row][col];
+  if (!cell || cell.type !== 'letter') return null;
+  cell.revealed = true;
+  return cell.letter;
+}
+
 function isSolved(grid) {
   for (const row of grid)
     for (const cell of row)
@@ -137,5 +157,6 @@ function isConsonant(letter) {
 module.exports = {
   normalize, layoutPhrase, buildGrid, createBoard,
   countOccurrences, revealLetter, letterPositions, isSolved, revealAll, isVowel, isConsonant,
+  hiddenLetterCells, revealCellAt,
   VOWELS, ROW_CAPACITIES, GRID_WIDTH
 };
