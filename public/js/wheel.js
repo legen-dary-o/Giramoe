@@ -10,7 +10,8 @@ const SEGMENT_COLORS = [
 const SPECIAL_STYLE = {
   bancarotta: { base: '#141414', edge: '#000000', text: '#ffffff', glow: 'rgba(239,68,68,0.95)', symbol: '✕',  word: 'BANCAROTTA' },
   next:       { base: '#aab2c0', edge: '#717a8a', text: '#ffffff', glow: 'rgba(255,255,255,0.55)', symbol: '→', word: 'PASSA' },
-  raddoppia:  { base: '#ffd24a', edge: '#e0a200', text: '#5a3d00', glow: 'rgba(255,236,150,0.95)', symbol: '×2', word: 'RADDOPPIA' }
+  raddoppia:  { base: '#ffd24a', edge: '#e0a200', text: '#5a3d00', glow: 'rgba(255,236,150,0.95)', symbol: '×2', word: 'RADDOPPIA' },
+  express:    { base: '#0ea5e9', edge: '#0369a1', text: '#ffffff', glow: 'rgba(125,225,255,0.95)', symbol: '🚄', word: 'EXPRESS' }
 };
 
 // Lighten (pct > 0) or darken (pct < 0) a #rrggbb color.
@@ -35,6 +36,12 @@ class Wheel {
     this.onSpinEnd = options.onSpinEnd || null;
 
     this.resize();
+    this.draw();
+  }
+
+  // Swap the segment labels (e.g. when the express round changes the wheel) and redraw.
+  setLabels(labels) {
+    this.labels = labels || [];
     this.draw();
   }
 

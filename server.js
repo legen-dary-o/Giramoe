@@ -21,7 +21,11 @@ const SPIN_MS = 6000; // wheel animation duration (must match client)
 const TRIPLETE_REVEAL_MS = 1500; // a cell appears every 1.5s
 const TRIPLETE_FLASH_MS = 1000;  // board 3: a flashed cell stays 1s before vanishing
 const TRIPLETE_FLASH_COUNT = 15; // board 3: flashes before the letters stabilize
-const TRIPLETE_GAP_MS = 2800;    // pause between boards / before the final standings
+const TRIPLETE_GAP_MS = Number(process.env.TRIPLETE_GAP_MS) || 2800; // pause between boards / before standings
+
+// Optional test/debug hook: force every wheel spin onto a fixed segment index.
+const FORCE_SEGMENT = process.env.GIRAMOE_FORCE_SEGMENT != null && process.env.GIRAMOE_FORCE_SEGMENT !== ''
+  ? Number(process.env.GIRAMOE_FORCE_SEGMENT) : null;
 
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
@@ -77,7 +81,7 @@ function mainGameView() {
 }
 
 function adminView() {
-  const inGame = ['playing', 'tripleteReady', 'triplete', 'matchEnd'].includes(state.phase);
+  const inGame = ['playing', 'express', 'tripleteReady', 'triplete', 'matchEnd'].includes(state.phase);
   return {
     phase: state.phase,
     roomCode: state.roomCode,
@@ -230,6 +234,45 @@ function finishTriplete() {
   if (!state.t || !state.g) return;
   clearTripleteTimer();
   triplete.applyToBank(state.t, state.g.players);
+  startExpressRound();
+}
+
+// --- Express round: 3 more wheel boards, one segment is EXPRESS ---
+
+function isWheelPhase() {
+  return state.phase === 'playing' || state.phase === 'express';
+}
+
+function startExpressRound() {
+  state.phase = 'express';
+  state.g.segments = game.EXPRESS_SEGMENTS.slice();
+  state.g.boardNumber = 1;
+  state.g.board = null;
+  state.g.currentTurnIndex = 0;
+  state.g.turnState = 'MUST_SPIN';
+  state.g.usedLetters = [];
+  state.g.players.forEach(p => { p.roundPoints = 0; });
+  io.to('main').emit('main:expressRound', { segments: state.g.segments });
+  io.to('admin').emit('admin:state', adminView());
+  state.lobby.forEach(p => io.to(p.socketId).emit('player:expressRound'));
+}
+
+// Advance after a solved wheel board (normal solve or express auto-complete),
+// or close out the round when the 3 boards are done.
+function advanceWheelBoard() {
+  if (state.phase === 'playing' && state.g.boardNumber >= TOTAL_BOARDS) {
+    state.phase = 'tripleteReady';
+    io.to('admin').emit('admin:state', adminView());
+  } else if (state.phase === 'express' && state.g.boardNumber >= TOTAL_BOARDS) {
+    goToMatchEnd(); // TODO: replaced by the GIRAMOE board when phase ② is built
+  } else {
+    state.g.boardNumber += 1;
+    broadcastAdminPlayers();
+    io.to('admin').emit('admin:boardSolved', { boardNumber: state.g.boardNumber });
+  }
+}
+
+function goToMatchEnd() {
   state.phase = 'matchEnd';
   const standings = state.g.players
     .map(p => ({ name: p.name, bank: p.bank }))
@@ -290,7 +333,7 @@ io.on('connection', (socket) => {
   socket.on('main:init', () => {
     socket.join('main');
     socket.emit('main:state', { phase: state.phase });
-    if (state.phase === 'playing' || state.phase === 'tripleteReady') {
+    if ((state.phase === 'playing' || state.phase === 'tripleteReady' || state.phase === 'express') && state.g && state.g.board) {
       socket.emit('main:gameState', mainGameView());
     } else if (state.phase === 'triplete' && state.t) {
       socket.emit('main:tripleteBoard', tripleteBoardView());
@@ -331,7 +374,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('admin:setBoard', ({ category, phrase }) => {
-    if (state.phase !== 'playing' && state.phase !== 'lobby') return;
+    if (!isWheelPhase() && state.phase !== 'lobby') return;
     if (!state.g) return;
     const startIndex = (state.g.boardNumber - 1) % state.g.players.length;
     const r = game.startBoard(state.g, category, phrase, startIndex, state.g.boardNumber);
@@ -340,12 +383,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('player:spin', () => {
-    if (state.phase !== 'playing' || !state.g || !state.g.board) return;
+    if (!isWheelPhase() || !state.g || !state.g.board) return;
     const pi = socket.playerIndex;
     if (pi !== state.g.currentTurnIndex) return;
     if (state.g.turnState !== 'MUST_SPIN' && state.g.turnState !== 'CONTINUE') return;
 
-    const winningSegment = Math.floor(Math.random() * 16);
+    const winningSegment = FORCE_SEGMENT != null ? FORCE_SEGMENT : Math.floor(Math.random() * 16);
     const spins = 5 + Math.floor(Math.random() * 3);
     const result = game.applySpin(state.g, winningSegment);
 
@@ -355,11 +398,15 @@ io.on('connection', (socket) => {
     io.to('main').emit('main:spin', spinData);
     io.to(socket.id).emit('player:spinResult', spinData);
 
-    setTimeout(() => broadcastScores(), SPIN_MS + 200);
+    setTimeout(() => {
+      broadcastScores();
+      // Landed on EXPRESS: play the "EXPRESS" animation, player is now in rapid-fire mode.
+      if (result.type === 'express') io.to('main').emit('main:expressStart');
+    }, SPIN_MS + 200);
   });
 
   socket.on('player:pickConsonant', ({ letter }) => {
-    if (state.phase !== 'playing' || !state.g || !state.g.board) return;
+    if (!isWheelPhase() || !state.g || !state.g.board) return;
     if (socket.playerIndex !== state.g.currentTurnIndex) return;
     const res = game.applyConsonant(state.g, letter);
     if (!res.ok) return;
@@ -369,7 +416,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('player:buyVowel', ({ letter }) => {
-    if (state.phase !== 'playing' || !state.g || !state.g.board) return;
+    if (!isWheelPhase() || !state.g || !state.g.board) return;
     if (socket.playerIndex !== state.g.currentTurnIndex) return;
     const res = game.applyVowel(state.g, letter);
     if (!res.ok) return;
@@ -378,28 +425,49 @@ io.on('connection', (socket) => {
     broadcastScores();
   });
 
+  // Express rapid-fire: a present consonant scores 500/occurrence and keeps the turn;
+  // a vowel is bought for 500; any absent letter is a full bancarotta.
+  socket.on('player:expressLetter', ({ letter }) => {
+    if (!isWheelPhase() || !state.g || !state.g.board) return;
+    if (socket.playerIndex !== state.g.currentTurnIndex) return;
+    if (state.g.turnState !== 'EXPRESS') return;
+    const actingName = game.currentPlayer(state.g).name;
+    const res = game.applyExpressLetter(state.g, letter);
+    if (!res.ok) return;
+    if (res.present) {
+      io.to('main').emit('main:revealLetter', { positions: res.positions });
+      if (res.solved) {
+        game.applySolve(state.g); // banks the express points
+        io.to('main').emit('main:gameState', mainGameView());
+        io.to('main').emit('main:solved');
+        advanceWheelBoard();
+        return;
+      }
+    } else {
+      io.to('main').emit('main:expressBankrupt', { name: actingName });
+    }
+    broadcastScores();
+  });
+
   socket.on('admin:solve', () => {
-    if (state.phase !== 'playing' || !state.g) return;
+    if (!isWheelPhase() || !state.g) return;
     game.applySolve(state.g);
     io.to('main').emit('main:gameState', mainGameView()); // fully-revealed board
     io.to('main').emit('main:solved');
-
-    if (state.g.boardNumber >= TOTAL_BOARDS) {
-      // The 3 wheel boards are done: offer the Triplete bonus round (the main
-      // screen keeps the solved board; admin shows the "IL TRIPLETE" button).
-      state.phase = 'tripleteReady';
-      io.to('admin').emit('admin:state', adminView());
-    } else {
-      state.g.boardNumber += 1;
-      broadcastAdminPlayers();
-      io.to('admin').emit('admin:boardSolved', { boardNumber: state.g.boardNumber });
-    }
+    advanceWheelBoard();
   });
 
   socket.on('admin:passTurn', () => {
-    if (state.phase !== 'playing' || !state.g) return;
-    game.passTurn(state.g);
-    io.to('main').emit('main:wrong');
+    if (!isWheelPhase() || !state.g) return;
+    if (state.g.turnState === 'EXPRESS') {
+      // In express, "Frase sbagliata" is a wrong solution attempt -> full bancarotta.
+      const bust = game.currentPlayer(state.g).name;
+      game.applyExpressWrongSolve(state.g);
+      io.to('main').emit('main:expressBankrupt', { name: bust });
+    } else {
+      game.passTurn(state.g);
+      io.to('main').emit('main:wrong');
+    }
     broadcastScores();
   });
 
@@ -476,7 +544,7 @@ io.on('connection', (socket) => {
     const p = state.lobby.find(pl => pl.socketId === socket.id);
     if (!p) return;
     p.connected = false;
-    if (state.phase === 'playing' || state.phase === 'triplete' || state.phase === 'tripleteReady') {
+    if (isWheelPhase() || state.phase === 'triplete' || state.phase === 'tripleteReady') {
       // mid-game: pause the main screen (and the triplete reveal) with the overlay
       if (state.phase === 'triplete') clearTripleteTimer();
       io.to('main').emit('main:playerDisconnected', { players: lobbyPlayers() });
@@ -495,7 +563,7 @@ io.on('connection', (socket) => {
     p.connected = true;
     socket.playerIndex = state.lobby.indexOf(p);
     socket.emit('player:reconnected', { playerIndex: socket.playerIndex, name, phase: state.phase });
-    if (state.phase === 'playing' && state.g) {
+    if (isWheelPhase() && state.g) {
       socket.emit('player:turnState', playerView(socket.playerIndex));
       io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
     } else if (state.phase === 'triplete' && state.t) {

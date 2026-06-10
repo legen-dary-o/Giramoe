@@ -83,7 +83,26 @@ l'animazione del titolo (stessi colori degli spicchi della ruota) e l'admin inse
 - Chi sbaglia è **bloccato** finché non sbagliano tutti (poi i blocchi si azzerano).
   Alla prenotazione parte il suono `buzzer.mp3` e l'admin vede chi ha schiacciato.
 - Chi indovina **tutti e 3** i tabelloni prende **5000** invece di 1000+1000+1000.
-- Alla fine del Triplete i punti vanno **in banca** e si mostra la classifica finale.
+- Alla fine del Triplete i punti vanno **in banca**.
+
+## EXPRESS (round)
+
+Dopo il Triplete si torna alla **ruota**: altri **3 tabelloni**, ma uno spicchio
+"PASSA" diventa **EXPRESS** (icona trenino). Chi ci capita entra **subito** in modalità
+express (parte l'animazione "EXPRESS"):
+
+- **Consonanti a raffica:** ogni occorrenza vale **500**, e si continua a sparare.
+- **Vocali:** si comprano a **500** come al solito (rivelano, niente punti).
+- **Indovina la frase** → vince il tabellone (punti in banca).
+- **Lettera assente** oppure **soluzione sbagliata** → **BANCAROTTA totale**: azzera i
+  punti del turno **e la banca**, e passa il turno. Il giocatore dopo gioca normale
+  (niente bonus express) a meno che non ricada sullo spicchio EXPRESS.
+
+Lato admin, in express i pulsanti diventano **Frase indovinata** / **Frase sbagliata**
+(quest'ultimo = bancarotta).
+
+> Le fasi successive (Giramoe, finale a tempo, buste) sono in arrivo; per ora, finiti i
+> 3 tabelloni express, si va alla classifica finale.
 
 ## Personalizzare la ruota
 
@@ -93,17 +112,20 @@ I 16 valori degli spicchi sono in `game.js`, nell'array `SEGMENTS`. Categoria e 
 
 ```bash
 node --test tests/board.test.js tests/game.test.js tests/triplete.test.js   # test unitari (logica)
-node --test tests/triplete.integration.test.js   # flusso Triplete via socket (server interno, ~17s)
+node --test tests/triplete.integration.test.js tests/express.integration.test.js   # flussi via socket (server interno, ~30s)
 # test di integrazione del gioco base (richiede il server avviato):
 node server.js & sleep 2 && node --test tests/integration.test.js
 ```
+
+Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind), `GIRAMOE_FORCE_SEGMENT` (forza lo spicchio del giro), `TRIPLETE_GAP_MS` (pausa tra i tabelloni del Triplete).
 
 ## Struttura
 
 - `server.js` — layer Socket.IO: stato di gioco e broadcast (delega la logica ai moduli)
 - `board.js` — layout della frase nel tabellone, rivelazione lettere (puro, testato)
 - `game.js` — macchina a stati del turno, punteggi, ciclo dei 3 tabelloni (puro, testato)
-- `triplete.js` — gioco finale: 3 tabelloni, prenotazioni/blocchi, bonus 5000 (puro, testato)
+- `triplete.js` — Triplete: 3 tabelloni, prenotazioni/blocchi, bonus 5000 (puro, testato)
+- `game.js` include anche la modalità **EXPRESS** (raffica 500/occorrenza, bancarotta totale)
 - `public/index.html` + `js/main.js` — schermo principale (PC/TV)
 - `public/admin.html` + `js/admin.js` — console admin (telefono)
 - `public/play.html` + `js/player.js` — vista giocatore (telefono)

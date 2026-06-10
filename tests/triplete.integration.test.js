@@ -112,9 +112,10 @@ test('triplete: title, reveal, buzz/lockout, board flow, 5000 treble, then stand
   await wait(250);
   assert.strictEqual(m.solved.points, 5000, 'treble bonus: 5000 not 3000');
 
+  // After the triplete the game flows into the EXPRESS round (points banked).
   await wait(3000);
-  assert.ok(m.matchEnd, 'match ended');
-  assert.deepStrictEqual(m.matchEnd.standings[0], { name: 'P2', bank: 5000 }, 'P2 tops with 5000');
+  assert.strictEqual(adminState.phase, 'express', 'triplete flows into the express round');
+  assert.strictEqual(adminState.players.find(p => p.name === 'P2').bank, 5000, 'P2 banked 5000 from the triplete');
 
   [admin, main, ...players].forEach(s => s.close());
   await new Promise(r => ioServer.close(r)); // release the server so the test process can exit

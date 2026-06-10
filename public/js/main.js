@@ -3,6 +3,7 @@ let wheel = null;
 let started = false;
 let currentPhase = 'video';
 let tripleteBoardReady = false;
+let lastSegmentsKey = '';
 
 // Same 16 colours as the wheel segments — reused for the "IL TRIPLETE" title.
 const TRIPLETE_COLORS = [
@@ -41,6 +42,7 @@ function applyPhaseScreen() {
   if (currentPhase === 'video') showScreen('video-screen');
   else if (currentPhase === 'lobby') showScreen('lobby-screen');
   else if (currentPhase === 'playing') showScreen('game-screen');
+  else if (currentPhase === 'express') showScreen('game-screen');
   else if (currentPhase === 'tripleteReady') showScreen('game-screen');
   else if (currentPhase === 'triplete') showScreen(tripleteBoardReady ? 'triplete-screen' : 'triplete-title-screen');
   else if (currentPhase === 'matchEnd') showScreen('matchend-screen');
@@ -64,8 +66,9 @@ socket.on('main:playerJoined', ({ players }) => updatePlayerSlots(players));
 socket.on('main:startGame', () => { currentPhase = 'playing'; applyPhaseScreen(); });
 
 socket.on('main:gameState', (g) => {
-  currentPhase = 'playing';
+  if (currentPhase !== 'express') currentPhase = 'playing';
   if (!wheel) initMainWheel(g.segments);
+  else updateWheelLabels(g.segments);
   document.getElementById('main-wheel-indicator').style.display = '';
   document.getElementById('category-banner').textContent = g.board.category;
   renderBoard(g.board.grid);
@@ -139,7 +142,14 @@ function updatePlayerSlots(players) {
 function initMainWheel(segments) {
   const canvas = document.getElementById('main-wheel-canvas');
   wheel = new Wheel(canvas, { segments: 16, labels: segments, showLabels: true });
+  lastSegmentsKey = (segments || []).join('|');
   window.addEventListener('resize', () => wheel.resize());
+}
+
+// The express round swaps the wheel labels (one PASSA becomes EXPRESS); redraw only on change.
+function updateWheelLabels(segments) {
+  const key = (segments || []).join('|');
+  if (key !== lastSegmentsKey) { lastSegmentsKey = key; if (wheel) wheel.setLabels(segments); }
 }
 
 function renderBoard(grid) {
@@ -212,8 +222,29 @@ function showResult(text) {
 socket.on('main:tripleteTitle', () => {
   currentPhase = 'triplete';
   tripleteBoardReady = false;
-  playTripleteTitle();
+  playTitleAnimation('IL TRIPLETE');
   applyPhaseScreen();
+});
+
+// --- Express round ---
+socket.on('main:expressRound', ({ segments }) => {
+  currentPhase = 'express';
+  updateWheelLabels(segments);
+  document.getElementById('main-wheel-indicator').style.display = '';
+  document.getElementById('category-banner').textContent = '';
+  document.getElementById('board-grid').innerHTML = '';
+  applyPhaseScreen();
+});
+
+socket.on('main:expressStart', () => {
+  playTitleAnimation('EXPRESS');
+  showScreen('triplete-title-screen');
+  setTimeout(() => { if (currentPhase === 'express') showScreen('game-screen'); }, 2800);
+});
+
+socket.on('main:expressBankrupt', () => {
+  Sfx.play('wrong');
+  showResult('BANCAROTTA');
 });
 
 socket.on('main:tripleteBoard', (b) => {
@@ -247,8 +278,9 @@ socket.on('main:tripleteSolved', ({ board, name, points }) => {
   showTripleteResult(`${name} +${points}`);
 });
 
-// --- Title animation: spinning rainbow "spicchi" fan + glass plate + popped-in letters ---
-function playTripleteTitle() {
+// --- Title animation: spinning rainbow "spicchi" fan + glass plate + popped-in letters.
+//     Reused for IL TRIPLETE, EXPRESS, GIRAMOE — just pass the word. ---
+function playTitleAnimation(word) {
   const stage = document.querySelector('#triplete-title-screen .triplete-stage');
   const fan = document.querySelector('#triplete-title-screen .triplete-fan');
   const titleEl = document.getElementById('triplete-title');
@@ -259,7 +291,7 @@ function playTripleteTitle() {
 
   titleEl.innerHTML = '';
   let ci = 0;
-  for (const ch of 'IL TRIPLETE') {
+  for (const ch of word) {
     if (ch === ' ') {
       const sp = document.createElement('span');
       sp.className = 'sp';

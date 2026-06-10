@@ -10,6 +10,7 @@ let playerWheel = null;
 let myIndex = -1;
 let myName = '';
 let reconnecting = false;
+let expressMode = false; // when true the keyboard fires express letters, no spinning
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -68,11 +69,17 @@ socket.on('player:gameStarted', () => {
   buildKeyboard();
 });
 
+// Express round: back to the wheel game screen (board/keyboard already built).
+socket.on('player:expressRound', () => {
+  showScreen('player-game-screen');
+  document.getElementById('player-nick-display').textContent = myName;
+});
+
 socket.on('player:reconnected', ({ playerIndex, name, phase }) => {
   myIndex = playerIndex; myName = name;
   reconnecting = false;
   saveSession(name);
-  if (phase === 'playing') {
+  if (phase === 'playing' || phase === 'express') {
     showScreen('player-game-screen');
     document.getElementById('player-nick-display').textContent = myName;
     initWheel();
@@ -149,7 +156,10 @@ function buildKeyboard() {
     b.className = 'key';
     b.textContent = letter;
     b.dataset.letter = letter;
-    b.addEventListener('click', () => socket.emit('player:pickConsonant', { letter }));
+    b.addEventListener('click', () => {
+      if (expressMode) socket.emit('player:expressLetter', { letter });
+      else socket.emit('player:pickConsonant', { letter });
+    });
     kb.appendChild(b);
   });
 
@@ -161,7 +171,8 @@ function buildKeyboard() {
     b.textContent = letter;
     b.dataset.letter = letter;
     b.addEventListener('click', () => {
-      socket.emit('player:buyVowel', { letter });
+      if (expressMode) socket.emit('player:expressLetter', { letter });
+      else socket.emit('player:buyVowel', { letter });
       vp.classList.add('hidden');
     });
     vp.appendChild(b);
@@ -188,6 +199,7 @@ function applyTurnState(st) {
   const container = document.getElementById('player-wheel-container');
 
   markUsedLetters(st.usedLetters);
+  expressMode = st.isMyTurn && st.turnState === 'EXPRESS';
 
   if (!st.isMyTurn) {
     msg.textContent = `Turno di ${st.currentTurnName}`;
@@ -204,6 +216,18 @@ function applyTurnState(st) {
   msg.className = 'turn-message your-turn';
 
   const state = st.turnState;
+
+  if (state === 'EXPRESS') {
+    // Rapid-fire: no wheel, keyboard always live, vowels buyable at >= 500.
+    spinBtn.disabled = true;
+    container.classList.add('disabled');
+    kb.classList.remove('disabled');
+    vowelBtn.disabled = st.roundPoints < 500;
+    vp.classList.add('hidden');
+    msg.textContent = '🚄 EXPRESS! Spara consonanti o compra vocali';
+    return;
+  }
+
   const canSpin = state === 'MUST_SPIN' || state === 'CONTINUE';
   const mustConsonant = state === 'PICK_CONSONANT' || state === 'PICK_CONSONANT_DOUBLE';
 

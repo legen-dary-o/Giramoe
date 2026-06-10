@@ -38,7 +38,7 @@ socket.on('admin:state', (s) => {
   else if (s.phase === 'lobby') {
     showScreen('admin-lobby');
     updateLobby(s.players);
-  } else if (s.phase === 'playing') {
+  } else if (s.phase === 'playing' || s.phase === 'express') {
     showScreen('admin-game');
     renderGame(s);
   } else if (s.phase === 'tripleteReady') {
@@ -103,17 +103,21 @@ const STATE_LABEL = {
   MUST_SPIN: 'deve girare',
   PICK_CONSONANT: 'consonante',
   PICK_CONSONANT_DOUBLE: 'consonante (raddoppia)',
-  CONTINUE: 'continua/vocale/risolve'
+  CONTINUE: 'continua/vocale/risolve',
+  EXPRESS: 'EXPRESS (raffica)'
 };
 
 let prevScores = {};
 
 function renderGame(s) {
   document.getElementById('admin-board-counter').textContent =
-    `Tabellone ${s.boardNumber} / ${s.totalBoards}`;
+    `${s.phase === 'express' ? 'Express' : 'Tabellone'} ${s.boardNumber} / ${s.totalBoards}`;
   const turnPlayer = s.players[s.currentTurn];
   document.getElementById('admin-turn-name').textContent = turnPlayer ? turnPlayer.name : '—';
   document.getElementById('admin-turn-state').textContent = STATE_LABEL[s.turnState] || '';
+  // In express, "Passa turno" becomes the wrong-solution button (full bancarotta).
+  document.getElementById('btn-pass').textContent =
+    s.turnState === 'EXPRESS' ? 'Frase sbagliata' : 'Passa turno';
 
   const list = document.getElementById('admin-scores');
   list.innerHTML = '';
