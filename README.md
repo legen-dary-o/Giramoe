@@ -20,20 +20,35 @@ Con `npm start` tutti i dispositivi devono essere sulla **stessa rete Wi‑Fi**.
 
 ## Giocare da reti diverse (online)
 
-Se i giocatori non sono sulla tua stessa rete (es. rete dati), avvia in modalità online:
+Per far entrare i giocatori da **qualsiasi rete** (anche dati cellulare), avvia in modalità
+online — è un comando **diverso** da `npm start`:
 
 ```bash
 npm run online
 ```
 
-Questo apre un tunnel Cloudflare verso il tuo Mac e usa l'URL pubblico
-(`https://xxx.trycloudflare.com`) nel QR code: i giocatori entrano da qualsiasi rete.
-Tu apri main screen e admin come al solito (in locale), il resto non cambia.
+> ⚠️ Deve essere `npm run online`, non `npm start`. Con `npm start` il QR punta all'IP
+> locale e serve la stessa rete Wi‑Fi.
 
-Richiede `cloudflared` (una sola volta): `brew install cloudflared`.
+All'avvio compare un banner con i link da usare:
 
-Note: l'URL è casuale e cambia a ogni avvio; chiunque lo abbia può aprirlo finché il
-tunnel è attivo, ma la lobby resta comunque limitata a 3 giocatori.
+```
+• Schermo (sul PC):  http://localhost:3000          ← aprilo sul PC/TV
+• Admin (telefono):  https://xxx.trycloudflare.com/admin.html   ← da QUALSIASI rete
+• Giocatori:         inquadrano il QR (già puntato al tunnel)
+```
+
+Punti chiave:
+- Lo **schermo principale** lo apri sul PC (`localhost:3000`): assets e video locali, nessuna latenza.
+- L'**admin** (il tuo telefono) lo apri dall'URL del tunnel `https://…/admin.html`: così
+  **anche tu** non devi stare sulla stessa rete del PC.
+- I **giocatori** scansionano il QR: contiene già l'URL del tunnel.
+
+Richiede `cloudflared` (installazione una tantum): `brew install cloudflared`.
+
+Note: l'URL del tunnel è casuale e cambia a ogni avvio; chiunque lo abbia può aprirlo
+finché il tunnel è attivo (lobby comunque limitata a 3 giocatori). Se la tua rete
+blocca i tunnel Cloudflare, `npm run online` riparte automaticamente in modalità locale.
 
 ## Come si gioca
 
