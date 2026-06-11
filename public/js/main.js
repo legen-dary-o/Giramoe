@@ -1,3 +1,7 @@
+import { initCursor } from './fx/cursor.js';
+
+initCursor();
+
 const socket = io();
 let wheel = null;
 let started = false;
