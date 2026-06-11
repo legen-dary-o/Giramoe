@@ -1,45 +1,29 @@
 const socket = io();
 let wheel = null;
 let started = false;
-let currentPhase = 'video';
+let currentPhase = 'video'; // il server chiama ancora 'video' la fase pre-lobby
 let tripleteBoardReady = false;
 let lastSegmentsKey = '';
-
-// Same 16 colours as the wheel segments — reused for the "IL TRIPLETE" title.
-const TRIPLETE_COLORS = [
-  '#22c55e', '#4ade80', '#a3e635', '#eab308',
-  '#f59e0b', '#f97316', '#ef4444', '#f43f5e',
-  '#ec4899', '#d946ef', '#a855f7', '#8b5cf6',
-  '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4'
-];
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }
 
-const video = document.getElementById('intro-video');
-video.addEventListener('ended', () => showScreen('start-screen'));
-video.addEventListener('error', () => showScreen('start-screen'));
-
-// --- Tap to start: unlock audio, play the intro video with sound ---
+// --- Tap to start: sblocca audio, title animation GIRAMOE, poi fase corrente ---
 document.getElementById('tap-start-btn').addEventListener('click', startMainDisplay);
 function startMainDisplay() {
   if (started) return;
   started = true;
   Sfx.unlock();
-  if (currentPhase === 'video') {
-    showScreen('video-screen');
-    video.muted = false;
-    video.play().catch(() => showScreen('start-screen'));
-  } else {
-    applyPhaseScreen();
-  }
+  document.getElementById('start-tap-screen').classList.add('waiting');
+  playTitleAnimation('GIRAMOE');
+  setTimeout(() => applyPhaseScreen(), 3000);
 }
 
 function applyPhaseScreen() {
-  if (!started) return; // stay on the tap screen until the user taps
-  if (currentPhase === 'video') showScreen('video-screen');
+  if (!started) return; // resta sull'intro finché l'utente non tocca
+  if (currentPhase === 'video') showScreen('start-tap-screen'); // in attesa dell'host
   else if (currentPhase === 'lobby') showScreen('lobby-screen');
   else if (currentPhase === 'playing') showScreen('game-screen');
   else if (currentPhase === 'express') showScreen('game-screen');
@@ -59,7 +43,7 @@ socket.on('main:state', ({ phase }) => { currentPhase = phase; applyPhaseScreen(
 socket.on('main:showLobby', ({ url, players }) => {
   currentPhase = 'lobby';
   QRCode.toCanvas(document.getElementById('qr-canvas'), url, {
-    width: 220, margin: 2, color: { dark: '#1a1a1a', light: '#ffffff' }
+    width: 220, margin: 2, color: { dark: '#1d1d1f', light: '#f5f5f7' }
   });
   updatePlayerSlots(players);
   applyPhaseScreen();
@@ -88,11 +72,11 @@ socket.on('main:spin', ({ winningSegment, spins, value }) => {
   Sfx.startSpin();
   wheel.onSpinEnd = () => {
     Sfx.stopSpin();
-    setWheelZoom(false); // back to the board once the wheel stops
+    setWheelZoom(false); // si torna al tabellone quando la ruota si ferma
     showResult(String(value).toUpperCase());
   };
   wheel.spinTo(winningSegment, spins, 6000);
-  setTimeout(() => { Sfx.stopSpin(); setWheelZoom(false); }, 6800); // fallback if rAF was throttled
+  setTimeout(() => { Sfx.stopSpin(); setWheelZoom(false); }, 6800); // fallback se rAF è stato throttlato
 });
 
 function setWheelZoom(on) {
@@ -101,9 +85,24 @@ function setWheelZoom(on) {
 
 socket.on('main:revealLetter', ({ positions }) => revealSequence(positions));
 
-socket.on('main:solved', () => Sfx.play('correct'));
+socket.on('main:solved', () => { Sfx.play('correct'); fxVeil('correct'); });
 
-socket.on('main:wrong', () => Sfx.play('wrong'));
+socket.on('main:wrong', () => { Sfx.play('wrong'); fxVeil('wrong'); });
+
+// --- Feedback bordo schermo: velo verde/rosso + shake sull'errore ---
+function fxVeil(kind) {
+  const veil = document.getElementById('fx-veil');
+  veil.classList.remove('correct', 'wrong');
+  void veil.offsetWidth;
+  veil.classList.add(kind);
+  if (kind === 'wrong') {
+    const scr = document.querySelector('.screen:not(.hidden)');
+    if (scr) {
+      scr.classList.add('shake');
+      setTimeout(() => scr.classList.remove('shake'), 450);
+    }
+  }
+}
 
 // --- Tie-break + finalist ---
 socket.on('main:tiebreakStart', ({ segments, contenders }) => {
@@ -152,7 +151,7 @@ socket.on('main:finalReveal', ({ positions }) => {
 
 socket.on('main:finalBuzzed', () => {
   Sfx.play('buzzer');
-  showBuzz('🔔 Risponde!');
+  showBuzz('Risponde!');
 });
 
 socket.on('main:envelopes', (view) => {
@@ -162,7 +161,7 @@ socket.on('main:envelopes', (view) => {
   applyPhaseScreen();
 });
 
-// Display-only render of the 3 envelopes (the main TV).
+// Render display-only delle 3 buste (la TV principale).
 function renderEnvelopes(row, view) {
   row.innerHTML = '';
   view.envelopes.forEach((e, i) => {
@@ -195,7 +194,6 @@ function renderFinalBoard(grid) {
   });
 }
 
-
 function renderTiebreak(contenders, current) {
   const bar = document.getElementById('players-bar');
   bar.innerHTML = '';
@@ -222,12 +220,11 @@ function updatePlayerSlots(players) {
   for (let i = 0; i < 3; i++) {
     const slot = document.getElementById(`slot-${i}`);
     const p = players[i];
+    slot.innerHTML = `${p ? p.name : '—'}<span class="slot-idx">P${i + 1}</span>`;
     if (p) {
-      slot.textContent = p.name;
       slot.classList.add('filled');
       slot.classList.toggle('reconnecting', p.connected === false);
     } else {
-      slot.textContent = '—';
       slot.classList.remove('filled', 'reconnecting');
     }
   }
@@ -240,7 +237,7 @@ function initMainWheel(segments) {
   window.addEventListener('resize', () => wheel.resize());
 }
 
-// The express round swaps the wheel labels (one PASSA becomes EXPRESS); redraw only on change.
+// Il round express cambia le etichette della ruota (un PASSA diventa EXPRESS); ridisegna solo se cambiano.
 function updateWheelLabels(segments) {
   const key = (segments || []).join('|');
   if (key !== lastSegmentsKey) { lastSegmentsKey = key; if (wheel) wheel.setLabels(segments); }
@@ -273,7 +270,7 @@ function cellAt(row, col) {
   return document.querySelector(`#board-grid .cell[data-row="${row}"][data-col="${col}"]`);
 }
 
-// Reveal each occurrence one at a time (TL->BR), with the flip sound.
+// Rivela ogni occorrenza una alla volta (TL->BR), con il suono flip.
 function revealSequence(positions) {
   positions.forEach((pos, i) => {
     setTimeout(() => {
@@ -338,6 +335,7 @@ socket.on('main:expressStart', () => {
 
 socket.on('main:expressBankrupt', () => {
   Sfx.play('wrong');
+  fxVeil('wrong');
   showResult('BANCAROTTA');
 });
 
@@ -364,13 +362,14 @@ socket.on('main:giramoeScores', ({ scores, currentTurn }) => renderGiramoeScores
 
 socket.on('main:giramoeBuzzed', ({ name }) => {
   Sfx.play('buzzer');
-  showBuzz(`🔔 ${name} risponde!`);
+  showBuzz(`${name} risponde!`);
 });
 
 socket.on('main:giramoeResume', () => hideBuzz());
 
 socket.on('main:giramoeSolved', ({ name, points }) => {
   hideBuzz();
+  fxVeil('correct');
   showResult(`${name} +${points}`);
 });
 
@@ -405,11 +404,12 @@ socket.on('main:tripleteScores', ({ scores }) => renderTripleteScores(scores));
 
 socket.on('main:tripleteBuzzed', ({ name }) => {
   Sfx.play('buzzer');
-  showBuzz(`🔔 ${name} si è prenotato!`);
+  showBuzz(`${name} si è prenotato!`);
 });
 
 socket.on('main:tripleteResume', () => {
   Sfx.play('wrong');
+  fxVeil('wrong');
   hideBuzz();
 });
 
@@ -417,39 +417,23 @@ socket.on('main:tripleteSolved', ({ board, name, points }) => {
   hideBuzz();
   renderTripleteBoard(board.grid);
   Sfx.play('correct');
+  fxVeil('correct');
   showTripleteResult(`${name} +${points}`);
 });
 
-// --- Title animation: spinning rainbow "spicchi" fan + glass plate + popped-in letters.
-//     Reused for IL TRIPLETE, EXPRESS, GIRAMOE — just pass the word. ---
+// --- Title animation condivisa: eyebrow contestuale + wordmark con glint.
+//     Usata per GIRAMOE (intro e round finale), IL TRIPLETE, EXPRESS. ---
+const TITLE_EYEBROWS = {
+  'GIRAMOE': 'Giramoe Studio presenta',
+  'IL TRIPLETE': 'Bonus round',
+  'EXPRESS': 'Bonus round'
+};
 function playTitleAnimation(word) {
-  const stage = document.querySelector('#triplete-title-screen .triplete-stage');
-  const fan = document.querySelector('#triplete-title-screen .triplete-fan');
-  const titleEl = document.getElementById('triplete-title');
-
-  const seg = 360 / TRIPLETE_COLORS.length;
-  fan.style.background = 'conic-gradient(from -90deg, ' +
-    TRIPLETE_COLORS.map((c, i) => `${c} ${(i * seg).toFixed(2)}deg ${((i + 1) * seg).toFixed(2)}deg`).join(', ') + ')';
-
-  titleEl.innerHTML = '';
-  let ci = 0;
-  for (const ch of word) {
-    if (ch === ' ') {
-      const sp = document.createElement('span');
-      sp.className = 'sp';
-      titleEl.appendChild(sp);
-      continue;
-    }
-    const span = document.createElement('span');
-    span.className = 'tl';
-    span.textContent = ch;
-    span.style.color = TRIPLETE_COLORS[(ci * 3) % TRIPLETE_COLORS.length];
-    span.style.animationDelay = (0.5 + ci * 0.085) + 's';
-    titleEl.appendChild(span);
-    ci++;
-  }
-
-  // restart the intro/pop animations
+  const stage = document.getElementById('title-stage');
+  document.getElementById('title-eyebrow').textContent = TITLE_EYEBROWS[word] || 'Bonus round';
+  document.getElementById('triplete-title').textContent = word;
+  showScreen('triplete-title-screen');
+  // riavvia le animazioni di entrata
   stage.classList.remove('play');
   void stage.offsetWidth;
   stage.classList.add('play');
@@ -482,7 +466,7 @@ function tripleteCellAt(row, col) {
   return document.querySelector(`#triplete-board-grid .cell[data-row="${row}"][data-col="${col}"]`);
 }
 
-// Boards 1-2 and board-3 stabilize: reveal one cell and keep it.
+// Board 1-2 e stabilizzazione board 3: rivela una cella e la tiene.
 function revealTripleteCell(cell) {
   const el = tripleteCellAt(cell.row, cell.col);
   if (!el) return;
@@ -492,8 +476,8 @@ function revealTripleteCell(cell) {
   Sfx.play('letter');
 }
 
-// Board 3 flash phase: pop a cell in for `ms`, then hide it again (unless it has
-// since been permanently revealed).
+// Fase flash board 3: cella visibile per `ms`, poi nascosta di nuovo (a meno che
+// nel frattempo non sia stata rivelata per sempre).
 function flashTripleteCell(cell, ms) {
   const el = tripleteCellAt(cell.row, cell.col);
   if (!el || el.classList.contains('revealed')) return;
