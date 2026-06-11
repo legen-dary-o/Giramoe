@@ -22,7 +22,7 @@ const TOTAL_BOARDS = 3;
 const SPIN_MS = 6000; // wheel animation duration (must match client)
 
 // --- Triplete (bonus round) timing ---
-const TRIPLETE_REVEAL_MS = 1500; // a cell appears every 1.5s
+const TRIPLETE_REVEAL_MS = Number(process.env.TRIPLETE_REVEAL_MS) || 1500; // a cell appears every 1.5s
 const TRIPLETE_FLASH_MS = 1000;  // board 3: a flashed cell stays 1s before vanishing
 const TRIPLETE_FLASH_COUNT = 15; // board 3: flashes before the letters stabilize
 const TRIPLETE_GAP_MS = Number(process.env.TRIPLETE_GAP_MS) || 2800; // pause between boards / before standings
@@ -258,6 +258,12 @@ function tripleteTick() {
     return;
   }
   io.to('main').emit('main:tripleteReveal', { cell });
+  // If that was the last cell, the board is now full: end it right away so a late
+  // buzz can't claim points on an already-revealed board (just advance, no score).
+  if (board.isSolved(triplete.currentGrid(t))) {
+    onTripleteBoardEnd(triplete.boardFilled(t));
+    return;
+  }
   scheduleTripleteTick(TRIPLETE_REVEAL_MS);
 }
 
