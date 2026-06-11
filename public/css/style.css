@@ -406,18 +406,18 @@ html, body {
   filter: drop-shadow(0 24px 50px rgba(0, 0, 0, 0.55));
 }
 
-/* Puntatore: goccia argento */
+/* Puntatore: triangolo piatto minimale */
 .wheel-indicator {
   position: absolute;
-  top: -2.5%;
+  top: -2%;
   left: 50%;
   transform: translateX(-50%);
-  width: 26px;
-  height: 34px;
+  width: 20px;
+  height: 26px;
   z-index: 3;
-  background: linear-gradient(180deg, #fafafa, #9c9ca2);
-  clip-path: polygon(50% 100%, 0 16%, 20% 0, 80% 0, 100% 16%);
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+  background: #f5f5f7;
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
 }
 
 .wheel-container.disabled { opacity: 0.45; pointer-events: none; }
@@ -438,10 +438,10 @@ html, body {
 }
 @keyframes wheelFly {
   0%   { transform: none; }
-  100% { transform: translateX(30vw) scale(1.55) rotateY(720deg); }
+  100% { transform: translateX(30vw) scale(1.22) rotateY(720deg); }
 }
 @keyframes wheelBack {
-  0%   { transform: translateX(30vw) scale(1.55) rotateY(0deg); }
+  0%   { transform: translateX(30vw) scale(1.22) rotateY(0deg); }
   100% { transform: translateX(0) scale(1) rotateY(-360deg); }
 }
 #game-screen .game-container.wheel-zoom .category-banner,
