@@ -376,8 +376,7 @@ html, body {
   padding: 3vh 4vw;
 }
 
-#game-screen .game-container,
-#triplete-screen .game-container {
+#game-screen .game-container {
   flex-direction: row;
   gap: 4vw;
 }
