@@ -138,14 +138,6 @@ test('flashNext picks unflashed cells without revealing them, then returns null'
   assert.strictEqual(triplete.flashNext(t, () => 0), null); // all flashed
 });
 
-test('boardFilled advances with no points when nobody solved', () => {
-  const t = make();
-  const res = triplete.boardFilled(t);
-  assert.deepStrictEqual(res, { ok: true, finished: false });
-  assert.strictEqual(t.state, 'BOARD_DONE');
-  assert.ok(t.players.every(p => p.points === 0));
-});
-
 test('applyToBank adds triplete points onto each matching game player bank', () => {
   const t = make();
   solveCurrent(t, 0); // P0 +1000

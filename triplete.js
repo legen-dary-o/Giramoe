@@ -102,14 +102,6 @@ function judgeWrong(t) {
   return { ok: true, playerId: id, reset };
 }
 
-// The board filled up with nobody solving: no points, just advance.
-function boardFilled(t) {
-  if (t.state !== 'REVEALING') return { ok: false };
-  const finished = isLastBoard(t);
-  t.state = finished ? 'FINISHED' : 'BOARD_DONE';
-  return { ok: true, finished };
-}
-
 // Move on to the next board (resets locks and the board-3 flash tracking).
 function nextBoard(t) {
   if (isLastBoard(t)) return { ok: false };
@@ -133,5 +125,5 @@ function applyToBank(t, gamePlayers) {
 module.exports = {
   BOARD_POINTS, SWEEP_BONUS, TOTAL_BOARDS,
   createTriplete, currentGrid, player, isLastBoard,
-  buzz, revealNext, flashNext, judgeCorrect, judgeWrong, boardFilled, nextBoard, applyToBank
+  buzz, revealNext, flashNext, judgeCorrect, judgeWrong, nextBoard, applyToBank
 };

@@ -254,16 +254,12 @@ function tripleteTick() {
   // Boards 1-2, and board-3 stabilize phase: reveal one cell and keep it.
   const cell = triplete.revealNext(t);
   if (!cell) {
-    onTripleteBoardEnd(triplete.boardFilled(t)); // filled, nobody solved
+    // Board full: stop here and stay on it. It never auto-advances — a player must
+    // still buzz and read the (now fully shown) phrase, and the admin's "frase
+    // indovinata" awards the 1000 points and only then moves to the next board.
     return;
   }
   io.to('main').emit('main:tripleteReveal', { cell });
-  // If that was the last cell, the board is now full: end it right away so a late
-  // buzz can't claim points on an already-revealed board (just advance, no score).
-  if (board.isSolved(triplete.currentGrid(t))) {
-    onTripleteBoardEnd(triplete.boardFilled(t));
-    return;
-  }
   scheduleTripleteTick(TRIPLETE_REVEAL_MS);
 }
 
