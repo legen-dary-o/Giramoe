@@ -1,4 +1,5 @@
 import { initCursor } from './fx/cursor.js';
+import { Wheel3D } from './fx/wheel3d.js';
 
 initCursor();
 
@@ -236,7 +237,14 @@ function updatePlayerSlots(players) {
 
 function initMainWheel(segments) {
   const canvas = document.getElementById('main-wheel-canvas');
-  wheel = new Wheel(canvas, { segments: 16, labels: segments, showLabels: true });
+  // Ruota 3D con fallback alla 2D se WebGL non è disponibile
+  try {
+    wheel = new Wheel3D(canvas, { segments: 16, labels: segments, showLabels: true });
+  } catch (err) {
+    console.warn('Wheel3D non disponibile, fallback 2D:', err);
+    wheel = new Wheel(canvas, { segments: 16, labels: segments, showLabels: true });
+  }
+  window.__wheel = wheel; // hook di verifica manuale
   lastSegmentsKey = (segments || []).join('|');
   window.addEventListener('resize', () => wheel.resize());
 }
