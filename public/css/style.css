@@ -422,21 +422,32 @@ html, body {
 
 .wheel-container.disabled { opacity: 0.45; pointer-events: none; }
 
-/* Spin zoom: la ruota cresce, il resto sfuma */
+/* Spin: la ruota fa un flip e vola al centro dello schermo, il resto sfuma */
+#game-screen .game-container { perspective: 1400px; }
 #game-screen .category-banner,
 #game-screen .board-grid,
 #game-screen .players-bar {
   transition: opacity 0.5s ease, transform 0.5s var(--ease-out);
 }
 #game-screen .game-container.wheel-zoom .wheel-container {
-  transform: scale(1.22) translateX(4%);
-  transition: transform 0.7s var(--ease-out);
+  animation: wheelFly 0.95s var(--ease-out) forwards;
+  z-index: 5;
 }
-#game-screen .game-container .wheel-container { transition: transform 0.7s var(--ease-out); }
+#game-screen .game-container.wheel-unzoom .wheel-container {
+  animation: wheelBack 0.75s var(--ease-out) forwards;
+}
+@keyframes wheelFly {
+  0%   { transform: none; }
+  100% { transform: translateX(30vw) scale(1.55) rotateY(720deg); }
+}
+@keyframes wheelBack {
+  0%   { transform: translateX(30vw) scale(1.55) rotateY(0deg); }
+  100% { transform: translateX(0) scale(1) rotateY(-360deg); }
+}
 #game-screen .game-container.wheel-zoom .category-banner,
 #game-screen .game-container.wheel-zoom .board-grid,
 #game-screen .game-container.wheel-zoom .players-bar {
-  opacity: 0.12;
+  opacity: 0.08;
   transform: scale(0.97);
 }
 

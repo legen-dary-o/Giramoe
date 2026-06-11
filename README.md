@@ -39,7 +39,7 @@ All'avvio compare un banner con i link da usare:
 ```
 
 Punti chiave:
-- Lo **schermo principale** lo apri sul PC (`localhost:3000`): assets e video locali, nessuna latenza.
+- Lo **schermo principale** lo apri sul PC (`localhost:3000`): assets locali, nessuna latenza.
 - L'**admin** (il tuo telefono) lo apri dall'URL del tunnel `https://…/admin.html`: così
   **anche tu** non devi stare sulla stessa rete del PC.
 - I **giocatori** scansionano il QR: contiene già l'URL del tunnel.
@@ -52,7 +52,7 @@ blocca i tunnel Cloudflare, `npm run online` riparte automaticamente in modalit�
 
 ## Come si gioca
 
-1. **Schermo principale (PC/TV):** apri `http://<IP>:3000/` — parte il video introduttivo a tutto schermo.
+1. **Schermo principale (PC/TV):** apri `http://<IP>:3000/` — tocca per partire: title animation GIRAMOE e poi la lobby.
 2. **Admin (tuo telefono):** apri `http://<IP>:3000/admin.html`, premi **Inizia** → compare il QR.
 3. **Giocatori (max 3):** inquadrano il QR, inseriscono il nome, entrano.
 4. Con 3 giocatori, premi **Avvia partita**, poi imposta **categoria** e **frase** del tabellone e premi **Avvia tabellone**.
@@ -185,12 +185,12 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 - `public/js/wheel.js` — disegno e animazione della ruota (Canvas)
 - `public/js/audio.js` — effetti sonori del main display
 - `public/css/style.css` — stile liquid glass condiviso
-- `public/assets/` — logo, video e i 5 file audio (incl. `buzzer.mp3` del Triplete)
+- `public/assets/` — i 5 file audio (incl. `buzzer.mp3` del Triplete)
 - `tests/` — test unitari (board, game) e di integrazione (socket)
 
 ## Note
 
-- **Audio:** l'audio (video iniziale + effetti) parte **solo dal main display** e si attiva al primo tocco sulla schermata "Tocca per iniziare" (i browser bloccano l'audio senza un click). I 5 suoni sono in `public/assets/`.
+- **Audio:** gli effetti partono **solo dal main display** e si attivano al primo tocco sulla schermata "Tocca per iniziare" (i browser bloccano l'audio senza un click). I 5 suoni sono in `public/assets/`.
 - Quando un giocatore indovina una lettera presente, le sue occorrenze si scoprono **una alla volta** sul tabellone, con un suono per ognuna.
 - L'animazione della ruota e l'audio girano solo con la scheda del main display **in primo piano** (limite del browser su `requestAnimationFrame`/autoplay).
 - La libreria QR è inclusa localmente (`public/js/qrcode.min.js`), quindi funziona anche senza internet.

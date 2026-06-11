@@ -31,10 +31,10 @@ const TRAIL_FRAG = `
     vec2 d = vUv - uPointer;
     d.x *= uTexel.y / uTexel.x; // correggi aspect
     float dist2 = dot(d, d);
-    float speed = min(length(uVel) * 26.0, 1.4);
-    float blob = exp(-dist2 * 950.0) * speed * uInject;
+    float speed = min(length(uVel) * 13.0, 0.8);
+    float blob = exp(-dist2 * 2400.0) * speed * uInject;
     c.r += blob;
-    c.gb += uVel * blob * 8.0; // memorizza direzione per la distorsione
+    c.gb += uVel * blob * 6.0; // memorizza direzione per la distorsione
 
     gl_FragColor = vec4(c, 1.0);
   }
@@ -50,7 +50,7 @@ const DRAW_FRAG = `
     float field = t.r;
 
     // distorsione del gradiente di base lungo la direzione memorizzata
-    vec2 offset = t.gb * 0.35 + vec2(field * 0.012);
+    vec2 offset = t.gb * 0.22 + vec2(field * 0.008);
     vec2 uv = vUv + offset;
 
     // base: il fondale tvOS (radiale freddo in alto + verticale scuro)
@@ -58,12 +58,9 @@ const DRAW_FRAG = `
     vec3 base = mix(vec3(0.047, 0.047, 0.055), vec3(0.071, 0.071, 0.078), uv.y);
     base += vec3(0.10, 0.12, 0.17) * topGlow * 0.32;
 
-    // highlight liquido: speculare freddo dove il campo e' intenso
-    float hi = smoothstep(0.06, 0.7, field);
-    vec3 sheen = vec3(0.42, 0.52, 0.72) * hi * 0.16;
-    // bordo piu' luminoso del cuore (effetto lente)
-    float edge = smoothstep(0.02, 0.16, field) - smoothstep(0.16, 0.6, field);
-    sheen += vec3(0.55, 0.62, 0.8) * max(edge, 0.0) * 0.10;
+    // riflesso discreto: solo un velo freddo, niente "verme" luminoso
+    float hi = smoothstep(0.10, 0.9, field);
+    vec3 sheen = vec3(0.36, 0.44, 0.62) * hi * 0.07;
 
     gl_FragColor = vec4(base + sheen, 1.0);
   }
@@ -164,6 +161,7 @@ export class FluidFX {
   }
 
   setEnabled(on) {
+    if (!this.renderer) return; // reduced-motion / niente WebGL: resta spento
     this.enabled = on;
     if (this.canvas) this.canvas.style.display = on ? '' : 'none';
     if (on) this._wake(); else this.running = false;

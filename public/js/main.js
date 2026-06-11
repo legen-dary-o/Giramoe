@@ -16,6 +16,7 @@ let lastSegmentsKey = '';
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
+  fluid.setEnabled(id === 'start-tap-screen'); // liquido solo sull'intro
 }
 
 // --- Tap to start: sblocca audio, title animation GIRAMOE, poi fase corrente ---
@@ -88,7 +89,14 @@ socket.on('main:spin', ({ winningSegment, spins, value }) => {
 });
 
 function setWheelZoom(on) {
-  document.querySelector('#game-screen .game-container').classList.toggle('wheel-zoom', on);
+  const c = document.querySelector('#game-screen .game-container');
+  if (on) {
+    c.classList.remove('wheel-unzoom');
+    c.classList.add('wheel-zoom');
+  } else if (c.classList.contains('wheel-zoom')) {
+    c.classList.remove('wheel-zoom');
+    c.classList.add('wheel-unzoom'); // flip di ritorno; nessuna animazione al primo load
+  }
 }
 
 socket.on('main:revealLetter', ({ positions }) => revealSequence(positions));
@@ -444,7 +452,6 @@ const TITLE_EYEBROWS = {
   'EXPRESS': 'Bonus round'
 };
 function playTitleAnimation(word) {
-  fluid.burst();
   const stage = document.getElementById('title-stage');
   document.getElementById('title-eyebrow').textContent = TITLE_EYEBROWS[word] || 'Bonus round';
   document.getElementById('triplete-title').textContent = word;

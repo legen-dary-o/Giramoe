@@ -5,11 +5,12 @@
 
 import * as THREE from '../../vendor/three.module.js';
 
+// Tinte profonde "jewel": meno caramella, piu' studio TV
 const SEGMENT_COLORS = [
-  '#e0352b', '#e8890c', '#ecbf08', '#2fb350',
-  '#0cb3ab', '#2b9fb5', '#2e9cd4', '#0871e8',
-  '#4f4dc4', '#9d4ac8', '#e8294e', '#c20013',
-  '#b32f00', '#20803a', '#00679a', '#312f96'
+  '#b3271e', '#c06a00', '#bd9a04', '#1d8742',
+  '#0a8c82', '#176f92', '#1d63b8', '#0c4eb3',
+  '#3b34a8', '#7c2fb3', '#ad2557', '#8c0d1c',
+  '#7d3608', '#176331', '#084f78', '#2c2a8c'
 ];
 
 // Stessa semantica degli "speciali" della ruota 2D.
@@ -46,18 +47,51 @@ export class Wheel3D {
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
-    this.cameraBaseZ = 16.4; // metà altezza visibile ≈ 4.7 > raggio+ghiera (4.37)
-    this.camera.position.set(0, 0, this.cameraBaseZ);
+    this.cameraBaseZ = 16.6; // metà altezza visibile ≈ 4.7 > raggio+ghiera (4.37)
+    // leggera inclinazione dal basso: lo spessore del disco si legge
+    this.camera.position.set(0, -1.5, this.cameraBaseZ);
+    this.camera.lookAt(0, 0, 0);
 
     // Luci da studio: key fredda alta, fill laterali tenui, ambient bassa
-    const key = new THREE.DirectionalLight(0xffffff, 2.4);
+    const key = new THREE.DirectionalLight(0xffffff, 2.9);
     key.position.set(-3, 6, 8);
-    const fillA = new THREE.DirectionalLight(0x9fb8ff, 0.7);
+    const fillA = new THREE.DirectionalLight(0x9fb8ff, 0.65);
     fillA.position.set(7, -2, 6);
-    const fillB = new THREE.DirectionalLight(0xc9b8ff, 0.45);
+    const fillB = new THREE.DirectionalLight(0xc9b8ff, 0.4);
     fillB.position.set(-7, -4, 5);
-    const amb = new THREE.AmbientLight(0xffffff, 0.55);
-    this.scene.add(key, fillA, fillB, amb);
+    const spec = new THREE.PointLight(0xffffff, 18, 30); // colpo speculare sul vetro
+    spec.position.set(2.5, 4, 7);
+    const amb = new THREE.AmbientLight(0xffffff, 0.5);
+    this.scene.add(key, fillA, fillB, spec, amb);
+
+    // Environment "studio" minimale: senza env i materiali metallici restano neri.
+    // Cielo in gradiente + due softbox luminosi, precalcolati con PMREM.
+    const envScene = new THREE.Scene();
+    const skyCnv = document.createElement('canvas');
+    skyCnv.width = 2; skyCnv.height = 128;
+    const sg = skyCnv.getContext('2d').createLinearGradient(0, 0, 0, 128);
+    sg.addColorStop(0, '#9aa6bd');
+    sg.addColorStop(0.55, '#3a4150');
+    sg.addColorStop(1, '#15171d');
+    const sctx = skyCnv.getContext('2d');
+    sctx.fillStyle = sg;
+    sctx.fillRect(0, 0, 2, 128);
+    const skyTex = new THREE.CanvasTexture(skyCnv);
+    skyTex.colorSpace = THREE.SRGBColorSpace;
+    const sky = new THREE.Mesh(
+      new THREE.SphereGeometry(20, 16, 12),
+      new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide })
+    );
+    envScene.add(sky);
+    const boxMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const boxA = new THREE.Mesh(new THREE.PlaneGeometry(8, 3), boxMat);
+    boxA.position.set(-5, 7, 6); boxA.lookAt(0, 0, 0);
+    const boxB = new THREE.Mesh(new THREE.PlaneGeometry(5, 2), boxMat);
+    boxB.position.set(7, -2, 7); boxB.lookAt(0, 0, 0);
+    envScene.add(boxA, boxB);
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = pmrem.fromScene(envScene, 0.04).texture;
+    pmrem.dispose();
   }
 
   _buildWheel() {
@@ -87,32 +121,55 @@ export class Wheel3D {
       const color = special ? special.base : SEGMENT_COLORS[i % SEGMENT_COLORS.length];
       const mat = new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(color),
-        roughness: 0.32,
-        metalness: 0.05,
+        roughness: 0.27,
+        metalness: 0.08,
         clearcoat: 1,
-        clearcoatRoughness: 0.25
+        clearcoatRoughness: 0.16
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.z = -DEPTH / 2;
       this.group.add(mesh);
     }
 
-    // Ghiera alluminio
+    // Ghiera canna di fucile + labbro argento interno
     const rim = new THREE.Mesh(
-      new THREE.TorusGeometry(R + 0.16, 0.21, 24, 96),
-      new THREE.MeshStandardMaterial({ color: 0xb9bcc4, metalness: 0.92, roughness: 0.24 })
+      new THREE.TorusGeometry(R + 0.18, 0.24, 24, 96),
+      new THREE.MeshStandardMaterial({ color: 0x33343a, metalness: 0.95, roughness: 0.32 })
     );
-    this.group.add(rim);
+    const lip = new THREE.Mesh(
+      new THREE.TorusGeometry(R + 0.005, 0.045, 16, 96),
+      new THREE.MeshStandardMaterial({ color: 0xd6d8de, metalness: 0.9, roughness: 0.2 })
+    );
+    lip.position.z = DEPTH / 2;
+    this.group.add(rim, lip);
 
-    // Hub a cupola
-    const hub = new THREE.Mesh(
-      new THREE.SphereGeometry(0.62, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2),
-      new THREE.MeshPhysicalMaterial({ color: 0xdfe2e8, metalness: 0.85, roughness: 0.18, clearcoat: 1 })
+    // Separatori metallici sottili tra gli spicchi
+    const segAngle = (2 * Math.PI) / this.segments;
+    const dividerMat = new THREE.MeshStandardMaterial({ color: 0xc9ccd4, metalness: 0.9, roughness: 0.25 });
+    for (let i = 0; i < this.segments; i++) {
+      const theta = i * segAngle; // angolo orario dalle 12
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.035, R, 0.05), dividerMat);
+      // sopra il bevel degli spicchi (che arriva a DEPTH/2 + bevelThickness)
+      blade.position.set(Math.sin(theta) * R / 2, Math.cos(theta) * R / 2, DEPTH / 2 + 0.06);
+      blade.rotation.z = -theta;
+      this.group.add(blade);
+    }
+
+    // Hub a due livelli: piatto scuro + cupola argento
+    const hubBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.92, 0.98, 0.16, 48),
+      new THREE.MeshStandardMaterial({ color: 0x3a3b42, metalness: 0.95, roughness: 0.3 })
     );
-    hub.rotation.x = -Math.PI / 2; // cupola verso la camera
-    hub.position.z = DEPTH / 2;
-    hub.scale.z = 0.55;
-    this.group.add(hub);
+    hubBase.rotation.x = Math.PI / 2;
+    hubBase.position.z = DEPTH / 2 + 0.08;
+    const hub = new THREE.Mesh(
+      new THREE.SphereGeometry(0.58, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshPhysicalMaterial({ color: 0xe4e6ec, metalness: 0.85, roughness: 0.16, clearcoat: 1 })
+    );
+    hub.rotation.x = Math.PI / 2; // cupola verso la camera (+y → +z)
+    hub.position.z = DEPTH / 2 + 0.16;
+    hub.scale.z = 0.6;
+    this.group.add(hubBase, hub);
 
     // Etichette: anello CanvasTexture appoggiato sulla faccia
     this._labelMesh = null;
@@ -189,6 +246,7 @@ export class Wheel3D {
   _render() {
     // rotation 2D è oraria col canvas; in three la z è verso l'osservatore → segno opposto
     this.group.rotation.z = -this.rotation;
+    this.camera.lookAt(0, 0, 0); // la camera è inclinata e il dolly cambia z
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -227,6 +285,7 @@ export class Wheel3D {
       // dolly: avvicina a metà corsa, torna alla base sul finale
       const dolly = Math.sin(progress * Math.PI) * 2.2;
       this.camera.position.z = this.cameraBaseZ - dolly;
+      this.camera.lookAt(0, 0, 0);
 
       this._render();
 
