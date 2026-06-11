@@ -1,7 +1,10 @@
 import { initCursor } from './fx/cursor.js';
 import { Wheel3D } from './fx/wheel3d.js';
+import { FluidFX } from './fx/fluid.js';
 
 initCursor();
+const fluid = new FluidFX(document.getElementById('fluid-canvas'));
+window.__fluid = fluid; // hook di verifica manuale
 
 const socket = io();
 let wheel = null;
@@ -441,6 +444,7 @@ const TITLE_EYEBROWS = {
   'EXPRESS': 'Bonus round'
 };
 function playTitleAnimation(word) {
+  fluid.burst();
   const stage = document.getElementById('title-stage');
   document.getElementById('title-eyebrow').textContent = TITLE_EYEBROWS[word] || 'Bonus round';
   document.getElementById('triplete-title').textContent = word;
