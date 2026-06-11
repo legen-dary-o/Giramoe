@@ -572,6 +572,11 @@ function lobbyPlayers() {
   return state.lobby.map(p => ({ name: p.name, connected: p.connected }));
 }
 
+function lobbyUrl() {
+  const base = process.env.GIRAMOE_PUBLIC_URL || `http://${getLocalIP()}:${PORT}`;
+  return `${base}/play.html?room=${state.roomCode}`;
+}
+
 function broadcastAdminPlayers() {
   io.to('admin').emit('admin:state', adminView());
   state.g.players.forEach((p, i) => {
@@ -602,7 +607,9 @@ io.on('connection', (socket) => {
   socket.on('main:init', () => {
     socket.join('main');
     socket.emit('main:state', { phase: state.phase });
-    if ((state.phase === 'playing' || state.phase === 'tripleteReady' || state.phase === 'express') && state.g && state.g.board) {
+    if (state.phase === 'lobby') {
+      socket.emit('main:showLobby', { roomCode: state.roomCode, url: lobbyUrl(), players: lobbyPlayers() });
+    } else if ((state.phase === 'playing' || state.phase === 'tripleteReady' || state.phase === 'express') && state.g && state.g.board) {
       socket.emit('main:gameState', mainGameView());
     } else if (state.phase === 'triplete' && state.t) {
       socket.emit('main:tripleteBoard', tripleteBoardView());
@@ -628,9 +635,7 @@ io.on('connection', (socket) => {
     state.phase = 'lobby';
     state.roomCode = generateRoomCode();
     state.lobby = [];
-    const base = process.env.GIRAMOE_PUBLIC_URL || `http://${getLocalIP()}:${PORT}`;
-    const url = `${base}/play.html?room=${state.roomCode}`;
-    io.to('main').emit('main:showLobby', { roomCode: state.roomCode, url, players: [] });
+    io.to('main').emit('main:showLobby', { roomCode: state.roomCode, url: lobbyUrl(), players: [] });
     io.to('admin').emit('admin:state', adminView());
   });
 
