@@ -8,6 +8,7 @@ const triplete = require('./triplete');
 const giramoe = require('./giramoe');
 const finalist = require('./finalist');
 const finalgame = require('./finalgame');
+const envelopes = require('./envelopes');
 
 const app = express();
 const server = http.createServer(app);
@@ -41,7 +42,7 @@ function getLocalIP() {
 }
 
 let state = {
-  phase: 'video',     // video | lobby | playing | tripleteReady | triplete | express | giramoe | tiebreak | finalist | final | finalDone
+  phase: 'video',     // ... | tiebreak | finalist | final | envelopes
   roomCode: null,
   lobby: [],          // [{ name, socketId, connected }]
   g: null,            // game object once playing
@@ -50,7 +51,9 @@ let state = {
   tiebreak: null,     // { contenders:[ids], spins:{id:value}, current } during a tie-break
   finalistId: null,   // the player who reached the final game
   fg: null,           // final game object
-  finalTimeLeft: 0    // ms remaining on the final's shared timer
+  finalTimeLeft: 0,   // ms remaining on the final's shared timer
+  envelopeContents: null, // the 3 envelope texts entered with the final setup
+  env: null           // envelope game object
 };
 
 let tripleteTimer = null;  // single reveal/flash timer for the bonus round
@@ -96,7 +99,7 @@ function mainGameView() {
 }
 
 function adminView() {
-  const inGame = ['playing', 'express', 'tripleteReady', 'triplete', 'giramoe', 'tiebreak', 'finalist', 'final', 'finalDone'].includes(state.phase);
+  const inGame = ['playing', 'express', 'tripleteReady', 'triplete', 'giramoe', 'tiebreak', 'finalist', 'final', 'envelopes'].includes(state.phase);
   return {
     phase: state.phase,
     roomCode: state.roomCode,
@@ -135,7 +138,7 @@ function adminView() {
           : { started: false })
       : null,
     tiebreak: state.phase === 'tiebreak' && state.tiebreak ? tiebreakView() : null,
-    finalist: state.finalistId != null && ['finalist', 'final', 'finalDone'].includes(state.phase)
+    finalist: state.finalistId != null && ['finalist', 'final', 'envelopes'].includes(state.phase)
       ? { id: state.finalistId, name: state.g.players[state.finalistId].name }
       : null,
     final: state.phase === 'final' && state.fg
@@ -149,7 +152,7 @@ function adminView() {
           buzzed: state.fg.state === 'BUZZED'
         }
       : null,
-    finalDone: state.phase === 'finalDone' && state.fg ? { results: state.fg.results.slice() } : null
+    envelopes: state.phase === 'envelopes' && state.env ? envelopesView() : null
   };
 }
 
@@ -438,12 +441,39 @@ function startFinalCountdown() {
 
 function endFinal() {
   clearFinalTimer();
-  state.phase = 'finalDone';
-  const results = state.fg.results.slice();
-  io.to('main').emit('main:finalDone', { results });
+  startEnvelopes(state.fg.results.slice());
+}
+
+// --- ENVELOPES: the final reveal, coloured by the 3 final results ---
+
+function startEnvelopes(results) {
+  state.phase = 'envelopes';
+  state.env = envelopes.createEnvelopes(results, state.envelopeContents || ['', '', '']);
+  broadcastEnvelopes(true);
+}
+
+function envelopesView() {
+  const env = state.env;
+  return {
+    envelopes: env.envelopes.map(e => ({
+      color: e.color,
+      revealed: e.revealed,
+      abandoned: e.abandoned,
+      content: e.revealed ? e.content : null
+    })),
+    current: env.current,
+    changesLeft: env.changesLeft,
+    state: env.state
+  };
+}
+
+function broadcastEnvelopes(intro) {
+  io.to('main').emit('main:envelopes', envelopesView());
   io.to('admin').emit('admin:state', adminView());
-  state.lobby.forEach((p, i) =>
-    io.to(p.socketId).emit('player:finalDone', { results, isFinalist: i === state.finalistId }));
+  state.lobby.forEach((p, i) => {
+    const ev = intro ? 'player:envelopesStart' : 'player:envelopesState';
+    io.to(p.socketId).emit(ev, { view: envelopesView(), isFinalist: i === state.finalistId });
+  });
 }
 
 // --- GIRAMOE: the final wheel board (admin spins once; round-robin consonants) ---
@@ -587,8 +617,8 @@ io.on('connection', (socket) => {
     } else if (state.phase === 'final' && state.fg) {
       socket.emit('main:finalBoard', finalBoardView());
       socket.emit('main:finalTimer', { ms: state.finalTimeLeft });
-    } else if (state.phase === 'finalDone' && state.fg) {
-      socket.emit('main:finalDone', { results: state.fg.results.slice() });
+    } else if (state.phase === 'envelopes' && state.env) {
+      socket.emit('main:envelopes', envelopesView());
     }
   });
 
@@ -861,11 +891,15 @@ io.on('connection', (socket) => {
   // --- FINAL game ---
 
   // Admin starts the final with the shared topic + 3 phrases (board 1 awaits picks).
-  socket.on('admin:startFinal', ({ topic, phrases }) => {
+  socket.on('admin:startFinal', ({ topic, phrases, envelopes: envTexts }) => {
     if (state.phase !== 'finalist' || state.finalistId == null) return;
+    if (!Array.isArray(envTexts) || envTexts.length !== 3 || envTexts.some(t => !String(t || '').trim())) {
+      return io.to('admin').emit('admin:finalError', 'Inserisci anche i 3 testi delle buste');
+    }
     const r = finalgame.createFinalGame(topic, phrases);
     if (!r.ok) return io.to('admin').emit('admin:finalError', r.error);
     state.fg = r.fg;
+    state.envelopeContents = envTexts.map(t => String(t).trim());
     state.finalTimeLeft = FINAL_TIME_MS;
     state.phase = 'final';
     io.to('admin').emit('admin:finalError', '');
@@ -920,6 +954,28 @@ io.on('connection', (socket) => {
     }, 1600);
   }
 
+  // --- ENVELOPES ---
+
+  socket.on('player:envelopeOpen', ({ index }) => {
+    if (state.phase !== 'envelopes' || !state.env) return;
+    if (socket.playerIndex !== state.finalistId) return;
+    if (!envelopes.openEnvelope(state.env, index).ok) return;
+    broadcastEnvelopes(false);
+  });
+
+  socket.on('player:envelopeChange', () => {
+    if (state.phase !== 'envelopes' || !state.env) return;
+    if (socket.playerIndex !== state.finalistId) return;
+    if (!envelopes.changeEnvelope(state.env).ok) return;
+    broadcastEnvelopes(false);
+  });
+
+  socket.on('admin:envelopeRevealRed', ({ index }) => {
+    if (state.phase !== 'envelopes' || !state.env) return;
+    if (!envelopes.revealRed(state.env, index).ok) return;
+    broadcastEnvelopes(false);
+  });
+
   socket.on('admin:giramoeWrong', () => {
     if (state.phase !== 'giramoe' || !state.gi) return;
     const res = giramoe.judgeWrong(state.gi);
@@ -944,7 +1000,7 @@ io.on('connection', (socket) => {
     const p = state.lobby.find(pl => pl.socketId === socket.id);
     if (!p) return;
     p.connected = false;
-    const midGame = isWheelPhase() || ['triplete', 'tripleteReady', 'giramoe', 'tiebreak', 'final'].includes(state.phase);
+    const midGame = isWheelPhase() || ['triplete', 'tripleteReady', 'giramoe', 'tiebreak', 'final', 'envelopes'].includes(state.phase);
     if (midGame) {
       // mid-game: pause the main screen (and any reveal/buzz timer) with the overlay
       if (state.phase === 'triplete') clearTripleteTimer();
@@ -991,8 +1047,8 @@ io.on('connection', (socket) => {
       if (socket.playerIndex === state.finalistId) socket.emit('player:finalState', playerFinalView());
       io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
       if (state.lobby.every(pl => pl.connected)) startFinalCountdown(); // resume if it was running
-    } else if (state.phase === 'finalDone' && state.fg) {
-      socket.emit('player:finalDone', { results: state.fg.results.slice(), isFinalist: socket.playerIndex === state.finalistId });
+    } else if (state.phase === 'envelopes' && state.env) {
+      socket.emit('player:envelopesStart', { view: envelopesView(), isFinalist: socket.playerIndex === state.finalistId });
       io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
     } else {
       io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });

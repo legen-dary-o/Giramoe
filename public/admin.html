@@ -126,6 +126,9 @@
         <input type="text" id="fin-phrase-1" class="glass-input" placeholder="Frase 1" autocomplete="off" style="margin-top:8px;">
         <input type="text" id="fin-phrase-2" class="glass-input" placeholder="Frase 2" autocomplete="off" style="margin-top:8px;">
         <input type="text" id="fin-phrase-3" class="glass-input" placeholder="Frase 3" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="fin-env-1" class="glass-input" placeholder="Busta 1 (testo)" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="fin-env-2" class="glass-input" placeholder="Busta 2 (testo)" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="fin-env-3" class="glass-input" placeholder="Busta 3 (testo)" autocomplete="off" style="margin-top:8px;">
         <button class="glass-button" id="btn-start-final" style="margin-top:10px;">Inizia il finale</button>
         <div class="board-error" id="final-error"></div>
       </div>
@@ -148,11 +151,12 @@
     </div>
   </div>
 
-  <!-- Final done -->
-  <div id="admin-finaldone" class="screen hidden">
+  <!-- Envelopes -->
+  <div id="admin-envelopes" class="screen hidden">
     <div class="admin-container">
-      <h1>Fine</h1>
-      <div class="admin-player-list" id="admin-finaldone-results"></div>
+      <h1>Buste</h1>
+      <p style="margin-bottom: 12px; color: var(--ink-soft);">Il finalista apre/cambia le verdi. Le rosse le riveli tu.</p>
+      <div class="admin-player-list" id="admin-envelopes-list"></div>
     </div>
   </div>
 

@@ -15,7 +15,7 @@ const { server, io: ioServer } = require('../server');
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 const listening = () => new Promise(r => (server.listening ? r() : server.once('listening', r)));
 
-test('final: NRTE + picks + timer, carry across boards, board3 -3s, results',
+test('final: picks/timer/carry/-3s, then envelopes (open, blind change, admin reveals red)',
   { timeout: 60000 }, async () => {
   await listening();
   const BASE = `http://127.0.0.1:${server.address().port}`;
@@ -23,13 +23,13 @@ test('final: NRTE + picks + timer, carry across boards, board3 -3s, results',
 
   const admin = connect(), main = connect();
   let adminState = null;
-  const m = { board: null, timer: null, buzzed: 0, wrong: 0, done: null };
+  const m = { board: null, timer: null, buzzed: 0, wrong: 0, env: null };
   admin.on('admin:state', s => { adminState = s; });
   main.on('main:finalBoard', d => { m.board = d; });
   main.on('main:finalTimer', d => { m.timer = d.ms; });
   main.on('main:finalBuzzed', () => { m.buzzed++; });
   main.on('main:wrong', () => { m.wrong++; });
-  main.on('main:finalDone', d => { m.done = d; });
+  main.on('main:envelopes', d => { m.env = d; });
 
   const players = [];
   try {
@@ -65,7 +65,10 @@ test('final: NRTE + picks + timer, carry across boards, board3 -3s, results',
     assert.strictEqual(adminState.phase, 'finalist', 'P1 is the finalist');
 
     // --- FINAL ---
-    admin.emit('admin:startFinal', { topic: 'TEST', phrases: ['CENTRO NORD', 'PRIMA SERA', 'SOLE'] });
+    admin.emit('admin:startFinal', {
+      topic: 'TEST', phrases: ['CENTRO NORD', 'PRIMA SERA', 'SOLE'],
+      envelopes: ['BUSTA UNO', 'BUSTA DUE', 'BUSTA TRE']
+    });
     await wait(250);
     assert.strictEqual(adminState.phase, 'final');
     assert.strictEqual(m.board.boardIndex, 0, 'board 1 shown');
@@ -109,12 +112,32 @@ test('final: NRTE + picks + timer, carry across boards, board3 -3s, results',
     assert.ok(m.wrong >= 1, 'wrong sound on the bad letter');
     assert.ok(before - m.timer >= 2500, `timer docked ~3s (was ${before}, now ${m.timer})`);
 
-    // Buzz + correct -> finished with [green, red, green].
+    // Buzz + correct on board 3 -> finished with [green, red, green] -> ENVELOPES.
     players[0].emit('player:finalBuzz'); await wait(120);
-    admin.emit('admin:finalCorrect'); await wait(250);
-    assert.ok(m.done, 'final done');
-    assert.deepStrictEqual(m.done.results, [true, false, true]);
-    assert.strictEqual(adminState.phase, 'finalDone');
+    admin.emit('admin:finalCorrect'); await wait(300);
+    assert.strictEqual(adminState.phase, 'envelopes', 'final flows into the envelopes');
+    assert.deepStrictEqual(m.env.envelopes.map(e => e.color), ['green', 'red', 'green'], 'colours from the results');
+    assert.strictEqual(m.env.state, 'CHOOSING');
+    assert.strictEqual(m.env.changesLeft, 1, '2 greens -> 1 change');
+
+    // Finalist (P1) opens envelope 1 (green), sees its content.
+    players[0].emit('player:envelopeOpen', { index: 0 }); await wait(150);
+    assert.strictEqual(m.env.current, 0);
+    assert.strictEqual(m.env.envelopes[0].revealed, true);
+    assert.strictEqual(m.env.envelopes[0].content, 'BUSTA UNO');
+
+    // Blind change -> the other green (3); the first is abandoned, no changes left.
+    players[0].emit('player:envelopeChange'); await wait(150);
+    assert.strictEqual(m.env.current, 2);
+    assert.strictEqual(m.env.envelopes[2].content, 'BUSTA TRE');
+    assert.strictEqual(m.env.envelopes[0].abandoned, true);
+    assert.strictEqual(m.env.changesLeft, 0);
+
+    // The red one stays hidden to the player; only the admin can reveal it.
+    assert.strictEqual(m.env.envelopes[1].revealed, false);
+    admin.emit('admin:envelopeRevealRed', { index: 1 }); await wait(150);
+    assert.strictEqual(m.env.envelopes[1].revealed, true);
+    assert.strictEqual(m.env.envelopes[1].content, 'BUSTA DUE');
   } finally {
     [admin, main, ...players].forEach(s => s.close());
     await new Promise(r => ioServer.close(r));

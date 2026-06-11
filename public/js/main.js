@@ -49,7 +49,7 @@ function applyPhaseScreen() {
   else if (currentPhase === 'tiebreak') showScreen('game-screen');
   else if (currentPhase === 'finalist') showScreen('finalist-screen');
   else if (currentPhase === 'final') showScreen('final-screen');
-  else if (currentPhase === 'finalDone') showScreen('finaldone-screen');
+  else if (currentPhase === 'envelopes') showScreen('envelopes-screen');
 }
 
 socket.emit('main:init');
@@ -155,12 +155,28 @@ socket.on('main:finalBuzzed', () => {
   showBuzz('🔔 Risponde!');
 });
 
-socket.on('main:finalDone', ({ results }) => {
-  currentPhase = 'finalDone';
+socket.on('main:envelopes', (view) => {
+  currentPhase = 'envelopes';
   hideBuzz();
-  renderFinalResults(results);
-  showScreen('finaldone-screen');
+  renderEnvelopes(document.getElementById('envelopes-row'), view);
+  applyPhaseScreen();
 });
+
+// Display-only render of the 3 envelopes (the main TV).
+function renderEnvelopes(row, view) {
+  row.innerHTML = '';
+  view.envelopes.forEach((e, i) => {
+    const el = document.createElement('div');
+    el.className = 'envelope ' + e.color
+      + (e.revealed ? ' open' : '')
+      + (i === view.current ? ' current' : '')
+      + (e.abandoned ? ' abandoned' : '');
+    el.innerHTML = e.revealed
+      ? `<div class="env-num">${i + 1}</div><div class="env-content">${e.content || ''}</div>`
+      : `<div class="env-num">${i + 1}</div><div class="env-q">?</div>`;
+    row.appendChild(el);
+  });
+}
 
 function renderFinalBoard(grid) {
   const el = document.getElementById('final-board-grid');
@@ -179,16 +195,6 @@ function renderFinalBoard(grid) {
   });
 }
 
-function renderFinalResults(results) {
-  const el = document.getElementById('final-results');
-  el.innerHTML = '';
-  results.forEach((ok, i) => {
-    const box = document.createElement('div');
-    box.className = 'final-result-box ' + (ok ? 'green' : 'red');
-    box.textContent = i + 1;
-    el.appendChild(box);
-  });
-}
 
 function renderTiebreak(contenders, current) {
   const bar = document.getElementById('players-bar');

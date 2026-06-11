@@ -192,12 +192,51 @@ socket.on('player:finalStart', ({ isFinalist }) => {
 
 socket.on('player:finalState', (st) => applyFinalState(st));
 
-socket.on('player:finalDone', ({ results, isFinalist }) => {
-  showScreen('player-finalist-screen');
-  const green = results.filter(Boolean).length;
-  document.getElementById('player-finalist-title').textContent =
-    isFinalist ? `Hai fatto ${green}/3!` : 'Fine partita';
+// --- Envelopes ---
+let amFinalist = false;
+document.getElementById('btn-env-change').addEventListener('click', () => socket.emit('player:envelopeChange'));
+
+socket.on('player:envelopesStart', ({ view, isFinalist }) => {
+  amFinalist = isFinalist;
+  showScreen('player-envelopes-screen');
+  applyEnvelopes(view);
 });
+socket.on('player:envelopesState', ({ view, isFinalist }) => {
+  amFinalist = isFinalist;
+  applyEnvelopes(view);
+});
+
+function applyEnvelopes(view) {
+  const msg = document.getElementById('env-message');
+  if (!amFinalist) msg.textContent = 'Apertura buste…';
+  else if (view.state === 'NONE') msg.textContent = 'Nessuna busta verde';
+  else if (view.state === 'CHOOSING') msg.textContent = 'Tocca una busta verde per aprirla';
+  else if (view.changesLeft > 0) msg.textContent = 'Tieni questa o cambia (alla cieca)';
+  else msg.textContent = 'È la tua busta!';
+
+  const row = document.getElementById('player-envelopes-row');
+  row.innerHTML = '';
+  view.envelopes.forEach((e, i) => {
+    const el = document.createElement('div');
+    el.className = 'envelope ' + e.color
+      + (e.revealed ? ' open' : '')
+      + (i === view.current ? ' current' : '')
+      + (e.abandoned ? ' abandoned' : '');
+    el.innerHTML = e.revealed
+      ? `<div class="env-num">${i + 1}</div><div class="env-content">${e.content || ''}</div>`
+      : `<div class="env-num">${i + 1}</div><div class="env-q">?</div>`;
+    if (amFinalist && view.state === 'CHOOSING' && e.color === 'green' && !e.revealed) {
+      el.classList.add('pickable');
+      el.addEventListener('click', () => socket.emit('player:envelopeOpen', { index: i }));
+    }
+    row.appendChild(el);
+  });
+
+  const change = document.getElementById('btn-env-change');
+  const showChange = amFinalist && view.state === 'OPENED' && view.changesLeft > 0;
+  change.style.display = showChange ? '' : 'none';
+  change.textContent = `CAMBIA (${view.changesLeft})`;
+}
 
 function buildFinalKeyboard() {
   if (finalKbBuilt) return;

@@ -50,9 +50,11 @@ socket.on('admin:giramoeError', (err) => { document.getElementById('giramoe-erro
 document.getElementById('btn-start-final').addEventListener('click', () => {
   const topic = document.getElementById('fin-topic').value.trim();
   const phrases = [1, 2, 3].map(i => document.getElementById(`fin-phrase-${i}`).value.trim());
+  const envelopes = [1, 2, 3].map(i => document.getElementById(`fin-env-${i}`).value.trim());
   if (!topic || phrases.some(p => !p)) { document.getElementById('final-error').textContent = 'Inserisci argomento e 3 frasi'; return; }
+  if (envelopes.some(e => !e)) { document.getElementById('final-error').textContent = 'Inserisci anche i 3 testi delle buste'; return; }
   document.getElementById('final-error').textContent = '';
-  socket.emit('admin:startFinal', { topic, phrases });
+  socket.emit('admin:startFinal', { topic, phrases, envelopes });
 });
 document.getElementById('btn-final-correct').addEventListener('click', () => socket.emit('admin:finalCorrect'));
 document.getElementById('btn-final-wrong').addEventListener('click', () => socket.emit('admin:finalWrong'));
@@ -84,9 +86,9 @@ socket.on('admin:state', (s) => {
   } else if (s.phase === 'final') {
     showScreen('admin-final');
     renderFinal(s.final);
-  } else if (s.phase === 'finalDone') {
-    showScreen('admin-finaldone');
-    renderFinalDone(s.finalDone);
+  } else if (s.phase === 'envelopes') {
+    showScreen('admin-envelopes');
+    renderAdminEnvelopes(s.envelopes);
   }
 });
 
@@ -227,14 +229,29 @@ function renderFinal(f) {
   });
 }
 
-function renderFinalDone(fd) {
-  const el = document.getElementById('admin-finaldone-results');
+function renderAdminEnvelopes(view) {
+  const el = document.getElementById('admin-envelopes-list');
   el.innerHTML = '';
-  if (!fd) return;
-  fd.results.forEach((res, i) => {
+  if (!view) return;
+  view.envelopes.forEach((e, i) => {
     const item = document.createElement('div');
     item.className = 'admin-player-item glass-panel';
-    item.innerHTML = `<span>Tabellone ${i + 1}</span><span>${res ? '🟢 verde' : '🔴 rosso'}</span>`;
+    const dot = e.color === 'green' ? '🟢' : '🔴';
+    const right = document.createElement('span');
+    if (e.revealed) {
+      right.innerHTML = `<b>${e.content || ''}</b>`;
+    } else if (e.color === 'red') {
+      const btn = document.createElement('button');
+      btn.className = 'glass-button';
+      btn.style.padding = '4px 12px';
+      btn.textContent = 'Rivela';
+      btn.addEventListener('click', () => socket.emit('admin:envelopeRevealRed', { index: i }));
+      right.appendChild(btn);
+    } else {
+      right.textContent = i === view.current ? 'scelta' : (e.abandoned ? 'scartata' : 'verde');
+    }
+    item.innerHTML = `<span>${dot} Busta ${i + 1}</span>`;
+    item.appendChild(right);
     el.appendChild(item);
   });
 }

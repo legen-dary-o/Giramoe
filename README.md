@@ -137,8 +137,19 @@ si trasporta tra i tabelloni. L'admin inserisce argomento + 3 frasi.
 - **Timer a 0** nei primi due tabelloni → i restanti sono persi; al terzo (senza
   prenotazione in tempo) → errato.
 
-Ogni tabellone risolto = **verde**, altrimenti **rosso**: a fine partita compaiono i 3
-esiti (questi alimenteranno le **buste**, in arrivo).
+Ogni tabellone risolto = **verde**, altrimenti **rosso**: questi 3 esiti colorano le buste.
+
+L'admin inserisce **argomento + 3 frasi + i 3 testi delle buste** nello stesso form.
+
+## Buste (finale)
+
+Compaiono **3 buste** colorate **verde/rosso** in base ai 3 esiti del gioco finale.
+
+- Il finalista apre una busta **verde** (se ce ne sono 2-3 sceglie quale; se 1 quella; se
+  0 non apre nulla). Vede il contenuto e può **cambiarla alla cieca** con un tasto.
+- Può cambiare **(verdi − 1)** volte (3 verdi → 2 cambi); una busta scartata **non** è più
+  riscegliibile.
+- Le buste **rosse** (se ci sono) le rivela **solo l'admin**, una alla volta, dalla console.
 
 ## Personalizzare la ruota
 
@@ -148,7 +159,7 @@ I 16 valori degli spicchi sono in `game.js`, nell'array `SEGMENTS`. Categoria e 
 
 ```bash
 # test unitari (logica):
-node --test tests/board.test.js tests/game.test.js tests/triplete.test.js tests/giramoe.test.js tests/finalist.test.js tests/finalgame.test.js
+node --test tests/board.test.js tests/game.test.js tests/triplete.test.js tests/giramoe.test.js tests/finalist.test.js tests/finalgame.test.js tests/envelopes.test.js
 # flussi via socket (server interno, ~55s):
 node --test tests/triplete.integration.test.js tests/express.integration.test.js tests/giramoe.integration.test.js tests/final.integration.test.js
 # test di integrazione del gioco base (richiede il server avviato):
@@ -166,6 +177,7 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 - `giramoe.js` — tabellone finale: giro unico dell'admin, round-robin a consonanti, solo il vincitore incassa (puro, testato)
 - `finalist.js` — selezione finalista (banca più alta) e confronto dello spareggio (puro, testato)
 - `finalgame.js` — gioco finale: 3 tabelloni (NRTE / prima-ultima / vuoto), scelte lettere, risultati verde/rosso (puro, testato)
+- `envelopes.js` — buste finali: apri/cambia le verdi, l'admin rivela le rosse (puro, testato)
 - `game.js` include anche la modalità **EXPRESS** (raffica 500/occorrenza, bancarotta totale)
 - `public/index.html` + `js/main.js` — schermo principale (PC/TV)
 - `public/admin.html` + `js/admin.js` — console admin (telefono)
