@@ -163,16 +163,17 @@ export class Wheel3D {
       this.group.add(blade);
     }
 
-    // Hub: cupola blu in vetro lucido con anellino cromato alla base
+    // Hub piccolo e neutro: perla scura lucida con anellino cromato alla base
+    // (piccolo per non coprire le scritte lunghe tipo BANCAROTTA)
     const hub = new THREE.Mesh(
-      new THREE.SphereGeometry(1.0, 64, 48, 0, Math.PI * 2, 0, Math.PI / 2),
-      new THREE.MeshPhysicalMaterial({ color: 0x1565ff, roughness: 0.06, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05 })
+      new THREE.SphereGeometry(0.6, 64, 48, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshPhysicalMaterial({ color: 0x202227, roughness: 0.05, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05 })
     );
     hub.rotation.x = Math.PI / 2; // cupola verso la camera (+y → +z)
     hub.position.z = DEPTH / 2;
     hub.scale.y = 0.72; // appiattisce lungo il polo (asse y locale = profondita' dopo la rotazione)
     const hubRing = new THREE.Mesh(
-      new THREE.TorusGeometry(1.0, 0.035, 16, 64),
+      new THREE.TorusGeometry(0.6, 0.03, 16, 64),
       new THREE.MeshPhysicalMaterial({ color: 0xeef3fa, metalness: 1, roughness: 0.12, clearcoat: 1 })
     );
     hubRing.position.z = DEPTH / 2 + 0.03;
