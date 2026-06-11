@@ -22,13 +22,13 @@ test('giramoe: admin spin sets V, consonants score V x occ, only the winner bank
 
   const admin = connect(), main = connect();
   let adminState = null;
-  const m = { giramoeStart: null, board: null, buzzed: null, solved: null, matchEnd: null };
+  const m = { giramoeStart: null, board: null, buzzed: null, solved: null, finalist: null };
   admin.on('admin:state', s => { adminState = s; });
   main.on('main:giramoeStart', d => { m.giramoeStart = d; });
   main.on('main:giramoeBoard', d => { m.board = d; });
   main.on('main:giramoeBuzzed', d => { m.buzzed = d; });
   main.on('main:giramoeSolved', d => { m.solved = d; });
-  main.on('main:matchEnd', d => { m.matchEnd = d; });
+  main.on('main:finalist', d => { m.finalist = d; });
 
   const players = [];
   try {
@@ -119,11 +119,15 @@ test('giramoe: admin spin sets V, consonants score V x occ, only the winner bank
 
     // Only the winner (P2) banks; P1's 750 giramoe points are NOT banked.
     assert.ok(m.solved && m.solved.points === 250, 'P2 solved for 250');
-    assert.ok(m.matchEnd, 'match ended after giramoe');
     const byName = Object.fromEntries(adminState.players.map(p => [p.name, p.bank]));
     assert.strictEqual(byName.P2, 250, 'winner P2 banked 250');
     assert.strictEqual(byName.P1, 5000, 'P1 unchanged — giramoe points not banked for non-winners');
     assert.strictEqual(byName.P3, 0, 'P3 unchanged');
+
+    // The highest bank (P1, 5000) becomes the finalist — not the giramoe winner.
+    await wait(2900);
+    assert.strictEqual(adminState.phase, 'finalist', 'finalist phase reached after giramoe');
+    assert.ok(m.finalist && m.finalist.name === 'P1', 'P1 (highest bank) is the finalist');
   } finally {
     [admin, main, ...players].forEach(s => s.close());
     await new Promise(r => ioServer.close(r));

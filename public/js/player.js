@@ -163,16 +163,21 @@ function applyGiramoeState(st) {
   buzz.classList.toggle('armed', st.canBuzz);
 }
 
-socket.on('player:matchEnd', ({ standings }) => {
-  showScreen('player-matchend');
-  const el = document.getElementById('player-standings');
-  el.innerHTML = '';
-  standings.forEach((s, i) => {
-    const row = document.createElement('div');
-    row.className = 'standing-row glass-panel' + (i === 0 ? ' winner' : '');
-    row.innerHTML = `<span>${i + 1}. ${s.name}</span><span>${s.bank}</span>`;
-    el.appendChild(row);
-  });
+// --- Tie-break + finalist ---
+document.getElementById('btn-tb-spin').addEventListener('click', () => socket.emit('player:tiebreakSpin'));
+
+socket.on('player:tiebreakState', (st) => {
+  showScreen('player-tiebreak-screen');
+  document.getElementById('tb-message').textContent = st.message;
+  const btn = document.getElementById('btn-tb-spin');
+  btn.disabled = !st.canSpin;
+  btn.classList.toggle('armed', st.canSpin);
+});
+
+socket.on('player:finalist', ({ name, isMe }) => {
+  showScreen('player-finalist-screen');
+  document.getElementById('player-finalist-title').textContent =
+    isMe ? 'Sei il finalista! 🏆' : `${name} va alla finale`;
 });
 
 // --- Wheel + spin ---

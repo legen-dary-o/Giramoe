@@ -114,8 +114,15 @@ tu la ruota una sola volta** → moltiplicatore **V**.
 - **Solo chi indovina** incassa **i propri** punti in banca; gli altri no. Frase
   sbagliata → passa, senza penalità.
 
-> Le fasi successive (finale a tempo, buste) sono in arrivo; per ora, finito il
-> tabellone Giramoe, si va alla classifica finale.
+## Finalista
+
+Finito il Giramoe, **chi ha più banca diventa il finalista** e accede al gioco finale;
+gli altri sono fuori. In caso di **parità**, i giocatori in testa fanno uno **spareggio**:
+ognuno gira la ruota Giramoe una volta (dal telefono), vince il valore più alto (quei
+punti **non** vengono aggiunti); se ancora pari si va a oltranza.
+
+> Le fasi finali (gioco finale a tempo, buste) sono in arrivo; per ora il gioco si
+> ferma sulla schermata del finalista. La vecchia "classifica finale" è stata rimossa.
 
 ## Personalizzare la ruota
 
@@ -125,7 +132,7 @@ I 16 valori degli spicchi sono in `game.js`, nell'array `SEGMENTS`. Categoria e 
 
 ```bash
 # test unitari (logica):
-node --test tests/board.test.js tests/game.test.js tests/triplete.test.js tests/giramoe.test.js
+node --test tests/board.test.js tests/game.test.js tests/triplete.test.js tests/giramoe.test.js tests/finalist.test.js
 # flussi via socket (server interno, ~40s):
 node --test tests/triplete.integration.test.js tests/express.integration.test.js tests/giramoe.integration.test.js
 # test di integrazione del gioco base (richiede il server avviato):
@@ -141,6 +148,7 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 - `game.js` — macchina a stati del turno, punteggi, ciclo dei 3 tabelloni (puro, testato)
 - `triplete.js` — Triplete: 3 tabelloni, prenotazioni/blocchi, bonus 5000 (puro, testato)
 - `giramoe.js` — tabellone finale: giro unico dell'admin, round-robin a consonanti, solo il vincitore incassa (puro, testato)
+- `finalist.js` — selezione finalista (banca più alta) e confronto dello spareggio (puro, testato)
 - `game.js` include anche la modalità **EXPRESS** (raffica 500/occorrenza, bancarotta totale)
 - `public/index.html` + `js/main.js` — schermo principale (PC/TV)
 - `public/admin.html` + `js/admin.js` — console admin (telefono)

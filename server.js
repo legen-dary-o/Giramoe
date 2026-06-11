@@ -6,6 +6,7 @@ const game = require('./game');
 const board = require('./board');
 const triplete = require('./triplete');
 const giramoe = require('./giramoe');
+const finalist = require('./finalist');
 
 const app = express();
 const server = http.createServer(app);
@@ -39,12 +40,14 @@ function getLocalIP() {
 }
 
 let state = {
-  phase: 'video',     // video | lobby | playing | tripleteReady | triplete | express | giramoe | matchEnd
+  phase: 'video',     // video | lobby | playing | tripleteReady | triplete | express | giramoe | tiebreak | finalist
   roomCode: null,
   lobby: [],          // [{ name, socketId, connected }]
   g: null,            // game object once playing
   t: null,            // triplete object during the bonus round
-  gi: null            // giramoe object during the final wheel board
+  gi: null,           // giramoe object during the final wheel board
+  tiebreak: null,     // { contenders:[ids], spins:{id:value}, current } during a tie-break
+  finalistId: null    // the player who reached the final game
 };
 
 let tripleteTimer = null;  // single reveal/flash timer for the bonus round
@@ -85,7 +88,7 @@ function mainGameView() {
 }
 
 function adminView() {
-  const inGame = ['playing', 'express', 'tripleteReady', 'triplete', 'giramoe', 'matchEnd'].includes(state.phase);
+  const inGame = ['playing', 'express', 'tripleteReady', 'triplete', 'giramoe', 'tiebreak', 'finalist'].includes(state.phase);
   return {
     phase: state.phase,
     roomCode: state.roomCode,
@@ -122,6 +125,10 @@ function adminView() {
               players: giramoeScores()
             }
           : { started: false })
+      : null,
+    tiebreak: state.phase === 'tiebreak' && state.tiebreak ? tiebreakView() : null,
+    finalist: state.phase === 'finalist' && state.finalistId != null
+      ? { id: state.finalistId, name: state.g.players[state.finalistId].name }
       : null
   };
 }
@@ -290,14 +297,64 @@ function advanceWheelBoard() {
   }
 }
 
-function goToMatchEnd() {
-  state.phase = 'matchEnd';
-  const standings = state.g.players
-    .map(p => ({ name: p.name, bank: p.bank }))
-    .sort((a, b) => b.bank - a.bank);
-  io.to('main').emit('main:matchEnd', { standings });
+// --- Finalist: the highest bank advances to the final game (tie -> wheel spin) ---
+
+function startFinalist() {
+  const top = finalist.topPlayers(state.g.players);
+  if (top.length === 1) declareFinalist(top[0]);
+  else startTiebreak(top);
+}
+
+function declareFinalist(id) {
+  state.phase = 'finalist';
+  state.finalistId = id;
+  state.tiebreak = null;
+  const f = state.g.players.find(p => p.id === id);
+  io.to('main').emit('main:finalist', { id, name: f.name });
   io.to('admin').emit('admin:state', adminView());
-  state.lobby.forEach(p => io.to(p.socketId).emit('player:matchEnd', { standings }));
+  state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:finalist', { id, name: f.name, isMe: i === id }));
+}
+
+function tiebreakView() {
+  const tb = state.tiebreak;
+  return {
+    current: tb.current,
+    currentId: tb.contenders[tb.current] != null ? tb.contenders[tb.current] : null,
+    contenders: tb.contenders.map(id => ({
+      id, name: state.g.players[id].name, value: tb.spins[id] != null ? tb.spins[id] : null
+    }))
+  };
+}
+
+function startTiebreak(contenderIds) {
+  state.phase = 'tiebreak';
+  state.tiebreak = { contenders: contenderIds.slice(), spins: {}, current: 0 };
+  io.to('main').emit('main:tiebreakStart', { segments: game.GIRAMOE_SEGMENTS, contenders: tiebreakView().contenders });
+  broadcastTiebreak();
+}
+
+function broadcastTiebreak() {
+  io.to('main').emit('main:tiebreakState', tiebreakView());
+  io.to('admin').emit('admin:state', adminView());
+  const tb = state.tiebreak;
+  state.lobby.forEach((p, i) => {
+    const isContender = tb.contenders.includes(i);
+    io.to(p.socketId).emit('player:tiebreakState', {
+      isContender,
+      canSpin: isContender && tb.contenders[tb.current] === i && tb.spins[i] == null,
+      myValue: tb.spins[i] != null ? tb.spins[i] : null,
+      message: !isContender ? 'Spareggio in corso…'
+        : tb.contenders[tb.current] === i && tb.spins[i] == null ? 'Spareggio! Gira la ruota'
+        : 'Aspetta il tuo turno…'
+    });
+  });
+}
+
+function evaluateTiebreak() {
+  const tb = state.tiebreak;
+  const res = finalist.evaluateSpins(tb.contenders, tb.spins);
+  if (res.winner != null) declareFinalist(res.winner);
+  else startTiebreak(res.tied); // sudden death among the tied-top
 }
 
 // --- GIRAMOE: the final wheel board (admin spins once; round-robin consonants) ---
@@ -433,6 +490,11 @@ io.on('connection', (socket) => {
       socket.emit('main:giramoeStart', { segments: game.GIRAMOE_SEGMENTS });
       socket.emit('main:giramoeBoard', giramoeBoardView());
       socket.emit('main:giramoeScores', { scores: giramoeScores(), currentTurn: state.gi.currentTurnIndex, multiplier: state.gi.multiplier });
+    } else if (state.phase === 'tiebreak' && state.tiebreak) {
+      socket.emit('main:tiebreakStart', { segments: game.GIRAMOE_SEGMENTS, contenders: tiebreakView().contenders });
+      socket.emit('main:tiebreakState', tiebreakView());
+    } else if (state.phase === 'finalist' && state.finalistId != null) {
+      socket.emit('main:finalist', { id: state.finalistId, name: state.g.players[state.finalistId].name });
     }
   });
 
@@ -679,7 +741,27 @@ io.on('connection', (socket) => {
     io.to('main').emit('main:giramoeBoard', giramoeBoardView());
     io.to('main').emit('main:giramoeSolved', { name: res.name, points: res.points });
     io.to('main').emit('main:solved');
-    goToMatchEnd(); // TODO: replaced by the finalist tie-break / final game when built
+    io.to('admin').emit('admin:state', adminView()); // refresh banks on the admin console
+    setTimeout(() => { if (state.phase === 'giramoe') startFinalist(); }, 2600);
+  });
+
+  // Tie-break: each tied contender spins once; highest value wins (not banked).
+  socket.on('player:tiebreakSpin', () => {
+    if (state.phase !== 'tiebreak' || !state.tiebreak) return;
+    const tb = state.tiebreak;
+    const currentId = tb.contenders[tb.current];
+    if (socket.playerIndex !== currentId || tb.spins[currentId] != null) return;
+    const seg = FORCE_SEGMENT != null ? FORCE_SEGMENT : Math.floor(Math.random() * 16);
+    const spins = 5 + Math.floor(Math.random() * 3);
+    const value = game.GIRAMOE_SEGMENTS[seg];
+    tb.spins[currentId] = value;
+    io.to('main').emit('main:spin', { winningSegment: seg, spins, value, result: { type: 'number', value } });
+    setTimeout(() => {
+      if (state.phase !== 'tiebreak' || state.tiebreak !== tb) return;
+      tb.current += 1;
+      if (tb.current >= tb.contenders.length) evaluateTiebreak();
+      else broadcastTiebreak();
+    }, SPIN_MS + 200);
   });
 
   socket.on('admin:giramoeWrong', () => {
@@ -706,7 +788,8 @@ io.on('connection', (socket) => {
     const p = state.lobby.find(pl => pl.socketId === socket.id);
     if (!p) return;
     p.connected = false;
-    if (isWheelPhase() || state.phase === 'triplete' || state.phase === 'tripleteReady' || state.phase === 'giramoe') {
+    const midGame = isWheelPhase() || ['triplete', 'tripleteReady', 'giramoe', 'tiebreak'].includes(state.phase);
+    if (midGame) {
       // mid-game: pause the main screen (and any reveal/buzz timer) with the overlay
       if (state.phase === 'triplete') clearTripleteTimer();
       if (state.phase === 'giramoe') clearGiramoeTimer();
@@ -738,6 +821,13 @@ io.on('connection', (socket) => {
     } else if (state.phase === 'giramoe' && state.gi) {
       socket.emit('player:giramoeIntro');
       socket.emit('player:giramoeState', playerGiramoeView(socket.playerIndex));
+      io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
+    } else if (state.phase === 'tiebreak' && state.tiebreak) {
+      broadcastTiebreak();
+      io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
+    } else if (state.phase === 'finalist' && state.finalistId != null) {
+      const f = state.g.players.find(pl => pl.id === state.finalistId);
+      socket.emit('player:finalist', { id: f.id, name: f.name, isMe: socket.playerIndex === f.id });
       io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
     } else {
       io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });

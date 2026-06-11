@@ -560,6 +560,21 @@ body::before {
   background-clip: text;
 }
 
+/* Finalist announcement — the big winner name */
+.finalist-name {
+  font-size: clamp(40px, 9vh, 80px);
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: clamp(10px, 2vh, 20px) clamp(28px, 5vw, 56px);
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2), var(--accent-3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 6px 24px rgba(120, 120, 220, 0.3));
+  animation: resultPopIn 0.5s var(--ease-spring);
+}
+
 .standings {
   display: flex;
   flex-direction: column;

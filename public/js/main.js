@@ -46,7 +46,8 @@ function applyPhaseScreen() {
   else if (currentPhase === 'giramoe') showScreen('game-screen');
   else if (currentPhase === 'tripleteReady') showScreen('game-screen');
   else if (currentPhase === 'triplete') showScreen(tripleteBoardReady ? 'triplete-screen' : 'triplete-title-screen');
-  else if (currentPhase === 'matchEnd') showScreen('matchend-screen');
+  else if (currentPhase === 'tiebreak') showScreen('game-screen');
+  else if (currentPhase === 'finalist') showScreen('finalist-screen');
 }
 
 socket.emit('main:init');
@@ -102,21 +103,39 @@ socket.on('main:solved', () => Sfx.play('correct'));
 
 socket.on('main:wrong', () => Sfx.play('wrong'));
 
-socket.on('main:matchEnd', ({ standings }) => {
-  // Delay so the solved phrase + correct sound register before the standings.
-  setTimeout(() => {
-    currentPhase = 'matchEnd';
-    showScreen('matchend-screen');
-    const el = document.getElementById('standings');
-    el.innerHTML = '';
-    standings.forEach((s, i) => {
-      const row = document.createElement('div');
-      row.className = 'standing-row glass-panel' + (i === 0 ? ' winner' : '');
-      row.innerHTML = `<span>${i + 1}. ${s.name}</span><span>${s.bank}</span>`;
-      el.appendChild(row);
-    });
-  }, 3000);
+// --- Tie-break + finalist ---
+socket.on('main:tiebreakStart', ({ segments, contenders }) => {
+  currentPhase = 'tiebreak';
+  if (wheel) updateWheelLabels(segments);
+  document.getElementById('main-wheel-indicator').style.display = '';
+  document.getElementById('category-banner').textContent = 'SPAREGGIO';
+  document.getElementById('board-grid').innerHTML = '';
+  renderTiebreak(contenders, -1);
+  applyPhaseScreen();
 });
+
+socket.on('main:tiebreakState', (tb) => renderTiebreak(tb.contenders, tb.current));
+
+socket.on('main:finalist', ({ name }) => {
+  currentPhase = 'finalist';
+  document.getElementById('finalist-name').textContent = name;
+  showScreen('finalist-screen');
+});
+
+function renderTiebreak(contenders, current) {
+  const bar = document.getElementById('players-bar');
+  bar.innerHTML = '';
+  contenders.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'player-name glass-panel' + (i === current ? ' active' : '');
+    el.innerHTML = `<div class="pn-avatar">${c.name.charAt(0).toUpperCase()}</div>
+      <div class="pn-info">
+        <div class="pn-name">${c.name}</div>
+        <div class="pn-score">${c.value != null ? c.value : '—'}</div>
+      </div>`;
+    bar.appendChild(el);
+  });
+}
 
 socket.on('main:playerDisconnected', () =>
   document.getElementById('disconnect-overlay').classList.add('visible'));

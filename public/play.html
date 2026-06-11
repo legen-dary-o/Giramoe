@@ -80,11 +80,19 @@
     </div>
   </div>
 
-  <!-- Match End -->
-  <div id="player-matchend" class="screen hidden">
+  <!-- Tie-break -->
+  <div id="player-tiebreak-screen" class="screen hidden">
     <div class="mobile-container">
-      <h2 class="matchend-title">Fine partita!</h2>
-      <div class="standings" id="player-standings"></div>
+      <h2 class="matchend-title">Spareggio</h2>
+      <div class="turn-message" id="tb-message">Spareggio in corso…</div>
+      <button class="buzz-pill" id="btn-tb-spin" disabled>GIRA LA RUOTA</button>
+    </div>
+  </div>
+
+  <!-- Finalist -->
+  <div id="player-finalist-screen" class="screen hidden">
+    <div class="mobile-container">
+      <h2 class="matchend-title" id="player-finalist-title">—</h2>
     </div>
   </div>
 

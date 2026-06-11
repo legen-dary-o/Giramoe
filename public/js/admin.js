@@ -62,9 +62,13 @@ socket.on('admin:state', (s) => {
   } else if (s.phase === 'giramoe') {
     showScreen('admin-giramoe');
     renderGiramoe(s.giramoe);
-  } else if (s.phase === 'matchEnd') {
-    showScreen('admin-matchend');
-    renderStandings(s.players);
+  } else if (s.phase === 'tiebreak') {
+    showScreen('admin-tiebreak');
+    renderTiebreak(s.tiebreak);
+  } else if (s.phase === 'finalist') {
+    showScreen('admin-finalist');
+    document.getElementById('admin-finalist-name').innerHTML =
+      s.finalist ? `<span>🏆 ${s.finalist.name}</span><span>finale</span>` : '';
   }
 });
 
@@ -156,13 +160,20 @@ function renderGame(s) {
   s.players.forEach(p => { prevScores[p.name] = { rp: p.roundPoints, bank: p.bank }; });
 }
 
-function renderStandings(players) {
-  const el = document.getElementById('admin-standings');
+function renderTiebreak(tb) {
+  const el = document.getElementById('admin-tiebreak-list');
   el.innerHTML = '';
-  players.slice().sort((a, b) => b.bank - a.bank).forEach((p, i) => {
+  if (!tb) return;
+  tb.contenders.forEach((c, i) => {
     const item = document.createElement('div');
-    item.className = 'admin-player-item glass-panel' + (i === 0 ? ' winner' : '');
-    item.innerHTML = `<span>${i + 1}. ${p.name}</span><span><b>${p.bank}</b></span>`;
+    item.className = 'admin-player-item glass-panel';
+    if (i === tb.current) {
+      item.style.border = '1px solid rgba(100, 180, 255, 0.5)';
+      item.style.boxShadow = '0 0 12px rgba(100, 180, 255, 0.2)';
+    }
+    const tag = i === tb.current ? ' ▶' : '';
+    item.innerHTML = `<span>${c.name}${tag}</span>
+      <span class="admin-scorenums"><b>${c.value != null ? c.value : '—'}</b></span>`;
     el.appendChild(item);
   });
 }
