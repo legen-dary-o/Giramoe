@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giramoe — tvOS Dark Pro</title>
+<style>
+/* ================= BASE ================= */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #060607;
+  color: #f5f5f7;
+  font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  padding: 56px 16px 90px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+.frame-label {
+  font-size: 11px; font-weight: 600; color: rgba(235,235,245,0.4);
+  text-transform: uppercase; letter-spacing: 2.5px; margin-top: 34px;
+}
+.frame {
+  position: relative; width: min(1180px, 96vw); aspect-ratio: 16/9;
+  border-radius: 20px; overflow: hidden;
+  background:
+    radial-gradient(85% 65% at 50% -8%, rgba(48, 56, 74, 0.32), transparent 62%),
+    linear-gradient(180deg, #121214, #0c0c0e 64%);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 30px 90px rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+/* grana pellicola: ammazza l'effetto "gradiente piatto da AI" */
+.grain {
+  position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0.55;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* aloni molto tenui, quasi monocromi */
+.blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.10; pointer-events: none; }
+.blob.b1 { width: 44%; aspect-ratio: 1.4; left: -10%; top: -16%; background: #3a5a8c; }
+.blob.b2 { width: 38%; aspect-ratio: 1.4; right: -8%; bottom: -18%; background: #4a3a6c; }
+
+/* micro-label agli angoli (stile editoriale) */
+.corner-label {
+  position: absolute; z-index: 4;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 3px;
+  color: rgba(235,235,245,0.38); text-transform: uppercase;
+}
+.corner-label .live-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: #30d158; margin-right: 7px; vertical-align: 1px;
+  animation: liveBlink 2.4s ease-in-out infinite;
+}
+@keyframes liveBlink { 50% { opacity: 0.25; } }
+
+.glass {
+  background: rgba(24, 24, 27, 0.55);
+  backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+.hairline { height: 1px; background: rgba(255,255,255,0.14); border: none; }
+
+/* ============ WORDMARK — bianco, riflesso metallico (niente rainbow) ============ */
+.wm {
+  font-weight: 700; letter-spacing: -0.03em; line-height: 1;
+  background: linear-gradient(105deg, #f5f5f7 42%, #ffffff 49%, #8e94a3 52%, #f5f5f7 60%);
+  background-size: 320% 100%; background-position: 120% 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: glint 7s ease-in-out infinite;
+}
+@keyframes glint { 0%, 72% { background-position: 120% 0; } 88%, 100% { background-position: -120% 0; } }
+.rise { animation: rise 1s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.wm.rise { animation: glint 7s ease-in-out infinite, rise 1s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes rise {
+  0% { opacity: 0; transform: translateY(28px); filter: blur(8px); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
+/* ============ FRAME 1 — INTRO (unica schermata con hover/cursore) ============ */
+#f-intro { cursor: none; }
+#f-intro a, #f-intro button { cursor: none; }
+.intro-stage {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  will-change: transform;
+}
+.eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 5px;
+  color: rgba(235,235,245,0.42); text-transform: uppercase;
+  animation-delay: 0.1s;
+}
+.intro-stage .wm { font-size: clamp(64px, 9.6vw, 128px); margin-top: 18px; }
+.intro-rule { width: 56px; margin-top: 26px; animation-delay: 0.5s; }
+.tagline {
+  margin-top: 22px; font-size: clamp(15px, 1.65vw, 20px); font-weight: 300;
+  color: rgba(235,235,245,0.55); letter-spacing: 0.01em;
+  animation-delay: 0.65s;
+}
+/* bottone ghost: hairline, riempimento bianco all'hover, magnetico via JS */
+.btn-ghost {
+  margin-top: 44px; position: relative;
+  font: 600 15px -apple-system, sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+  color: #f5f5f7; background: transparent;
+  border: 1px solid rgba(255,255,255,0.35); border-radius: 999px;
+  padding: 17px 52px;
+  transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+  animation-delay: 0.85s;
+  will-change: transform;
+}
+.btn-ghost:hover { background: #f5f5f7; color: #0c0c0e; border-color: #f5f5f7; }
+
+/* cursore custom: punto + anello che insegue (mix-blend difference) */
+.cursor-dot, .cursor-ring {
+  position: absolute; top: 0; left: 0; z-index: 9; pointer-events: none;
+  border-radius: 50%; opacity: 0;
+  mix-blend-mode: difference;
+}
+.cursor-dot { width: 6px; height: 6px; background: #fff; }
+.cursor-ring {
+  width: 38px; height: 38px; border: 1px solid rgba(255,255,255,0.9);
+  display: flex; align-items: center; justify-content: center;
+  transition: width 0.3s cubic-bezier(0.22,1,0.36,1), height 0.3s cubic-bezier(0.22,1,0.36,1), background-color 0.3s;
+}
+.cursor-ring .cursor-tip {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #fff;
+  opacity: 0; transition: opacity 0.25s; text-transform: uppercase;
+}
+.cursor-ring.expanded { width: 72px; height: 72px; background: rgba(255,255,255,0.06); }
+.cursor-ring.expanded .cursor-tip { opacity: 1; }
+
+/* ============ FRAME 2 — LOBBY ============ */
+.lobby { position: absolute; inset: 0; z-index: 3; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 6.5%; gap: 5%; }
+.lobby .col { display: flex; flex-direction: column; }
+.lobby .center { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.lobby .wm { font-size: clamp(34px, 4.2vw, 52px); }
+.col-title {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 3px;
+  color: rgba(235,235,245,0.38); text-transform: uppercase; margin-bottom: 14px;
+}
+.slot {
+  display: flex; align-items: center; gap: 13px;
+  padding: 16px 4px; border-bottom: 1px solid rgba(255,255,255,0.10);
+  font-size: 16px; font-weight: 500; color: rgba(235,235,245,0.42);
+}
+.slot:first-of-type { border-top: 1px solid rgba(255,255,255,0.10); }
+.slot .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.16); }
+.slot.filled { color: #f5f5f7; }
+.slot.filled .dot { background: #30d158; }
+.slot .idx { margin-left: auto; font-size: 11px; letter-spacing: 2px; color: rgba(235,235,245,0.3); }
+.qr-card { background: #f5f5f7; padding: 17px; border-radius: 18px; box-shadow: 0 18px 60px rgba(0,0,0,0.5); }
+.qr-fake {
+  width: 160px; height: 160px;
+  background:
+    repeating-linear-gradient(0deg, #1d1d1f 0 9px, transparent 9px 18px),
+    repeating-linear-gradient(90deg, #1d1d1f 0 9px, #f5f5f7 9px 18px);
+}
+.lobby .hint { font-size: 11px; font-weight: 600; letter-spacing: 3px; color: rgba(235,235,245,0.45); text-transform: uppercase; }
+.stat { padding: 14px 4px; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; align-items: baseline; gap: 14px; }
+.stat:first-of-type { border-top: 1px solid rgba(255,255,255,0.10); }
+.stat b { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; min-width: 64px; }
+.stat small { color: rgba(235,235,245,0.42); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; }
+/* fasi: riga editoriale numerata */
+.phases {
+  position: absolute; bottom: 5.5%; left: 50%; transform: translateX(-50%); z-index: 3;
+  display: flex; gap: 30px; white-space: nowrap;
+}
+.phases .ph { font-size: 10.5px; font-weight: 600; letter-spacing: 2.5px; color: rgba(235,235,245,0.3); text-transform: uppercase; }
+.phases .ph em { font-style: normal; margin-right: 7px; color: rgba(235,235,245,0.22); }
+.phases .ph.now { color: #f5f5f7; }
+.phases .ph.now em { color: #0a84ff; }
+
+/* ============ FRAME 3 — GAME (niente hover: è la TV) ============ */
+.game { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; padding: 3% 4%; gap: 4%; }
+.wheel-zone { position: relative; flex: 0 0 36%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+.wheel {
+  position: relative; width: 100%; aspect-ratio: 1; border-radius: 50%;
+  background: conic-gradient(from 0deg, #d4d4da, #74747c 12%, #c4c4cc 25%, #84848c 38%, #dcdce2 50%, #74747c 62%, #c4c4cc 75%, #84848c 88%, #d4d4da);
+  padding: 1%;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.1), inset 0 2px 4px rgba(255,255,255,0.4);
+}
+.wheel .face {
+  width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden;
+  background: conic-gradient(from -90deg,
+    #e0352b 0 22.5deg, #e8890c 22.5deg 45deg, #ecbf08 45deg 67.5deg, #2fb350 67.5deg 90deg,
+    #0cb3ab 90deg 112.5deg, #2b9fb5 112.5deg 135deg, #2e9cd4 135deg 157.5deg, #0871e8 157.5deg 180deg,
+    #4f4dc4 180deg 202.5deg, #9d4ac8 202.5deg 225deg, #e8294e 225deg 247.5deg, #c20013 247.5deg 270deg,
+    #b32f00 270deg 292.5deg, #20803a 292.5deg 315deg, #00679a 315deg 337.5deg, #312f96 337.5deg 360deg);
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.35);
+}
+.wheel .face::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background:
+    radial-gradient(56% 56% at 33% 26%, rgba(255,255,255,0.24), transparent 58%),
+    radial-gradient(100% 100% at 50% 50%, transparent 62%, rgba(0,0,0,0.32) 100%);
+}
+.hub {
+  position: absolute; left: 50%; top: 50%; width: 16.5%; aspect-ratio: 1;
+  transform: translate(-50%, -50%); border-radius: 50%; z-index: 2;
+  background: radial-gradient(circle at 35% 28%, #f4f4f6, #c8c8ce 42%, #6c6c72 100%);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.55), inset 0 1px 2px rgba(255,255,255,0.85);
+}
+.pointer {
+  position: absolute; top: -4%; left: 50%; transform: translateX(-50%); z-index: 3;
+  width: 25px; height: 33px;
+  background: linear-gradient(180deg, #fafafa, #9c9ca2);
+  clip-path: polygon(50% 100%, 0 16%, 20% 0, 80% 0, 100% 16%);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+.note { position: absolute; bottom: -8.5%; width: 100%; text-align: center; font-size: 11px; letter-spacing: 1px; color: rgba(235,235,245,0.32); }
+.game-right { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4.2%; }
+.category {
+  font-size: clamp(13px, 1.45vw, 17px); font-weight: 600; letter-spacing: 5px;
+  text-transform: uppercase; color: #f5f5f7;
+  padding: 12px 36px;
+}
+.board { display: flex; flex-direction: column; gap: 5px; }
+.brow { display: flex; gap: 5px; }
+.cell {
+  width: clamp(18px, 2.55vw, 38px); aspect-ratio: 0.78; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(11px, 1.5vw, 21px); font-weight: 600;
+}
+.cell.edge { background: transparent; }
+.cell.blocked { background: rgba(38,38,42,0.7); border: 1px solid rgba(255,255,255,0.05); }
+.cell.hidden-letter { background: rgba(54,54,58,0.85); border: 1px solid rgba(255,255,255,0.09); }
+.cell.revealed {
+  background: #f5f5f7; color: #1d1d1f;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.5);
+  animation: flip 0.5s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes flip { 0% { transform: rotateX(90deg); filter: brightness(1.5); } 100% { transform: none; } }
+.players { display: flex; gap: 14px; }
+.pcard {
+  position: relative;
+  display: flex; align-items: center; gap: 12px; padding: 11px 22px 11px 12px;
+}
+.pcard .av {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 600; color: #f5f5f7;
+  background: linear-gradient(150deg, #3c3c40, #232327);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.pcard .nm { font-size: 14.5px; font-weight: 600; }
+.pcard .sc { font-size: 12px; font-weight: 500; color: rgba(235,235,245,0.55); }
+.pcard .sc b { color: #f5f5f7; font-weight: 600; }
+.pcard .bk { font-size: 11px; color: rgba(235,235,245,0.38); }
+/* turno attivo: hairline bianca + dot blu — sobrio, niente rainbow */
+.pcard.active { border-color: rgba(255,255,255,0.32); background: rgba(32,32,36,0.7); }
+.pcard.active::after {
+  content: ''; position: absolute; top: 10px; right: 10px;
+  width: 7px; height: 7px; border-radius: 50%; background: #0a84ff;
+  animation: liveBlink 1.6s ease-in-out infinite;
+}
+/* feedback: flash sobrio — velo + bordo 1px, niente alone enorme */
+.frame.fx-correct::before, .frame.fx-wrong::before {
+  content: ''; position: absolute; inset: 0; z-index: 6; pointer-events: none; border-radius: 20px;
+  animation: fxFade 1.4s ease both;
+}
+.frame.fx-correct::before { box-shadow: inset 0 0 0 1px rgba(48,209,88,0.75), inset 0 0 80px rgba(48,209,88,0.22); }
+.frame.fx-wrong::before { box-shadow: inset 0 0 0 1px rgba(255,69,58,0.75), inset 0 0 80px rgba(255,69,58,0.24); }
+.frame.fx-wrong .game { animation: shake 0.4s ease; }
+@keyframes fxFade { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes shake { 0%,100% { transform: none; } 25%,75% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+
+.demo-bar { display: flex; gap: 10px; margin-top: 12px; }
+.demo-btn {
+  cursor: pointer; font: 600 13px -apple-system, sans-serif; color: #f5f5f7;
+  padding: 9px 18px; border-radius: 999px;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13);
+  transition: background 0.2s;
+}
+.demo-btn:hover { background: rgba(255,255,255,0.15); }
+</style>
+</head>
+<body>
+
+<div class="frame-label">1 · Intro — cursore custom + bottone magnetico (hover solo qui) · muovi il mouse dentro il frame</div>
+<div class="frame" id="f-intro">
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="grain"></div>
+  <span class="corner-label" style="top:4.5%; left:3.5%;">Giramoe&reg;</span>
+  <span class="corner-label" style="top:4.5%; right:3.5%;">Est. 2026</span>
+  <span class="corner-label" style="bottom:4.5%; left:3.5%;"><span class="live-dot"></span>Live</span>
+  <span class="corner-label" style="bottom:4.5%; right:3.5%;">Show dal vivo — IT</span>
+  <div class="intro-stage" id="intro-stage">
+    <div class="eyebrow rise">Giramoe Studio presenta</div>
+    <div class="wm rise">GIRAMOE</div>
+    <hr class="hairline intro-rule rise">
+    <div class="tagline rise">Il gioco della ruota. Tre giocatori, un finalista.</div>
+    <button class="btn-ghost rise" id="magnet-btn">Tocca per iniziare</button>
+  </div>
+  <div class="cursor-dot" id="cur-dot"></div>
+  <div class="cursor-ring" id="cur-ring"><span class="cursor-tip">Tap</span></div>
+</div>
+
+<div class="frame-label">2 · Lobby — colonne editoriali con hairline, fasi numerate</div>
+<div class="frame">
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="grain"></div>
+  <div class="lobby">
+    <div class="col">
+      <div class="col-title">Giocatori</div>
+      <div class="slot filled"><span class="dot"></span>MARIO<span class="idx">P1</span></div>
+      <div class="slot filled"><span class="dot"></span>LUCA<span class="idx">P2</span></div>
+      <div class="slot"><span class="dot"></span>In attesa…<span class="idx">P3</span></div>
+    </div>
+    <div class="center">
+      <div class="wm">GIRAMOE</div>
+      <div class="qr-card"><div class="qr-fake"></div></div>
+      <div class="hint">Inquadra per entrare</div>
+    </div>
+    <div class="col">
+      <div class="col-title">Partita</div>
+      <div class="stat"><b>2/3</b><small>giocatori connessi</small></div>
+      <div class="stat"><b>5</b><small>round</small></div>
+      <div class="stat"><b>3</b><small>buste finali</small></div>
+    </div>
+  </div>
+  <div class="phases">
+    <span class="ph now"><em>01</em>Tabelloni</span><span class="ph"><em>02</em>Triplete</span>
+    <span class="ph"><em>03</em>Express</span><span class="ph"><em>04</em>Giramoe</span>
+    <span class="ph"><em>05</em>Finale</span><span class="ph"><em>06</em>Buste</span>
+  </div>
+</div>
+
+<div class="frame-label">3 · Game — è la TV: niente hover, solo animazioni di gioco</div>
+<div class="frame" id="f-game">
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="grain"></div>
+  <div class="game">
+    <div class="wheel-zone">
+      <div class="pointer"></div>
+      <div class="wheel"><div class="face"></div><div class="hub"></div></div>
+      <div class="note">mock — versione finale: 3D Three.js, vetro + alluminio, luci da studio</div>
+    </div>
+    <div class="game-right">
+      <div class="category glass">Personaggi famosi</div>
+      <div class="board" id="board"></div>
+      <div class="players">
+        <div class="pcard glass active"><div class="av">M</div><div><div class="nm">MARIO</div><div class="sc">Turno <b>1400</b></div><div class="bk">Banca 3200</div></div></div>
+        <div class="pcard glass"><div class="av">L</div><div><div class="nm">LUCA</div><div class="sc">Turno <b>0</b></div><div class="bk">Banca 1850</div></div></div>
+        <div class="pcard glass"><div class="av">G</div><div><div class="nm">GIOVANNA</div><div class="sc">Turno <b>600</b></div><div class="bk">Banca 950</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="demo-bar">
+  <button class="demo-btn" onclick="fx('fx-correct')">▶ Risposta giusta</button>
+  <button class="demo-btn" onclick="fx('fx-wrong')">▶ Risposta errata</button>
+</div>
+
+<script>
+// ---- board: replica esatta delle regole (board.js: 4 righe, capacità 14/16/16/14) ----
+const ROW_CAPACITIES = [14, 16, 16, 14];
+const GRID_WIDTH = 16;
+function layoutPhrase(phrase) {
+  const words = phrase.toUpperCase().split(' ');
+  const rows = [[], [], [], []];
+  const used = [0, 0, 0, 0];
+  let r = 0;
+  for (const w of words) {
+    while (r < 4) {
+      const sep = rows[r].length === 0 ? 0 : 1;
+      if (used[r] + sep + w.length <= ROW_CAPACITIES[r]) { used[r] += sep + w.length; rows[r].push(w); break; }
+      r++;
+    }
+  }
+  return rows;
+}
+function buildGrid(rows) {
+  const grid = [];
+  for (let r = 0; r < 4; r++) {
+    const cap = ROW_CAPACITIES[r];
+    const side = (GRID_WIDTH - cap) / 2;
+    const content = rows[r].join(' ');
+    const pad = Math.floor((cap - content.length) / 2);
+    const cells = [];
+    for (let c = 0; c < GRID_WIDTH; c++) {
+      const u = c - side;
+      if (u < 0 || u >= cap) { cells.push({ type: 'edge' }); continue; }
+      const k = u - pad;
+      if (k < 0 || k >= content.length || content[k] === ' ') { cells.push({ type: 'blocked' }); continue; }
+      cells.push({ type: 'letter', letter: content[k] });
+    }
+    grid.push(cells);
+  }
+  return grid;
+}
+const REVEALED = new Set(['L', 'N', 'D', 'I']);
+const grid = buildGrid(layoutPhrase('LEONARDO DA VINCI'));
+const boardEl = document.getElementById('board');
+grid.forEach(row => {
+  const rowEl = document.createElement('div');
+  rowEl.className = 'brow';
+  row.forEach(cell => {
+    const d = document.createElement('div');
+    if (cell.type === 'edge') d.className = 'cell edge';
+    else if (cell.type === 'blocked') d.className = 'cell blocked';
+    else if (REVEALED.has(cell.letter)) { d.className = 'cell revealed'; d.textContent = cell.letter; }
+    else d.className = 'cell hidden-letter';
+    rowEl.appendChild(d);
+  });
+  boardEl.appendChild(rowEl);
+});
+
+function fx(cls) {
+  const f = document.getElementById('f-game');
+  f.classList.remove('fx-correct', 'fx-wrong');
+  void f.offsetWidth;
+  f.classList.add(cls);
+  setTimeout(() => f.classList.remove(cls), 1600);
+}
+
+// ---- cursore custom (solo intro): punto istantaneo + anello che insegue ----
+const frame = document.getElementById('f-intro');
+const dot = document.getElementById('cur-dot');
+const ring = document.getElementById('cur-ring');
+const btn = document.getElementById('magnet-btn');
+const stage = document.getElementById('intro-stage');
+let mx = 0, my = 0, rx = 0, ry = 0, inside = false;
+
+frame.addEventListener('mousemove', (e) => {
+  const r = frame.getBoundingClientRect();
+  mx = e.clientX - r.left;
+  my = e.clientY - r.top;
+  if (!inside) { inside = true; rx = mx; ry = my; dot.style.opacity = 1; ring.style.opacity = 1; }
+  dot.style.transform = `translate(${mx - 3}px, ${my - 3}px)`;
+
+  // parallax leggero su titolo e aloni
+  const px = (mx / r.width - 0.5), py = (my / r.height - 0.5);
+  stage.style.transform = `translate(${px * -14}px, ${py * -10}px)`;
+
+  // bottone magnetico: attratto dal cursore entro un raggio
+  const br = btn.getBoundingClientRect();
+  const bx = br.left - r.left + br.width / 2;
+  const by = br.top - r.top + br.height / 2;
+  const dx = mx - bx, dy = my - by;
+  const dist = Math.hypot(dx, dy);
+  const RADIUS = 130;
+  if (dist < RADIUS) {
+    const pull = (1 - dist / RADIUS) * 0.42;
+    btn.style.transform = `translate(${dx * pull}px, ${dy * pull}px)`;
+  } else {
+    btn.style.transform = '';
+  }
+});
+frame.addEventListener('mouseleave', () => {
+  inside = false;
+  dot.style.opacity = 0; ring.style.opacity = 0;
+  btn.style.transform = '';
+  stage.style.transform = '';
+});
+btn.addEventListener('mouseenter', () => ring.classList.add('expanded'));
+btn.addEventListener('mouseleave', () => ring.classList.remove('expanded'));
+// l'anello insegue con lerp
+(function follow() {
+  rx += (mx - rx) * 0.14;
+  ry += (my - ry) * 0.14;
+  const s = ring.classList.contains('expanded') ? 36 : 19;
+  ring.style.transform = `translate(${rx - s}px, ${ry - s}px)`;
+  requestAnimationFrame(follow);
+})();
+</script>
+</body>
+</html>
