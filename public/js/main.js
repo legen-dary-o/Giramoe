@@ -48,6 +48,8 @@ function applyPhaseScreen() {
   else if (currentPhase === 'triplete') showScreen(tripleteBoardReady ? 'triplete-screen' : 'triplete-title-screen');
   else if (currentPhase === 'tiebreak') showScreen('game-screen');
   else if (currentPhase === 'finalist') showScreen('finalist-screen');
+  else if (currentPhase === 'final') showScreen('final-screen');
+  else if (currentPhase === 'finalDone') showScreen('finaldone-screen');
 }
 
 socket.emit('main:init');
@@ -121,6 +123,72 @@ socket.on('main:finalist', ({ name }) => {
   document.getElementById('finalist-name').textContent = name;
   showScreen('finalist-screen');
 });
+
+// --- Final game ---
+socket.on('main:finalBoard', (b) => {
+  currentPhase = 'final';
+  hideBuzz();
+  document.getElementById('final-category').textContent = b.category;
+  document.getElementById('final-board-tag').textContent = `Tabellone ${b.boardIndex + 1}/${b.totalBoards}`;
+  renderFinalBoard(b.grid);
+  applyPhaseScreen();
+});
+
+socket.on('main:finalTimer', ({ ms }) => {
+  const el = document.getElementById('final-timer');
+  el.textContent = Math.ceil(ms / 1000);
+  el.classList.toggle('low', ms <= 10000);
+});
+
+socket.on('main:finalReveal', ({ positions }) => {
+  positions.forEach((pos, i) => {
+    setTimeout(() => {
+      const cell = document.querySelector(`#final-board-grid .cell[data-row="${pos.row}"][data-col="${pos.col}"]`);
+      if (cell) { cell.classList.add('letter', 'revealed'); cell.classList.remove('blocked', 'edge'); cell.textContent = pos.letter; }
+      Sfx.play('letter');
+    }, i * 420);
+  });
+});
+
+socket.on('main:finalBuzzed', () => {
+  Sfx.play('buzzer');
+  showBuzz('🔔 Risponde!');
+});
+
+socket.on('main:finalDone', ({ results }) => {
+  currentPhase = 'finalDone';
+  hideBuzz();
+  renderFinalResults(results);
+  showScreen('finaldone-screen');
+});
+
+function renderFinalBoard(grid) {
+  const el = document.getElementById('final-board-grid');
+  el.innerHTML = '';
+  grid.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      const div = document.createElement('div');
+      div.dataset.row = r;
+      div.dataset.col = c;
+      if (cell.type === 'edge') div.className = 'cell edge';
+      else if (cell.type === 'blocked') div.className = 'cell blocked';
+      else if (cell.revealed) { div.className = 'cell letter revealed'; div.textContent = cell.letter; }
+      else div.className = 'cell letter';
+      el.appendChild(div);
+    });
+  });
+}
+
+function renderFinalResults(results) {
+  const el = document.getElementById('final-results');
+  el.innerHTML = '';
+  results.forEach((ok, i) => {
+    const box = document.createElement('div');
+    box.className = 'final-result-box ' + (ok ? 'green' : 'red');
+    box.textContent = i + 1;
+    el.appendChild(box);
+  });
+}
 
 function renderTiebreak(contenders, current) {
   const bar = document.getElementById('players-bar');

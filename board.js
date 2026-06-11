@@ -146,6 +146,22 @@ function revealAll(grid) {
       if (cell.type === 'letter') cell.revealed = true;
 }
 
+// Reveal the first and last letter cell of every word (a word = a contiguous run of
+// letter cells in a row). Single-letter words reveal that one cell. Used by the
+// final game's second board.
+function revealFirstLast(grid) {
+  for (const row of grid) {
+    let c = 0;
+    while (c < row.length) {
+      if (row[c].type !== 'letter') { c++; continue; }
+      const start = c;
+      while (c < row.length && row[c].type === 'letter') c++;
+      row[start].revealed = true;
+      row[c - 1].revealed = true;
+    }
+  }
+}
+
 function isVowel(letter) {
   return VOWELS.has(letter);
 }
@@ -156,7 +172,7 @@ function isConsonant(letter) {
 
 module.exports = {
   normalize, layoutPhrase, buildGrid, createBoard,
-  countOccurrences, revealLetter, letterPositions, isSolved, revealAll, isVowel, isConsonant,
+  countOccurrences, revealLetter, letterPositions, isSolved, revealAll, revealFirstLast, isVowel, isConsonant,
   hiddenLetterCells, revealCellAt,
   VOWELS, ROW_CAPACITIES, GRID_WIDTH
 };

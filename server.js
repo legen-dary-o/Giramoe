@@ -7,6 +7,7 @@ const board = require('./board');
 const triplete = require('./triplete');
 const giramoe = require('./giramoe');
 const finalist = require('./finalist');
+const finalgame = require('./finalgame');
 
 const app = express();
 const server = http.createServer(app);
@@ -40,19 +41,26 @@ function getLocalIP() {
 }
 
 let state = {
-  phase: 'video',     // video | lobby | playing | tripleteReady | triplete | express | giramoe | tiebreak | finalist
+  phase: 'video',     // video | lobby | playing | tripleteReady | triplete | express | giramoe | tiebreak | finalist | final | finalDone
   roomCode: null,
   lobby: [],          // [{ name, socketId, connected }]
   g: null,            // game object once playing
   t: null,            // triplete object during the bonus round
   gi: null,           // giramoe object during the final wheel board
   tiebreak: null,     // { contenders:[ids], spins:{id:value}, current } during a tie-break
-  finalistId: null    // the player who reached the final game
+  finalistId: null,   // the player who reached the final game
+  fg: null,           // final game object
+  finalTimeLeft: 0    // ms remaining on the final's shared timer
 };
 
 let tripleteTimer = null;  // single reveal/flash timer for the bonus round
 let giramoeTimer = null;   // 5s buzz window timer for the giramoe board
 const GIRAMOE_BUZZ_MS = 5000;
+
+let finalTimer = null;     // 60s countdown interval for the final game
+const FINAL_TIME_MS = Number(process.env.FINAL_TIME_MS) || 60000;
+const FINAL_TICK_MS = 250;
+const FINAL_PENALTY_MS = 3000; // board 3: a wrong letter costs 3s
 
 function generateRoomCode() {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -88,7 +96,7 @@ function mainGameView() {
 }
 
 function adminView() {
-  const inGame = ['playing', 'express', 'tripleteReady', 'triplete', 'giramoe', 'tiebreak', 'finalist'].includes(state.phase);
+  const inGame = ['playing', 'express', 'tripleteReady', 'triplete', 'giramoe', 'tiebreak', 'finalist', 'final', 'finalDone'].includes(state.phase);
   return {
     phase: state.phase,
     roomCode: state.roomCode,
@@ -127,9 +135,21 @@ function adminView() {
           : { started: false })
       : null,
     tiebreak: state.phase === 'tiebreak' && state.tiebreak ? tiebreakView() : null,
-    finalist: state.phase === 'finalist' && state.finalistId != null
+    finalist: state.finalistId != null && ['finalist', 'final', 'finalDone'].includes(state.phase)
       ? { id: state.finalistId, name: state.g.players[state.finalistId].name }
-      : null
+      : null,
+    final: state.phase === 'final' && state.fg
+      ? {
+          category: state.fg.category,
+          boardIndex: state.fg.boardIndex,
+          totalBoards: 3,
+          state: state.fg.state,
+          results: state.fg.results.slice(),
+          timeLeft: state.finalTimeLeft,
+          buzzed: state.fg.state === 'BUZZED'
+        }
+      : null,
+    finalDone: state.phase === 'finalDone' && state.fg ? { results: state.fg.results.slice() } : null
   };
 }
 
@@ -357,6 +377,75 @@ function evaluateTiebreak() {
   else startTiebreak(res.tied); // sudden death among the tied-top
 }
 
+// --- FINAL game: 3 boards, one shared 60s countdown (solo finalist) ---
+
+function finalBoardView() {
+  const b = state.fg.boards[state.fg.boardIndex];
+  return {
+    category: b.category,
+    boardIndex: state.fg.boardIndex,
+    totalBoards: 3,
+    grid: b.grid.map(row => row.map(cell => {
+      if (cell.type === 'letter') {
+        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null };
+      }
+      return { type: cell.type };
+    }))
+  };
+}
+
+function playerFinalView() {
+  const fg = state.fg;
+  const board1 = fg.boardIndex === 0;
+  const board3 = fg.boardIndex === 2;
+  const canPickConsonant = (board1 && fg.state === 'PICKING' && fg.consonantPicks < finalgame.BOARD1_CONSONANTS)
+    || (board3 && fg.state === 'RUNNING');
+  const canPickVowel = (board1 && fg.state === 'PICKING' && !fg.vowelPicked)
+    || (board3 && fg.state === 'RUNNING' && !fg.vowelPicked);
+  let message;
+  if (fg.state === 'BUZZED') message = 'Di\' la soluzione!';
+  else if (board1 && fg.state === 'PICKING') message = `Scegli ${finalgame.BOARD1_CONSONANTS - fg.consonantPicks} consonanti e ${fg.vowelPicked ? 0 : 1} vocale`;
+  else if (board3) message = 'Chiama consonanti (−3s se sbagli) o prenotati';
+  else message = 'Prenotati e risolvi!';
+  return {
+    boardIndex: fg.boardIndex, totalBoards: 3, state: fg.state,
+    canPickConsonant, canPickVowel, canBuzz: fg.state === 'RUNNING',
+    usedLetters: fg.usedLetters, message
+  };
+}
+
+function broadcastFinal() {
+  io.to('main').emit('main:finalBoard', finalBoardView());
+  io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });
+  io.to('admin').emit('admin:state', adminView());
+  if (state.finalistId != null && state.lobby[state.finalistId]) {
+    io.to(state.lobby[state.finalistId].socketId).emit('player:finalState', playerFinalView());
+  }
+}
+
+function clearFinalTimer() {
+  if (finalTimer) { clearInterval(finalTimer); finalTimer = null; }
+}
+
+function startFinalCountdown() {
+  if (finalTimer || !state.fg || state.fg.state !== 'RUNNING') return;
+  finalTimer = setInterval(() => {
+    state.finalTimeLeft = Math.max(0, state.finalTimeLeft - FINAL_TICK_MS);
+    io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });
+    if (state.finalTimeLeft <= 0) { clearFinalTimer(); finalgame.expire(state.fg); endFinal(); }
+  }, FINAL_TICK_MS);
+}
+
+function endFinal() {
+  clearFinalTimer();
+  state.phase = 'finalDone';
+  const results = state.fg.results.slice();
+  io.to('main').emit('main:finalDone', { results });
+  io.to('admin').emit('admin:state', adminView());
+  state.lobby.forEach((p, i) =>
+    io.to(p.socketId).emit('player:finalDone', { results, isFinalist: i === state.finalistId }));
+}
+
 // --- GIRAMOE: the final wheel board (admin spins once; round-robin consonants) ---
 
 function startGiramoe() {
@@ -495,6 +584,11 @@ io.on('connection', (socket) => {
       socket.emit('main:tiebreakState', tiebreakView());
     } else if (state.phase === 'finalist' && state.finalistId != null) {
       socket.emit('main:finalist', { id: state.finalistId, name: state.g.players[state.finalistId].name });
+    } else if (state.phase === 'final' && state.fg) {
+      socket.emit('main:finalBoard', finalBoardView());
+      socket.emit('main:finalTimer', { ms: state.finalTimeLeft });
+    } else if (state.phase === 'finalDone' && state.fg) {
+      socket.emit('main:finalDone', { results: state.fg.results.slice() });
     }
   });
 
@@ -764,6 +858,68 @@ io.on('connection', (socket) => {
     }, SPIN_MS + 200);
   });
 
+  // --- FINAL game ---
+
+  // Admin starts the final with the shared topic + 3 phrases (board 1 awaits picks).
+  socket.on('admin:startFinal', ({ topic, phrases }) => {
+    if (state.phase !== 'finalist' || state.finalistId == null) return;
+    const r = finalgame.createFinalGame(topic, phrases);
+    if (!r.ok) return io.to('admin').emit('admin:finalError', r.error);
+    state.fg = r.fg;
+    state.finalTimeLeft = FINAL_TIME_MS;
+    state.phase = 'final';
+    io.to('admin').emit('admin:finalError', '');
+    state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:finalStart', { isFinalist: i === state.finalistId }));
+    broadcastFinal();
+  });
+
+  // Finalist picks a letter (board 1: 3 consonants + 1 vowel then the timer starts;
+  // board 3: unlimited consonants + 1 vowel, a wrong letter docks 3s).
+  socket.on('player:finalPick', ({ letter }) => {
+    if (state.phase !== 'final' || !state.fg) return;
+    if (socket.playerIndex !== state.finalistId) return;
+    const res = finalgame.pick(state.fg, letter);
+    if (!res.ok) return;
+    if (res.present) io.to('main').emit('main:finalReveal', { positions: res.positions });
+    if (res.wrong) {
+      state.finalTimeLeft = Math.max(0, state.finalTimeLeft - FINAL_PENALTY_MS);
+      io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });
+      io.to('main').emit('main:wrong');
+      if (state.finalTimeLeft <= 0) { clearFinalTimer(); finalgame.expire(state.fg); return endFinal(); }
+    }
+    if (res.startTimer) startFinalCountdown(); // board 1 picks complete
+    broadcastFinal();
+  });
+
+  socket.on('player:finalBuzz', () => {
+    if (state.phase !== 'final' || !state.fg) return;
+    if (socket.playerIndex !== state.finalistId) return;
+    const res = finalgame.buzz(state.fg);
+    if (!res.ok) return;
+    clearFinalTimer(); // stop the clock while answering
+    io.to('main').emit('main:finalBuzzed');
+    broadcastFinal();
+  });
+
+  socket.on('admin:finalCorrect', () => finalJudge(true));
+  socket.on('admin:finalWrong', () => finalJudge(false));
+  function finalJudge(correct) {
+    if (state.phase !== 'final' || !state.fg || state.fg.state !== 'BUZZED') return;
+    const res = finalgame.resolve(state.fg, correct);
+    if (!res.ok) return;
+    io.to('main').emit('main:finalBoard', finalBoardView());      // the just-resolved board, revealed
+    io.to('main').emit(correct ? 'main:solved' : 'main:wrong');
+    io.to('admin').emit('admin:state', adminView());
+    if (res.finished) { endFinal(); return; }
+    // brief pause on the solved board, then advance and resume the carried time
+    setTimeout(() => {
+      if (state.phase !== 'final' || !state.fg) return;
+      finalgame.advance(state.fg);
+      broadcastFinal();
+      startFinalCountdown();
+    }, 1600);
+  }
+
   socket.on('admin:giramoeWrong', () => {
     if (state.phase !== 'giramoe' || !state.gi) return;
     const res = giramoe.judgeWrong(state.gi);
@@ -788,11 +944,12 @@ io.on('connection', (socket) => {
     const p = state.lobby.find(pl => pl.socketId === socket.id);
     if (!p) return;
     p.connected = false;
-    const midGame = isWheelPhase() || ['triplete', 'tripleteReady', 'giramoe', 'tiebreak'].includes(state.phase);
+    const midGame = isWheelPhase() || ['triplete', 'tripleteReady', 'giramoe', 'tiebreak', 'final'].includes(state.phase);
     if (midGame) {
       // mid-game: pause the main screen (and any reveal/buzz timer) with the overlay
       if (state.phase === 'triplete') clearTripleteTimer();
       if (state.phase === 'giramoe') clearGiramoeTimer();
+      if (state.phase === 'final') clearFinalTimer();
       io.to('main').emit('main:playerDisconnected', { players: lobbyPlayers() });
     } else {
       // lobby: keep the QR visible, just refresh the slots
@@ -828,6 +985,14 @@ io.on('connection', (socket) => {
     } else if (state.phase === 'finalist' && state.finalistId != null) {
       const f = state.g.players.find(pl => pl.id === state.finalistId);
       socket.emit('player:finalist', { id: f.id, name: f.name, isMe: socket.playerIndex === f.id });
+      io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
+    } else if (state.phase === 'final' && state.fg) {
+      socket.emit('player:finalStart', { isFinalist: socket.playerIndex === state.finalistId });
+      if (socket.playerIndex === state.finalistId) socket.emit('player:finalState', playerFinalView());
+      io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
+      if (state.lobby.every(pl => pl.connected)) startFinalCountdown(); // resume if it was running
+    } else if (state.phase === 'finalDone' && state.fg) {
+      socket.emit('player:finalDone', { results: state.fg.results.slice(), isFinalist: socket.playerIndex === state.finalistId });
       io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
     } else {
       io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });

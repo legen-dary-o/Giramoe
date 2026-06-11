@@ -46,6 +46,18 @@ document.getElementById('btn-giramoe-correct').addEventListener('click', () => s
 document.getElementById('btn-giramoe-wrong').addEventListener('click', () => socket.emit('admin:giramoeWrong'));
 socket.on('admin:giramoeError', (err) => { document.getElementById('giramoe-error').textContent = err; });
 
+// --- Final game ---
+document.getElementById('btn-start-final').addEventListener('click', () => {
+  const topic = document.getElementById('fin-topic').value.trim();
+  const phrases = [1, 2, 3].map(i => document.getElementById(`fin-phrase-${i}`).value.trim());
+  if (!topic || phrases.some(p => !p)) { document.getElementById('final-error').textContent = 'Inserisci argomento e 3 frasi'; return; }
+  document.getElementById('final-error').textContent = '';
+  socket.emit('admin:startFinal', { topic, phrases });
+});
+document.getElementById('btn-final-correct').addEventListener('click', () => socket.emit('admin:finalCorrect'));
+document.getElementById('btn-final-wrong').addEventListener('click', () => socket.emit('admin:finalWrong'));
+socket.on('admin:finalError', (err) => { document.getElementById('final-error').textContent = err; });
+
 socket.on('admin:state', (s) => {
   if (s.phase === 'video') showScreen('admin-pregame');
   else if (s.phase === 'lobby') {
@@ -69,6 +81,12 @@ socket.on('admin:state', (s) => {
     showScreen('admin-finalist');
     document.getElementById('admin-finalist-name').innerHTML =
       s.finalist ? `<span>🏆 ${s.finalist.name}</span><span>finale</span>` : '';
+  } else if (s.phase === 'final') {
+    showScreen('admin-final');
+    renderFinal(s.final);
+  } else if (s.phase === 'finalDone') {
+    showScreen('admin-finaldone');
+    renderFinalDone(s.finalDone);
   }
 });
 
@@ -180,6 +198,45 @@ function renderTiebreak(tb) {
 
 function showBoardError(msg) {
   document.getElementById('board-error').textContent = msg;
+}
+
+const FINAL_STATE_LABEL = {
+  PICKING: 'sceglie le lettere',
+  RUNNING: 'timer in corso',
+  BUZZED: 'si è prenotato — giudica',
+  BOARD_DONE: 'tabellone risolto',
+  DONE: 'fine'
+};
+
+function renderFinal(f) {
+  if (!f) return;
+  document.getElementById('fin-board-counter').textContent = `Tabellone ${f.boardIndex + 1} / ${f.totalBoards}`;
+  document.getElementById('fin-timer').textContent = Math.ceil(f.timeLeft / 1000) + 's';
+  document.getElementById('fin-state').textContent = (f.category ? f.category + ' · ' : '') + (FINAL_STATE_LABEL[f.state] || '');
+  document.getElementById('btn-final-correct').disabled = !f.buzzed;
+  document.getElementById('btn-final-wrong').disabled = !f.buzzed;
+
+  const list = document.getElementById('fin-results');
+  list.innerHTML = '';
+  f.results.forEach((res, i) => {
+    const item = document.createElement('div');
+    item.className = 'admin-player-item glass-panel';
+    const label = res === true ? '✅ indovinato' : res === false ? '❌ sbagliato' : (i === f.boardIndex ? '▶ in corso' : '—');
+    item.innerHTML = `<span>Tabellone ${i + 1}</span><span>${label}</span>`;
+    list.appendChild(item);
+  });
+}
+
+function renderFinalDone(fd) {
+  const el = document.getElementById('admin-finaldone-results');
+  el.innerHTML = '';
+  if (!fd) return;
+  fd.results.forEach((res, i) => {
+    const item = document.createElement('div');
+    item.className = 'admin-player-item glass-panel';
+    item.innerHTML = `<span>Tabellone ${i + 1}</span><span>${res ? '🟢 verde' : '🔴 rosso'}</span>`;
+    el.appendChild(item);
+  });
 }
 
 function showTripleteError(msg) {

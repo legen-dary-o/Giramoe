@@ -180,6 +180,65 @@ socket.on('player:finalist', ({ name, isMe }) => {
     isMe ? 'Sei il finalista! 🏆' : `${name} va alla finale`;
 });
 
+// --- Final game (finalist only) ---
+let finalKbBuilt = false;
+document.getElementById('btn-final-buzz').addEventListener('click', () => socket.emit('player:finalBuzz'));
+
+socket.on('player:finalStart', ({ isFinalist }) => {
+  if (!isFinalist) return; // others keep spectating on the finalist screen
+  showScreen('player-final-screen');
+  buildFinalKeyboard();
+});
+
+socket.on('player:finalState', (st) => applyFinalState(st));
+
+socket.on('player:finalDone', ({ results, isFinalist }) => {
+  showScreen('player-finalist-screen');
+  const green = results.filter(Boolean).length;
+  document.getElementById('player-finalist-title').textContent =
+    isFinalist ? `Hai fatto ${green}/3!` : 'Fine partita';
+});
+
+function buildFinalKeyboard() {
+  if (finalKbBuilt) return;
+  finalKbBuilt = true;
+  const kb = document.getElementById('final-keyboard');
+  kb.innerHTML = '';
+  CONSONANTS.forEach(letter => {
+    const b = document.createElement('button');
+    b.className = 'key';
+    b.textContent = letter;
+    b.dataset.letter = letter;
+    b.addEventListener('click', () => socket.emit('player:finalPick', { letter }));
+    kb.appendChild(b);
+  });
+  const vr = document.getElementById('final-vowels');
+  vr.innerHTML = '';
+  VOWELS.forEach(letter => {
+    const b = document.createElement('button');
+    b.className = 'key vowel';
+    b.textContent = letter;
+    b.dataset.letter = letter;
+    b.addEventListener('click', () => socket.emit('player:finalPick', { letter }));
+    vr.appendChild(b);
+  });
+}
+
+function applyFinalState(st) {
+  const msg = document.getElementById('final-message');
+  msg.textContent = st.message;
+  msg.className = 'turn-message your-turn';
+  document.querySelectorAll('#final-keyboard .key').forEach(b => {
+    b.disabled = !st.canPickConsonant || st.usedLetters.includes(b.dataset.letter);
+  });
+  document.querySelectorAll('#final-vowels .key').forEach(b => {
+    b.disabled = !st.canPickVowel || st.usedLetters.includes(b.dataset.letter);
+  });
+  const buzz = document.getElementById('btn-final-buzz');
+  buzz.disabled = !st.canBuzz;
+  buzz.classList.toggle('armed', st.canBuzz);
+}
+
 // --- Wheel + spin ---
 function initWheel() {
   const canvas = document.getElementById('player-wheel-canvas');

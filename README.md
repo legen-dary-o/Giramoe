@@ -121,8 +121,24 @@ gli altri sono fuori. In caso di **parità**, i giocatori in testa fanno uno **s
 ognuno gira la ruota Giramoe una volta (dal telefono), vince il valore più alto (quei
 punti **non** vengono aggiunti); se ancora pari si va a oltranza.
 
-> Le fasi finali (gioco finale a tempo, buste) sono in arrivo; per ora il gioco si
-> ferma sulla schermata del finalista. La vecchia "classifica finale" è stata rimossa.
+## Gioco finale (solo il finalista)
+
+Niente ruota: **3 tabelloni** sullo stesso argomento con un **unico timer di 60s** che
+si trasporta tra i tabelloni. L'admin inserisce argomento + 3 frasi.
+
+- **Tabellone 1:** si rivelano **N R T E** (se presenti); il giocatore sceglie **3
+  consonanti + 1 vocale** (gratis), poi **parte il timer**. Si prenota (ferma il timer)
+  e risponde a voce → suono giusto/sbagliato; **in entrambi i casi** si va al tabellone
+  successivo **mantenendo il tempo**.
+- **Tabellone 2:** rivelate **prima e ultima lettera di ogni parola**; niente scelta
+  lettere; il timer riparte da dov'era; si prenota e risponde.
+- **Tabellone 3:** tutto vuoto; **consonanti illimitate + 1 vocale**, ma ogni **lettera
+  errata −3s**; bottone per prenotarsi.
+- **Timer a 0** nei primi due tabelloni → i restanti sono persi; al terzo (senza
+  prenotazione in tempo) → errato.
+
+Ogni tabellone risolto = **verde**, altrimenti **rosso**: a fine partita compaiono i 3
+esiti (questi alimenteranno le **buste**, in arrivo).
 
 ## Personalizzare la ruota
 
@@ -132,9 +148,9 @@ I 16 valori degli spicchi sono in `game.js`, nell'array `SEGMENTS`. Categoria e 
 
 ```bash
 # test unitari (logica):
-node --test tests/board.test.js tests/game.test.js tests/triplete.test.js tests/giramoe.test.js tests/finalist.test.js
-# flussi via socket (server interno, ~40s):
-node --test tests/triplete.integration.test.js tests/express.integration.test.js tests/giramoe.integration.test.js
+node --test tests/board.test.js tests/game.test.js tests/triplete.test.js tests/giramoe.test.js tests/finalist.test.js tests/finalgame.test.js
+# flussi via socket (server interno, ~55s):
+node --test tests/triplete.integration.test.js tests/express.integration.test.js tests/giramoe.integration.test.js tests/final.integration.test.js
 # test di integrazione del gioco base (richiede il server avviato):
 node server.js & sleep 2 && node --test tests/integration.test.js
 ```
@@ -149,6 +165,7 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 - `triplete.js` — Triplete: 3 tabelloni, prenotazioni/blocchi, bonus 5000 (puro, testato)
 - `giramoe.js` — tabellone finale: giro unico dell'admin, round-robin a consonanti, solo il vincitore incassa (puro, testato)
 - `finalist.js` — selezione finalista (banca più alta) e confronto dello spareggio (puro, testato)
+- `finalgame.js` — gioco finale: 3 tabelloni (NRTE / prima-ultima / vuoto), scelte lettere, risultati verde/rosso (puro, testato)
 - `game.js` include anche la modalità **EXPRESS** (raffica 500/occorrenza, bancarotta totale)
 - `public/index.html` + `js/main.js` — schermo principale (PC/TV)
 - `public/admin.html` + `js/admin.js` — console admin (telefono)

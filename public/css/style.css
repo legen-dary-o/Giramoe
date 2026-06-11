@@ -1038,3 +1038,40 @@ body::before {
 .buzz-pill:not(:disabled):active { transform: scale(0.97); }
 .buzz-pill:disabled { opacity: 0.4; filter: grayscale(0.4); }
 .buzz-pill.armed { animation: buzzPulse 0.8s ease-in-out infinite; }
+
+/* Final game: category + countdown timer */
+.final-top {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 28px);
+  justify-content: center;
+}
+.final-timer {
+  min-width: clamp(64px, 8vh, 96px);
+  padding: clamp(6px, 1vh, 12px) clamp(14px, 2vw, 22px);
+  border-radius: var(--r-md);
+  font-size: clamp(26px, 5vh, 48px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--ink);
+}
+.final-timer.low { color: #d92a50; animation: buzzPulse 0.7s ease-in-out infinite; }
+
+/* Final results — three green/red boxes */
+.final-results { display: flex; gap: clamp(12px, 2vw, 24px); justify-content: center; }
+.final-result-box {
+  width: clamp(60px, 12vh, 100px);
+  height: clamp(60px, 12vh, 100px);
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(26px, 5vh, 44px);
+  font-weight: 800;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.final-result-box.green { background: linear-gradient(150deg, #34d27a 0%, #16a34a 100%); }
+.final-result-box.red { background: linear-gradient(150deg, #ff6d88 0%, #d92a50 100%); }
