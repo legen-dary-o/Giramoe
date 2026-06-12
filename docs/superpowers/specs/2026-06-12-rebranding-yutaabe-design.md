@@ -121,8 +121,13 @@ tabellone e ruota nel canvas; l'HUD resta HTML sopra.
 - **Title screen** (GIRAMOE / IL TRIPLETE / EXPRESS): Syne 800 gigante,
   reveal a punti: i punti del dotfield si addensano a formare il titolo,
   poi si dissolvono — stessa famiglia di effetti della home.
-- **Finalista / Buste / fine partita**: stile ink; buste = pannelli scuri con
-  bordo, apertura con flash ciano.
+- **Finalista / fine partita**: stile ink.
+- **Buste** (`envelopes-screen`): in three.js (`fx/envelopes3d.js`) — 3 buste
+  3D con spessore, materiale halftone come la ruota, che **fluttuano** al
+  centro dello schermo (idle float lento, leggera rotazione indipendente per
+  busta). Selezione = la busta scelta avanza verso camera; apertura = flip 3D
+  del lembo con flash ciano e reveal del contenuto. Stessi eventi/flusso di
+  `envelopes.js` (logica intatta), solo resa.
 
 ## 5. Telefoni (player.html / admin.html)
 
@@ -138,6 +143,7 @@ public/js/fx/homewheel.js     ← nuovo: scena home (ruota decorativa + parallax
 public/js/fx/stage3d.js       ← nuovo: orchestratore palco partita (camera, sfondo, eventi)
 public/js/fx/board3d.js       ← nuovo: tabellone 3D
 public/js/fx/dotfield.js      ← nuovo: sfondo punti reattivo
+public/js/fx/envelopes3d.js   ← nuovo: buste finali 3D fluttuanti
 public/js/fx/halftone.js      ← nuovo: materiale/shader condiviso (halftone + wireframe sweep)
 public/js/fx/wheel3d.js       ← riscritto: ruota halftone, stessa interfaccia
 public/js/fx/fluid.js         ← rimosso dall'uso (sostituito da homewheel/dotfield)
