@@ -15,7 +15,8 @@ export class HomeWheel {
     this.renderer.setClearColor(0x000000, 0);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
-    this.camera.position.set(0, 0, 15);
+    // z=33: la ruota ~45% dell'altezza viewport, resta nel gap tra wordmark e bottone
+    this.camera.position.set(0, 0, 33);
     this._materials = [];
     this._buildWheel();
     this._mouse = { px: -1e5, py: -1e5, nx: 0, ny: 0 };
