@@ -249,7 +249,7 @@ html, body {
   height: 100%;
   will-change: transform;
 }
-#intro-stage .wm { font-size: clamp(64px, 10vw, 150px); margin-top: 18px; }
+#intro-stage .wm { font-size: clamp(36px, 10vw, 150px); margin-top: 18px; }
 .intro-wheel-gap { height: 48vh; pointer-events: none; }
 .tagline {
   margin-top: 22px;
