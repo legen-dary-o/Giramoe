@@ -3,21 +3,46 @@
    Fonte di verità visiva: docs/mockups/index.html (approvato)
    ============================================================ */
 
+/* === FONT (self-hosted: il gioco gira in LAN senza internet) === */
+@font-face {
+  font-family: 'Syne';
+  src: url('/fonts/syne-800.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/space-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/space-mono-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
 /* === TOKENS === */
 :root {
-  --bg: #0c0c0e;
-  --bg-2: #121214;
+  --bg: #000000;
+  --bg-2: #0a0a0c;
   --ink: #f5f5f7;
-  --ink-soft: rgba(235, 235, 245, 0.55);
-  --ink-faint: rgba(235, 235, 245, 0.38);
-  --accent: #0a84ff;
-  --green: #30d158;
-  --red: #ff453a;
+  --ink-soft: rgba(245, 245, 247, 0.55);
+  --ink-faint: rgba(245, 245, 247, 0.38);
+  --accent: #30b8ff;
+  --green: #30b8ff;
+  --red: #f5f5f7;
 
-  --glass: rgba(24, 24, 27, 0.55);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  --hairline: rgba(255, 255, 255, 0.12);
+  --petrol: #0d2433;
+  --panel: #16161a;
+  --glass: #16161a;
+  --glass-border: 1px solid rgba(255, 255, 255, 0.10);
+  --glass-edge: none;
+  --hairline: rgba(255, 255, 255, 0.14);
+
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
 
   --r-sm: 12px;
   --r-md: 16px;
@@ -40,7 +65,7 @@
 html, body {
   width: 100%;
   height: 100%;
-  font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-mono);
   background:
     radial-gradient(85% 65% at 50% -8%, rgba(48, 56, 74, 0.32), transparent 62%),
     linear-gradient(180deg, var(--bg-2), var(--bg) 64%);
@@ -71,8 +96,6 @@ html, body {
 
 .glass-panel {
   background: var(--glass);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: var(--glass-border);
   border-radius: var(--r-md);
   box-shadow: var(--glass-edge);
@@ -119,6 +142,7 @@ html, body {
 .corner-label {
   position: absolute;
   z-index: 4;
+  font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 3px;
@@ -138,6 +162,7 @@ html, body {
 @keyframes liveBlink { 50% { opacity: 0.25; } }
 
 .eyebrow {
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 5px;
@@ -149,7 +174,8 @@ html, body {
    ATTENZIONE: animare SOLO questo elemento — transform/filter sui figli
    rompono background-clip: text. */
 .wm {
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;
   background: linear-gradient(105deg, #f5f5f7 42%, #ffffff 49%, #8e94a3 52%, #f5f5f7 60%);
@@ -275,6 +301,7 @@ html, body {
 .lobby-center .wm { font-size: clamp(34px, 4.2vw, 56px); }
 
 .col-title {
+  font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 3px;
@@ -306,7 +333,7 @@ html, body {
 .player-slot.filled::before { background: var(--green); }
 .player-slot.reconnecting { opacity: 0.5; }
 .player-slot.reconnecting::before { background: #ffd60a; animation: liveBlink 1.2s ease-in-out infinite; }
-.player-slot .slot-idx { margin-left: auto; font-size: 11px; letter-spacing: 2px; color: rgba(235, 235, 245, 0.3); }
+.player-slot .slot-idx { margin-left: auto; font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; color: rgba(235, 235, 245, 0.3); }
 
 .qr-container {
   background: #f5f5f7;
@@ -350,6 +377,7 @@ html, body {
   display: flex;
   gap: 30px;
   white-space: nowrap;
+  font-family: var(--font-mono);
 }
 .phases .ph {
   font-size: 10.5px;
@@ -453,6 +481,7 @@ html, body {
 /* === CATEGORIA === */
 
 .category-banner {
+  font-family: var(--font-mono);
   font-size: clamp(13px, 1.5vw, 18px);
   font-weight: 600;
   letter-spacing: 5px;
@@ -585,8 +614,6 @@ html, body {
   align-items: center;
   justify-content: center;
   background: rgba(8, 8, 10, 0.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.35s ease;
@@ -641,8 +668,6 @@ html, body {
   align-items: center;
   justify-content: center;
   background: rgba(8, 8, 10, 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -660,15 +685,17 @@ html, body {
 /* === FINALIST / MATCH END === */
 
 .matchend-title {
+  font-family: var(--font-display);
   font-size: clamp(20px, 3.4vh, 34px);
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: 4px;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
 
 .finalist-name {
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 800;
   font-size: clamp(56px, 12vh, 140px);
   letter-spacing: -0.03em;
   line-height: 1;
@@ -703,6 +730,7 @@ html, body {
   justify-content: center;
 }
 .final-timer {
+  font-family: var(--font-mono);
   min-width: clamp(64px, 8vh, 96px);
   padding: clamp(6px, 1vh, 12px) clamp(14px, 2vw, 22px);
   border-radius: var(--r-md);
@@ -734,6 +762,7 @@ html, body {
 /* === TRIPLETE === */
 
 .triplete-tag {
+  font-family: var(--font-mono);
   padding: clamp(5px, 0.9vh, 9px) clamp(16px, 2.4vw, 28px);
   font-weight: 600;
   letter-spacing: 3px;
@@ -755,8 +784,6 @@ html, body {
   padding: clamp(10px, 1.6vh, 18px) clamp(22px, 3vw, 40px);
   border-radius: 999px;
   background: rgba(24, 24, 27, 0.85);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: var(--ink);
   font-weight: 600;
@@ -794,8 +821,6 @@ html, body {
   font-weight: 600;
   text-align: center;
   background: var(--glass);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: var(--glass-border);
   box-shadow: var(--glass-edge), var(--shadow-md);
   transition: transform 0.25s var(--ease-out), opacity 0.2s ease, border-color 0.25s ease;
@@ -823,8 +848,6 @@ html, body {
   padding: 28px 24px;
   border-radius: var(--r-lg);
   background: var(--glass);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: var(--glass-border);
   box-shadow: var(--glass-edge), var(--shadow-md);
 }
@@ -992,8 +1015,6 @@ html, body {
   padding: 16px;
   border-radius: var(--r-md);
   background: var(--glass);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: var(--glass-border);
   box-shadow: var(--glass-edge);
 }
@@ -1050,8 +1071,6 @@ html, body {
   background: none;
   border: none;
   box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   padding: 0;
 }
 .admin-actions .glass-button { flex: 1; padding: 15px 10px; font-size: 14px; }
