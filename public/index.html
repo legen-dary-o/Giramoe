@@ -8,11 +8,12 @@
   <script src="/js/qrcode.min.js"></script>
 </head>
 <body>
-  <!-- Fluido (three.js) sotto la UI -->
-  <canvas id="fluid-canvas" aria-hidden="true"></canvas>
+  <!-- Stage (three.js) sotto la UI -->
+  <canvas id="stage-canvas" aria-hidden="true"></canvas>
 
   <!-- Intro: tap per sbloccare audio e partire (niente più video) -->
   <div id="start-tap-screen" class="screen">
+    <canvas id="home-canvas" aria-hidden="true"></canvas>
     <span class="corner-label" style="top:4.5%; left:3.5%;">Giramoe&reg;</span>
     <span class="corner-label" style="top:4.5%; right:3.5%;">Est. 2026</span>
     <span class="corner-label" style="bottom:4.5%; left:3.5%;"><span class="live-dot"></span>Live</span>
@@ -20,7 +21,7 @@
     <div id="intro-stage">
       <div class="eyebrow rise">Giramoe Studio presenta</div>
       <div class="wm rise">GIRAMOE</div>
-      <hr class="hairline intro-rule rise">
+      <div class="intro-wheel-gap" aria-hidden="true"></div>
       <div class="tagline rise">Il gioco della ruota. Tre giocatori, un finalista.</div>
       <button class="glass-button rise" id="tap-start-btn" data-cursor-label="Tap">Tocca per iniziare</button>
       <div class="intro-wait-hint">In attesa dell'host&hellip;</div>

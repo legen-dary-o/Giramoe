@@ -74,8 +74,8 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Fluido (three.js) sotto tutta la UI */
-#fluid-canvas {
+/* Stage (three.js) sotto tutta la UI */
+#stage-canvas {
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -231,15 +231,26 @@ html, body {
 
 #start-tap-screen { flex-direction: column; }
 
+#home-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+}
+
 #intro-stage {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 100%;
   will-change: transform;
 }
 #intro-stage .wm { font-size: clamp(64px, 10vw, 150px); margin-top: 18px; }
-.intro-rule { width: 56px; margin-top: 26px; animation-delay: 0.5s; }
+.intro-wheel-gap { height: 48vh; pointer-events: none; }
 .tagline {
   margin-top: 22px;
   font-size: clamp(15px, 1.7vw, 22px);
@@ -1150,6 +1161,6 @@ body.has-custom-cursor, body.has-custom-cursor * { cursor: none !important; }
   .rise, .title-stage.play .eyebrow, .title-stage.play .hairline { animation: none; opacity: 1; }
   .title-stage .eyebrow, .title-stage .wm, .title-stage .hairline { opacity: 1; }
   .live-dot, .player-name.active::after { animation: none; }
-  #fluid-canvas { display: none; }
+  #stage-canvas { display: none; }
   .screen { transition: none; }
 }

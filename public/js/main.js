@@ -1,10 +1,16 @@
 import { initCursor } from './fx/cursor.js';
 import { Wheel3D } from './fx/wheel3d.js';
-import { FluidFX } from './fx/fluid.js';
+import { HomeWheel } from './fx/homewheel.js';
 
 initCursor();
-const fluid = new FluidFX(document.getElementById('fluid-canvas'));
-window.__fluid = fluid; // hook di verifica manuale
+let home = null;
+try {
+  home = new HomeWheel(document.getElementById('home-canvas'));
+  window.__home = home; // hook di verifica manuale
+} catch (err) {
+  console.warn('HomeWheel non disponibile (WebGL?):', err);
+}
+window.addEventListener('resize', () => { if (home) home.resize(); });
 
 const socket = io();
 let wheel = null;
@@ -16,7 +22,7 @@ let lastSegmentsKey = '';
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
-  fluid.setEnabled(id === 'start-tap-screen'); // liquido solo sull'intro
+  if (home) home.setEnabled(id === 'start-tap-screen');
 }
 
 // --- Tap to start: sblocca audio, title animation GIRAMOE, poi fase corrente ---
