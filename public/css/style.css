@@ -289,7 +289,7 @@ html, body {
   gap: 0;
 }
 .title-stage .eyebrow { opacity: 0; }
-.title-stage .wm { font-size: clamp(56px, 9.5vw, 140px); margin-top: 18px; opacity: 0; }
+.title-stage .wm { font-size: clamp(28px, 9.5vw, 140px); margin-top: 18px; opacity: 0; }
 .title-stage .hairline { width: 56px; margin-top: 26px; opacity: 0; }
 .title-stage.play .eyebrow { animation: rise 0.8s 0.05s var(--ease-out) both; }
 .title-stage.play .wm { animation: glint 3.2s 0.55s ease-in-out infinite, rise 1s 0.25s var(--ease-out) both; }
