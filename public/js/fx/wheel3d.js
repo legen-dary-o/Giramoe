@@ -1,24 +1,16 @@
-// Ruota 3D (three.js) — drop-in per la Wheel 2D di wheel.js: stessa interfaccia
-// (constructor(canvas, opts), spinTo, setLabels, resize, onSpinEnd, spinning).
-// Estetica "candy glass": arcobaleno saturo lucido, ghiera cromata con led,
-// cupola blu in vetro al centro, sheen di vetro fisso sulla faccia.
-
+// public/js/fx/wheel3d.js
+// Ruota di gioco halftone (stile yutaabe) — drop-in per la Wheel 2D di wheel.js:
+// stessa interfaccia (constructor(canvas, opts), spinTo, setLabels, resize,
+// onSpinEnd, spinning). Spicchi mono a densità alternata, speciali in ciano.
 import * as THREE from '../../vendor/three.module.js';
+import { createHalftoneMaterial, addBarycentric, ACCENT_CSS } from './halftone.js';
 
-// Arcobaleno candy: ordinato per tinta come la ruota del logo
-const SEGMENT_COLORS = [
-  '#ff2d2d', '#ff6a00', '#ffa600', '#ffd500',
-  '#c8e600', '#6fd800', '#00c853', '#00c8a0',
-  '#00c2d7', '#00a2ff', '#0066ff', '#4845ff',
-  '#7d2dff', '#b620e0', '#e91e8c', '#ff3b5c'
-];
-
-// Stessa semantica degli "speciali" della ruota 2D.
+// Stessa semantica degli speciali della ruota 2D (wheel.js).
 const SPECIAL_STYLE = {
-  bancarotta: { base: '#141416', text: '#ffffff', symbol: '✕',  word: 'BANCAROTTA' },
-  next:       { base: '#8e8e96', text: '#ffffff', symbol: '→',  word: 'PASSA' },
-  raddoppia:  { base: '#ffc400', text: '#3a2c00', symbol: '×2', word: 'RADDOPPIA' },
-  express:    { base: '#0a84ff', text: '#ffffff', symbol: '»',  word: 'EXPRESS' }
+  bancarotta: { symbol: '✕',  word: 'BANCAROTTA' },
+  next:       { symbol: '→',  word: 'PASSA' },
+  raddoppia:  { symbol: '×2', word: 'RADDOPPIA' },
+  express:    { symbol: '»',  word: 'EXPRESS' }
 };
 
 export class Wheel3D {
@@ -30,180 +22,65 @@ export class Wheel3D {
     this.onSpinEnd = options.onSpinEnd || null;
     this.rotation = 0;       // radianti, stessa convenzione della 2D
     this.spinning = false;
-    this._raf = null;
 
-    this._initScene();
-    this._buildWheel();
-    this.resize();
-    this._render();
-  }
-
-  _initScene() {
-    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     this.renderer.setClearColor(0x000000, 0);
-    // Neutral preserva la saturazione dei colori accesi (ACES li sbiadiva in pastello)
-    this.renderer.toneMapping = THREE.NeutralToneMapping || THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
-
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
-    this.cameraBaseZ = 16.6; // metà altezza visibile ≈ 4.7 > raggio+ghiera (4.37)
-    // leggera inclinazione dal basso: lo spessore del disco si legge
+    this.cameraBaseZ = 16.6;
     this.camera.position.set(0, -1.5, this.cameraBaseZ);
     this.camera.lookAt(0, 0, 0);
 
-    // Luci da studio: key fredda alta, fill laterali tenui, ambient bassa.
-    // Niente point light speculare: creava un alone "glow" sugli spicchi.
-    const key = new THREE.DirectionalLight(0xffffff, 2.3);
-    key.position.set(-3, 6, 8);
-    const fillA = new THREE.DirectionalLight(0x9fb8ff, 0.65);
-    fillA.position.set(7, -2, 6);
-    const fillB = new THREE.DirectionalLight(0xc9b8ff, 0.4);
-    fillB.position.set(-7, -4, 5);
-    const amb = new THREE.AmbientLight(0xffffff, 0.45);
-    this.scene.add(key, fillA, fillB, amb);
-
-    // Environment "studio" minimale: senza env i materiali metallici restano neri.
-    // Cielo in gradiente + due softbox luminosi, precalcolati con PMREM.
-    const envScene = new THREE.Scene();
-    const skyCnv = document.createElement('canvas');
-    skyCnv.width = 2; skyCnv.height = 128;
-    const sg = skyCnv.getContext('2d').createLinearGradient(0, 0, 0, 128);
-    sg.addColorStop(0, '#aab6cf');
-    sg.addColorStop(0.55, '#3a4150');
-    sg.addColorStop(1, '#15171d');
-    const sctx = skyCnv.getContext('2d');
-    sctx.fillStyle = sg;
-    sctx.fillRect(0, 0, 2, 128);
-    const skyTex = new THREE.CanvasTexture(skyCnv);
-    skyTex.colorSpace = THREE.SRGBColorSpace;
-    const sky = new THREE.Mesh(
-      new THREE.SphereGeometry(20, 16, 12),
-      new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide })
-    );
-    envScene.add(sky);
-    // softbox larghi: sui materiali lucidi diventano i riflessi "finestra" del candy
-    const boxMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const boxA = new THREE.Mesh(new THREE.PlaneGeometry(10, 3.5), boxMat);
-    boxA.position.set(-5, 7, 6); boxA.lookAt(0, 0, 0);
-    const boxB = new THREE.Mesh(new THREE.PlaneGeometry(6, 2.4), boxMat);
-    boxB.position.set(7, -2, 7); boxB.lookAt(0, 0, 0);
-    const boxC = new THREE.Mesh(new THREE.PlaneGeometry(12, 2), boxMat);
-    boxC.position.set(0, 9, 4); boxC.lookAt(0, 0, 0);
-    envScene.add(boxA, boxB, boxC);
-    const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromScene(envScene, 0.04).texture;
-    pmrem.dispose();
+    this._materials = [];
+    this._buildWheel();
+    this.resize();
+    this._t0 = performance.now();
+    this._tick = this._tick.bind(this);
+    requestAnimationFrame(this._tick);
   }
 
   _buildWheel() {
     if (this.group) this.scene.remove(this.group);
+    this._materials = [];
     this.group = new THREE.Group();
-
-    const R = 4;             // raggio faccia
-    const DEPTH = 0.42;      // spessore disco
+    const R = 4, DEPTH = 0.42;
     const seg = (2 * Math.PI) / this.segments;
 
-    // Spicchi estrusi con bevel
     for (let i = 0; i < this.segments; i++) {
-      const start = -Math.PI / 2 + i * seg; // segmento 0 in alto, come la 2D
+      const start = -Math.PI / 2 + i * seg;
       const shape = new THREE.Shape();
       shape.moveTo(0, 0);
-      const STEPS = 10;
+      const STEPS = 6;
       for (let s = 0; s <= STEPS; s++) {
         const a = start + (seg * s) / STEPS;
-        shape.lineTo(Math.cos(a) * R, -Math.sin(a) * R); // y invertita: la scena guarda -z
+        shape.lineTo(Math.cos(a) * R, -Math.sin(a) * R);
       }
       shape.lineTo(0, 0);
-      const geo = new THREE.ExtrudeGeometry(shape, {
-        depth: DEPTH, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.03, bevelSegments: 2
+      const geo = addBarycentric(new THREE.ExtrudeGeometry(shape, { depth: DEPTH, bevelEnabled: false }));
+      const special = SPECIAL_STYLE[this.labels[i]];
+      // niente hover sulla TV (isTouch) — speciali quasi neri così il ciano dell'etichetta spicca
+      const mat = createHalftoneMaterial({
+        isTouch: true,
+        dotScale: special ? 0.4 : (i % 2 ? 0.62 : 1.0)
       });
-      const label = this.labels[i];
-      const special = SPECIAL_STYLE[label];
-      const color = special ? special.base : SEGMENT_COLORS[i % SEGMENT_COLORS.length];
-      const mat = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(color),
-        roughness: 0.1,
-        metalness: 0,
-        clearcoat: 1,
-        clearcoatRoughness: 0.06,
-        envMapIntensity: 0.55 // tiene i colori saturi: l'env piena li sbiadiva
-      });
+      this._materials.push(mat);
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.z = -DEPTH / 2;
       this.group.add(mesh);
     }
 
-    // Ghiera cromata lucida con led bianchi, come la ruota del logo
-    const rim = new THREE.Mesh(
-      new THREE.TorusGeometry(R + 0.16, 0.26, 32, 128),
-      new THREE.MeshPhysicalMaterial({ color: 0xeef3fa, metalness: 1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.08 })
-    );
-    this.group.add(rim);
-
-    const segAngle = (2 * Math.PI) / this.segments;
-    const dotGeo = new THREE.SphereGeometry(0.075, 16, 12);
-    const dotMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1.4, roughness: 0.3 });
-    for (let i = 0; i < this.segments; i++) {
-      const theta = i * segAngle;
-      const dot = new THREE.Mesh(dotGeo, dotMat);
-      dot.position.set(Math.sin(theta) * (R + 0.16), Math.cos(theta) * (R + 0.16), 0.24);
-      this.group.add(dot);
-    }
-
-    // Separatori sottili cromati tra gli spicchi
-    const dividerMat = new THREE.MeshStandardMaterial({ color: 0xdfe5ee, metalness: 1, roughness: 0.15 });
-    for (let i = 0; i < this.segments; i++) {
-      const theta = i * segAngle; // angolo orario dalle 12
-      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.022, R, 0.03), dividerMat);
-      // sopra il bevel degli spicchi (che arriva a DEPTH/2 + bevelThickness)
-      blade.position.set(Math.sin(theta) * R / 2, Math.cos(theta) * R / 2, DEPTH / 2 + 0.055);
-      blade.rotation.z = -theta;
-      this.group.add(blade);
-    }
-
-    // Hub piccolo e neutro: perla scura lucida con anellino cromato alla base
-    // (piccolo per non coprire le scritte lunghe tipo BANCAROTTA)
-    const hub = new THREE.Mesh(
-      new THREE.SphereGeometry(0.6, 64, 48, 0, Math.PI * 2, 0, Math.PI / 2),
-      new THREE.MeshPhysicalMaterial({ color: 0x202227, roughness: 0.05, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05 })
-    );
-    hub.rotation.x = Math.PI / 2; // cupola verso la camera (+y → +z)
+    // hub piccolo, stessi punti
+    const hubGeo = addBarycentric(new THREE.SphereGeometry(0.5, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2));
+    const hubMat = createHalftoneMaterial({ isTouch: true, dotScale: 0.8 });
+    this._materials.push(hubMat);
+    const hub = new THREE.Mesh(hubGeo, hubMat);
+    hub.rotation.x = Math.PI / 2;
     hub.position.z = DEPTH / 2;
-    hub.scale.y = 0.72; // appiattisce lungo il polo (asse y locale = profondita' dopo la rotazione)
-    const hubRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.6, 0.03, 16, 64),
-      new THREE.MeshPhysicalMaterial({ color: 0xeef3fa, metalness: 1, roughness: 0.12, clearcoat: 1 })
-    );
-    hubRing.position.z = DEPTH / 2 + 0.03;
-    this.group.add(hub, hubRing);
+    this.group.add(hub);
 
-    // Sheen di vetro fisso (non ruota con la ruota): velo bianco sull'arco alto
-    if (!this._sheen) {
-      const shCnv = document.createElement('canvas');
-      shCnv.width = shCnv.height = 512;
-      const sctx2 = shCnv.getContext('2d');
-      const grad = sctx2.createLinearGradient(0, 0, 0, 512);
-      grad.addColorStop(0, 'rgba(255,255,255,0.10)');
-      grad.addColorStop(0.3, 'rgba(255,255,255,0.03)');
-      grad.addColorStop(0.42, 'rgba(255,255,255,0)');
-      sctx2.fillStyle = grad;
-      sctx2.fillRect(0, 0, 512, 512);
-      const shTex = new THREE.CanvasTexture(shCnv);
-      this._sheen = new THREE.Mesh(
-        new THREE.CircleGeometry(R * 0.99, 64),
-        new THREE.MeshBasicMaterial({ map: shTex, transparent: true, depthWrite: false })
-      );
-      this._sheen.position.z = DEPTH / 2 + 0.4;
-      this._sheen.renderOrder = 10;
-      this.scene.add(this._sheen);
-    }
-
-    // Etichette: anello CanvasTexture appoggiato sulla faccia
     this._labelMesh = null;
     if (this.showLabels) this._buildLabelRing(R, DEPTH);
-
     this.scene.add(this.group);
   }
 
@@ -214,7 +91,7 @@ export class Wheel3D {
     const ctx = cnv.getContext('2d');
     const cx = SIZE / 2;
     const seg = (2 * Math.PI) / this.segments;
-    const rr = (SIZE / 2) * 0.96; // raggio in px texture ~ faccia
+    const rr = (SIZE / 2) * 0.96;
 
     for (let i = 0; i < this.segments; i++) {
       const label = this.labels[i];
@@ -227,18 +104,14 @@ export class Wheel3D {
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       if (special) {
-        ctx.fillStyle = special.text;
-        ctx.font = `900 ${rr * 0.135}px -apple-system, "Helvetica Neue", sans-serif`;
-        ctx.shadowColor = 'rgba(0,0,0,0.45)';
-        ctx.shadowBlur = 8;
+        ctx.fillStyle = ACCENT_CSS;
+        ctx.font = `700 ${rr * 0.13}px "Space Mono", monospace`;
         ctx.fillText(special.symbol, rr * 0.92, 0);
-        ctx.font = `700 ${rr * 0.052}px -apple-system, "Helvetica Neue", sans-serif`;
+        ctx.font = `700 ${rr * 0.048}px "Space Mono", monospace`;
         ctx.fillText(special.word, rr * 0.6, 0);
       } else {
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `800 ${rr * 0.095}px -apple-system, "Helvetica Neue", sans-serif`;
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 6;
+        ctx.fillStyle = '#f5f5f7';
+        ctx.font = `700 ${rr * 0.085}px "Space Mono", monospace`;
         ctx.fillText(String(label).toUpperCase(), rr * 0.9, 0);
       }
       ctx.restore();
@@ -258,8 +131,7 @@ export class Wheel3D {
   setLabels(labels) {
     this.labels = labels || [];
     this._buildWheel();
-    this.group.rotation.z = -this.rotation; // mantieni l'orientamento corrente
-    this._render();
+    this.group.rotation.z = -this.rotation;
   }
 
   resize() {
@@ -269,18 +141,21 @@ export class Wheel3D {
     this.renderer.setSize(size, size, true);
     this.camera.aspect = 1;
     this.camera.updateProjectionMatrix();
-    this._render();
   }
 
-  _render() {
-    // rotation 2D è oraria col canvas; in three la z è verso l'osservatore → segno opposto
+  // Loop continuo: i punti pulsano anche da ferma. Durante lo spin la rotazione
+  // è guidata da spinTo (che ha il suo scheduler col paracadute anti-throttle).
+  _tick(now) {
+    requestAnimationFrame(this._tick);
+    const t = (now - this._t0) / 1000;
+    for (const m of this._materials) m.uniforms.uTime.value = t;
     this.group.rotation.z = -this.rotation;
-    this.camera.lookAt(0, 0, 0); // la camera è inclinata e il dolly cambia z
+    this.camera.lookAt(0, 0, 0);
     this.renderer.render(this.scene, this.camera);
   }
 
-  // Identica alla 2D: porta il centro di `segmentIndex` sotto il puntatore in alto,
-  // accumulando la rotazione tra gli spin. Ease-out cubico + dolly della camera.
+  // Identica alla versione precedente: porta il centro di `segmentIndex` sotto
+  // il puntatore in alto accumulando la rotazione; ease-out cubico + dolly camera.
   spinTo(segmentIndex, spins = 6, duration = 6000) {
     if (this.spinning) return;
     this.spinning = true;
@@ -294,8 +169,7 @@ export class Wheel3D {
     const targetRotation = startRotation + (totalDeg * Math.PI) / 180;
     const startTime = performance.now();
 
-    // rAF con paracadute: se la tab è nascosta/throttlata, avanza via setTimeout
-    // (l'easing è basato sul tempo, quindi il risultato resta corretto).
+    // rAF con paracadute: se la tab è throttlata avanza via setTimeout
     const schedule = (fn) => {
       let fired = false;
       const id = requestAnimationFrame((t) => { fired = true; fn(t); });
@@ -308,22 +182,15 @@ export class Wheel3D {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-
       this.rotation = startRotation + (targetRotation - startRotation) * eased;
 
-      // dolly leggero: avvicina a metà corsa senza mai tagliare il bordo
-      // (mezza altezza visibile a z=15.7 ≈ 4.5 > raggio+ghiera 4.42)
       const dolly = Math.sin(progress * Math.PI) * 0.9;
       this.camera.position.z = this.cameraBaseZ - dolly;
-      this.camera.lookAt(0, 0, 0);
-
-      this._render();
 
       if (progress < 1) {
         schedule(animate);
       } else {
         this.camera.position.z = this.cameraBaseZ;
-        this._render();
         this.spinning = false;
         if (this.onSpinEnd) this.onSpinEnd();
       }
