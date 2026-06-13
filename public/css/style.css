@@ -961,7 +961,7 @@ html, body {
 }
 .vowel-picker.hidden { display: none; }
 
-/* Buzzer telefono: cerchio scuro che si arma di rosso */
+/* Buzzer telefono: cerchio scuro che si arma di ciano */
 .buzz-button {
   width: min(78vw, 320px);
   height: min(78vw, 320px);
