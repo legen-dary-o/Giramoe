@@ -32,6 +32,7 @@ const FRAG = /* glsl */ `
   uniform float uSweepY;      // quota world del fronte wireframe (-1000 = spento)
   uniform float uDim;         // 1 normale, <1 attenua (buste abbandonate)
   uniform vec3 uAccent;
+  uniform vec3 uTint;         // colore base dei punti (bianco = mono, default)
   varying vec3 vNormal;
   varying vec3 vViewPosition;
   varying vec3 vBary;
@@ -72,7 +73,7 @@ const FRAG = /* glsl */ `
         + (pulseB - 0.5) * 0.06 * lightShaped) * uDotScale
         + cursor * 0.35;
     float dotMask = smoothstep(dotRadius + 0.08, dotRadius - 0.08, dotDist);
-    vec3 dotColor = mix(vec3(1.0), uAccent, cursor);
+    vec3 dotColor = mix(uTint, uAccent, cursor);
     vec3 hot = vec3(0.4, 0.75, 1.0) * pow(spec, 1.2) * 2.0 * (1.0 - cursor);
     vec3 col = mix(vec3(0.0), dotColor + hot, dotMask);
 
@@ -118,7 +119,8 @@ export function createHalftoneMaterial(opts = {}) {
       uHoverRadius: { value: (opts.hoverRadius ?? 220) * dpr },
       uSweepY: { value: -1000 },
       uDim: { value: 1 },
-      uAccent: { value: ACCENT.clone() }
+      uAccent: { value: ACCENT.clone() },
+      uTint: { value: opts.tint ? opts.tint.clone() : new THREE.Color(1, 1, 1) }
     }
   });
 }
