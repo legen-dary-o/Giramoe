@@ -214,7 +214,8 @@ function renderEnvelopes(row, view) {
     el.className = 'envelope ' + e.color
       + (e.revealed ? ' open' : '')
       + (i === view.current ? ' current' : '')
-      + (e.abandoned ? ' abandoned' : '');
+      + (e.abandoned ? ' abandoned' : '')
+      + (view.state === 'KEPT' && i !== view.current ? ' gone' : '');
     el.innerHTML = e.revealed
       ? `<div class="env-num">${i + 1}</div><div class="env-content">${e.content || ''}</div>`
       : `<div class="env-num">${i + 1}</div><div class="env-q">?</div>`;

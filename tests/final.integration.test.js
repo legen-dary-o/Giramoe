@@ -126,8 +126,9 @@ test('final: picks/timer/carry/-3s, then envelopes (open, blind change, admin re
     assert.strictEqual(m.env.envelopes[0].revealed, true);
     assert.strictEqual(m.env.envelopes[0].content, 'BUSTA UNO');
 
-    // Blind change -> the other green (3); the first is abandoned, no changes left.
-    players[0].emit('player:envelopeChange'); await wait(150);
+    // The finalist chooses to change to the other green (3); here it's the only
+    // available green, so that's the one picked. The first is abandoned, no changes left.
+    players[0].emit('player:envelopeChange', { index: 2 }); await wait(150);
     assert.strictEqual(m.env.current, 2);
     assert.strictEqual(m.env.envelopes[2].content, 'BUSTA TRE');
     assert.strictEqual(m.env.envelopes[0].abandoned, true);
@@ -138,6 +139,11 @@ test('final: picks/timer/carry/-3s, then envelopes (open, blind change, admin re
     admin.emit('admin:envelopeRevealRed', { index: 1 }); await wait(150);
     assert.strictEqual(m.env.envelopes[1].revealed, true);
     assert.strictEqual(m.env.envelopes[1].content, 'BUSTA DUE');
+
+    // The finalist keeps it -> state KEPT (the display collapses to the chosen one).
+    players[0].emit('player:envelopeKeep'); await wait(150);
+    assert.strictEqual(m.env.state, 'KEPT');
+    assert.strictEqual(m.env.current, 2);
   } finally {
     [admin, main, ...players].forEach(s => s.close());
     await new Promise(r => ioServer.close(r));

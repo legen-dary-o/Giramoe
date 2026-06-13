@@ -848,8 +848,14 @@ io.on('connection', (socket) => {
     if (socket.playerIndex !== state.gi.currentTurnIndex) return;
     const res = giramoe.callConsonant(state.gi, letter);
     if (!res.ok) return;
-    if (res.present) io.to('main').emit('main:revealLetter', { positions: res.positions });
-    startGiramoeBuzzWindow();
+    if (res.present) {
+      io.to('main').emit('main:revealLetter', { positions: res.positions });
+      startGiramoeBuzzWindow();
+    } else {
+      // Absent consonant: no buzz window — the turn already passed to the next player.
+      clearGiramoeTimer();
+      io.to('main').emit('main:wrong');
+    }
     broadcastGiramoe();
   });
 
@@ -970,10 +976,17 @@ io.on('connection', (socket) => {
     broadcastEnvelopes(false);
   });
 
-  socket.on('player:envelopeChange', () => {
+  socket.on('player:envelopeChange', ({ index }) => {
     if (state.phase !== 'envelopes' || !state.env) return;
     if (socket.playerIndex !== state.finalistId) return;
-    if (!envelopes.changeEnvelope(state.env).ok) return;
+    if (!envelopes.changeEnvelope(state.env, index).ok) return;
+    broadcastEnvelopes(false);
+  });
+
+  socket.on('player:envelopeKeep', () => {
+    if (state.phase !== 'envelopes' || !state.env) return;
+    if (socket.playerIndex !== state.finalistId) return;
+    if (!envelopes.keepEnvelope(state.env).ok) return;
     broadcastEnvelopes(false);
   });
 

@@ -2,10 +2,10 @@ const board = require('./board');
 
 // GIRAMOE — the final wheel board. The admin spins the wheel once for a multiplier
 // V; players then take turns calling ONE consonant each (no vowels). A present
-// consonant scores V x occurrences for that player. After calling, the player has a
-// short window to buzz and solve aloud. Only the player who solves banks their own
-// points; everyone else banks nothing. Pure state machine — the 5s buzz timer lives
-// in server.js.
+// consonant scores V x occurrences for that player and opens a short window to buzz
+// and solve aloud; an absent consonant scores nothing and passes the turn (no buzz).
+// Only the player who solves banks their own points; everyone else banks nothing.
+// Pure state machine — the 5s buzz timer lives in server.js.
 
 function createGiramoe(players, category, phrase) {
   const r = board.createBoard(category, phrase);
@@ -43,23 +43,26 @@ function passTurn(gi) {
   gi.state = 'PLAYING';
 }
 
-// Current player calls one consonant. Present -> reveal + V x occurrences. After any
-// call (present or not) the buzz window opens (calledThisTurn = true).
+// Current player calls one consonant. Present -> reveal + V x occurrences, then the
+// buzz window opens (calledThisTurn = true). Absent -> no points, no buzz: the turn
+// passes straight to the next player.
 function callConsonant(gi, letter) {
   letter = String(letter).toUpperCase();
   if (gi.state !== 'PLAYING' || gi.calledThisTurn) return { ok: false };
   if (!board.isConsonant(letter) || gi.usedLetters.includes(letter)) return { ok: false };
 
   gi.usedLetters.push(letter);
-  gi.calledThisTurn = true;
   const count = board.countOccurrences(gi.board.grid, letter);
   if (count > 0) {
     const positions = board.letterPositions(gi.board.grid, letter);
     board.revealLetter(gi.board.grid, letter);
     currentPlayer(gi).points += gi.multiplier * count;
+    gi.calledThisTurn = true; // only a present consonant opens the buzz window
     return { ok: true, present: true, count, positions };
   }
-  return { ok: true, present: false, count: 0, positions: [] };
+  // Absent consonant: scores nothing and can't be solved on -> pass to the next player.
+  passTurn(gi);
+  return { ok: true, present: false, count: 0, positions: [], passed: true };
 }
 
 // Only the current player, and only after they've called a letter, may buzz.

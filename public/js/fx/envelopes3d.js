@@ -98,14 +98,18 @@ export class Envelopes3D {
 
   set(view) {
     this.view = view;
+    const kept = view.state === 'KEPT';
     view.envelopes.forEach((e, i) => {
       const it = this.items[i];
-      it.targetZ = i === view.current ? 0.9 : 0;
-      it.targetScale = i === view.current ? 1.12 : 1;
+      const isCurrent = i === view.current;
+      // Keeping collapses the display to the chosen one: the others shrink and recede.
+      const goneAway = kept && !isCurrent;
+      it.targetZ = goneAway ? -4 : (isCurrent ? (kept ? 1.3 : 0.9) : 0);
+      it.targetScale = goneAway ? 0.001 : (isCurrent ? (kept ? 1.3 : 1.12) : 1);
       it.flapTarget = e.revealed ? -2.4 : 0;
       it.bodyMat.uniforms.uDim.value = e.abandoned ? 0.3 : 1;
       it.flapMat.uniforms.uDim.value = e.abandoned ? 0.3 : 1;
-      it.content.visible = !!e.revealed;
+      it.content.visible = !!e.revealed && !goneAway;
       if (e.revealed) this._drawText(it.content, e.content || (e.color === 'red' ? '✕' : ''));
       // bordo: rivelata green → ciano, red → bianco spento, corrente → bianco pieno
       const edgeColor = e.revealed ? (e.color === 'green' ? ACCENT_CSS : '#9a9aa0') : '#ffffff';

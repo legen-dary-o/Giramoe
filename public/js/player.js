@@ -194,10 +194,27 @@ socket.on('player:finalState', (st) => applyFinalState(st));
 
 // --- Envelopes ---
 let amFinalist = false;
-document.getElementById('btn-env-change').addEventListener('click', () => socket.emit('player:envelopeChange'));
+let lastEnvView = null;
+let envChangeArmed = false; // true once CAMBIA is pressed with 2+ greens to pick from
+
+document.getElementById('btn-env-keep').addEventListener('click', () => {
+  envChangeArmed = false;
+  socket.emit('player:envelopeKeep');
+});
+document.getElementById('btn-env-change').addEventListener('click', () => {
+  if (!lastEnvView) return;
+  const avail = availableGreens(lastEnvView);
+  if (avail.length === 1) {
+    socket.emit('player:envelopeChange', { index: avail[0] }); // only one option: go
+  } else if (avail.length > 1) {
+    envChangeArmed = true;             // let the finalist tap WHICH green to switch to
+    applyEnvelopes(lastEnvView);
+  }
+});
 
 socket.on('player:envelopesStart', ({ view, isFinalist }) => {
   amFinalist = isFinalist;
+  envChangeArmed = false;
   showScreen('player-envelopes-screen');
   applyEnvelopes(view);
 });
@@ -206,12 +223,27 @@ socket.on('player:envelopesState', ({ view, isFinalist }) => {
   applyEnvelopes(view);
 });
 
+// Closed green envelopes the finalist could still switch into (not the held one).
+function availableGreens(view) {
+  return view.envelopes
+    .map((e, i) => ({ e, i }))
+    .filter(({ e, i }) => e.color === 'green' && !e.revealed && !e.abandoned && i !== view.current)
+    .map(({ i }) => i);
+}
+
 function applyEnvelopes(view) {
+  lastEnvView = view;
+  const avail = availableGreens(view);
+  const canChange = amFinalist && view.state === 'OPENED' && view.changesLeft > 0 && avail.length > 0;
+  if (!canChange) envChangeArmed = false;
+
   const msg = document.getElementById('env-message');
   if (!amFinalist) msg.textContent = 'Apertura buste…';
   else if (view.state === 'NONE') msg.textContent = 'Nessuna busta verde';
   else if (view.state === 'CHOOSING') msg.textContent = 'Tocca una busta verde per aprirla';
-  else if (view.changesLeft > 0) msg.textContent = 'Tieni questa o cambia (alla cieca)';
+  else if (view.state === 'KEPT') msg.textContent = 'È la tua busta!';
+  else if (envChangeArmed) msg.textContent = 'Tocca la busta verde su cui spostarti';
+  else if (canChange) msg.textContent = 'Tieni questa o cambia';
   else msg.textContent = 'È la tua busta!';
 
   const row = document.getElementById('player-envelopes-row');
@@ -221,21 +253,32 @@ function applyEnvelopes(view) {
     el.className = 'envelope ' + e.color
       + (e.revealed ? ' open' : '')
       + (i === view.current ? ' current' : '')
-      + (e.abandoned ? ' abandoned' : '');
+      + (e.abandoned ? ' abandoned' : '')
+      + (view.state === 'KEPT' && i !== view.current ? ' gone' : '');
     el.innerHTML = e.revealed
       ? `<div class="env-num">${i + 1}</div><div class="env-content">${e.content || ''}</div>`
       : `<div class="env-num">${i + 1}</div><div class="env-q">?</div>`;
     if (amFinalist && view.state === 'CHOOSING' && e.color === 'green' && !e.revealed) {
       el.classList.add('pickable');
       el.addEventListener('click', () => socket.emit('player:envelopeOpen', { index: i }));
+    } else if (envChangeArmed && avail.includes(i)) {
+      el.classList.add('pickable');
+      el.addEventListener('click', () => {
+        envChangeArmed = false;
+        socket.emit('player:envelopeChange', { index: i });
+      });
     }
     row.appendChild(el);
   });
 
-  const change = document.getElementById('btn-env-change');
-  const showChange = amFinalist && view.state === 'OPENED' && view.changesLeft > 0;
-  change.style.display = showChange ? '' : 'none';
-  change.textContent = `CAMBIA (${view.changesLeft})`;
+  // TIENI + CAMBIA are shown together once an envelope is opened; arming CAMBIA hides
+  // them while the finalist taps the green to move to.
+  const keepBtn = document.getElementById('btn-env-keep');
+  const changeBtn = document.getElementById('btn-env-change');
+  const showButtons = amFinalist && view.state === 'OPENED' && !envChangeArmed;
+  keepBtn.style.display = showButtons ? '' : 'none';
+  changeBtn.style.display = showButtons && canChange ? '' : 'none';
+  changeBtn.textContent = `CAMBIA (${view.changesLeft})`;
 }
 
 function buildFinalKeyboard() {

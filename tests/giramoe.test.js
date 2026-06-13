@@ -117,11 +117,15 @@ test('timeout (no buzz in the window) passes the turn', () => {
   assert.strictEqual(giramoe.timeout(gi).ok, false);
 });
 
-test('an absent consonant still opens the buzz window (read-the-board solve)', () => {
+test('an absent consonant scores nothing and passes the turn (no buzz)', () => {
   const gi = make('CECE');
   giramoe.setMultiplier(gi, 100);
   const res = giramoe.callConsonant(gi, 'Z'); // absent
   assert.strictEqual(res.present, false);
+  assert.strictEqual(res.passed, true);
   assert.strictEqual(gi.players[0].points, 0);
-  assert.strictEqual(giramoe.buzz(gi, 0).ok, true); // can still buzz to solve
+  assert.strictEqual(gi.currentTurnIndex, 1, 'turn passed to the next player');
+  assert.strictEqual(gi.calledThisTurn, false);
+  assert.strictEqual(giramoe.buzz(gi, 0).ok, false, 'the caller cannot buzz after an absent letter');
+  assert.strictEqual(giramoe.buzz(gi, 1).ok, false, 'the next player must call a letter first');
 });

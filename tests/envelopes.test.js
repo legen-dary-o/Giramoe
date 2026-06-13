@@ -28,26 +28,49 @@ test('opening a green reveals it and arms the change; a red cannot be opened', (
   assert.strictEqual(e.state, 'OPENED');
 });
 
-test('change swaps to the other green, abandons the first, and it cannot be re-chosen', () => {
+test('change swaps to the CHOSEN green, abandons the first, and it cannot be re-chosen', () => {
   const e = env.createEnvelopes([true, false, true], ['ONE', 'X', 'TWO']);
   env.openEnvelope(e, 0);
-  const r = env.changeEnvelope(e);
+  const r = env.changeEnvelope(e, 2); // the player picks index 2
   assert.deepStrictEqual(r, { ok: true, index: 2, content: 'TWO' });
   assert.strictEqual(e.current, 2);
   assert.strictEqual(e.envelopes[0].abandoned, true);
   assert.strictEqual(e.changesLeft, 0);
   // no changes left, and the abandoned one is gone from the pool
-  assert.strictEqual(env.changeEnvelope(e).ok, false);
+  assert.strictEqual(env.changeEnvelope(e, 0).ok, false);
 });
 
-test('three greens: open then change twice, visiting all three', () => {
+test('change is rejected for a non-green, the held one, or a value not in the pool', () => {
+  const e = env.createEnvelopes([true, false, true], ['A', 'NOPE', 'C']);
+  env.openEnvelope(e, 0);
+  assert.strictEqual(env.changeEnvelope(e, 1).ok, false, 'cannot change into a red');
+  assert.strictEqual(env.changeEnvelope(e, 0).ok, false, 'cannot change into the one you hold');
+  assert.strictEqual(env.changeEnvelope(e, 9).ok, false, 'out-of-range index');
+});
+
+test('three greens: open then change twice, the PLAYER chooses which each time', () => {
   const e = env.createEnvelopes([true, true, true], ['A', 'B', 'C']);
   env.openEnvelope(e, 1);
   assert.strictEqual(e.current, 1);
-  assert.strictEqual(env.changeEnvelope(e).index, 0); // next available green by index
-  assert.strictEqual(env.changeEnvelope(e).index, 2);
+  assert.strictEqual(env.changeEnvelope(e, 2).index, 2); // chosen, not auto
+  assert.strictEqual(env.changeEnvelope(e, 0).index, 0);
   assert.strictEqual(e.changesLeft, 0);
-  assert.ok(e.envelopes[1].abandoned && e.envelopes[0].abandoned);
+  assert.ok(e.envelopes[1].abandoned && e.envelopes[2].abandoned);
+});
+
+test('keep locks in the held envelope (state KEPT) and blocks further actions', () => {
+  const e = env.createEnvelopes([true, true, true], ['A', 'B', 'C']);
+  env.openEnvelope(e, 0);
+  const r = env.keepEnvelope(e);
+  assert.deepStrictEqual(r, { ok: true, index: 0, content: 'A' });
+  assert.strictEqual(e.state, 'KEPT');
+  assert.strictEqual(env.changeEnvelope(e, 1).ok, false, 'no changing after keep');
+  assert.strictEqual(env.keepEnvelope(e).ok, false, 'cannot keep twice');
+});
+
+test('keep is only valid while holding an opened envelope', () => {
+  const e = env.createEnvelopes([true, false, true], ['A', 'X', 'C']);
+  assert.strictEqual(env.keepEnvelope(e).ok, false, 'nothing opened yet');
 });
 
 test('admin reveals a red; greens are not red-revealable and double-reveal is rejected', () => {
@@ -63,5 +86,5 @@ test('with one green the player opens that one and cannot change', () => {
   const e = env.createEnvelopes([false, true, false], ['x', 'WIN', 'y']);
   assert.strictEqual(e.changesLeft, 0);
   assert.strictEqual(env.openEnvelope(e, 1).ok, true);
-  assert.strictEqual(env.changeEnvelope(e).ok, false);
+  assert.strictEqual(env.changeEnvelope(e, 0).ok, false);
 });
