@@ -3,7 +3,7 @@
 // converge a formare la parola, tiene, poi si disperde.
 import * as THREE from '../../vendor/three.module.js';
 
-const COUNT_MAX = 1600;
+const COUNT_MAX = 2200;
 
 export class TitleDots {
   constructor(scene) {
@@ -22,31 +22,45 @@ export class TitleDots {
 
   async show(word) {
     await document.fonts.load('800 180px Syne').catch(() => {});
+    const W = 1280, H = 320;
     const cnv = document.createElement('canvas');
-    cnv.width = 1024; cnv.height = 256;
+    cnv.width = W; cnv.height = H;
     const ctx = cnv.getContext('2d');
-    ctx.font = '800 180px Syne, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff';
-    ctx.fillText(word, 512, 128);
-    const img = ctx.getImageData(0, 0, 1024, 256).data;
+    // adatta il corpo del font alla larghezza: parole lunghe (IL TRIPLETE)
+    // altrimenti debordano dal canvas e perdono le lettere ai bordi
+    let fontSize = 200;
+    ctx.font = `800 ${fontSize}px Syne, sans-serif`;
+    while (ctx.measureText(word).width > W * 0.92 && fontSize > 40) {
+      fontSize -= 8;
+      ctx.font = `800 ${fontSize}px Syne, sans-serif`;
+    }
+    ctx.fillText(word, W / 2, H / 2);
+    const img = ctx.getImageData(0, 0, W, H).data;
 
-    // campiona i pixel pieni a passo fisso → posizioni world (larghezza ~8 unità)
-    let n = 0;
-    for (let y = 0; y < 256 && n < COUNT_MAX; y += 4) {
-      for (let x = 0; x < 1024 && n < COUNT_MAX; x += 4) {
-        if (img[(y * 1024 + x) * 4 + 3] > 128) {
-          this.target[n * 3] = ((x - 512) / 1024) * 8;
-          this.target[n * 3 + 1] = ((128 - y) / 256) * 2 + 0.4;
-          this.target[n * 3 + 2] = 0.5;
-          // partenza: sparsi in una sfera larga
-          this.pos[n * 3] = (Math.random() - 0.5) * 14;
-          this.pos[n * 3 + 1] = (Math.random() - 0.5) * 8;
-          this.pos[n * 3 + 2] = (Math.random() - 0.5) * 4;
-          n++;
-        }
+    // raccoglie TUTTI i pixel pieni, poi ne campiona COUNT_MAX uniformemente:
+    // così i punti coprono l'intera parola invece di esaurirsi sulle prime righe.
+    const filled = [];
+    for (let y = 0; y < H; y += 3) {
+      for (let x = 0; x < W; x += 3) {
+        if (img[(y * W + x) * 4 + 3] > 128) filled.push(x, y);
       }
+    }
+    const total = filled.length / 2;
+    const n = Math.min(total, COUNT_MAX);
+    const stride = total > 0 ? total / n : 1; // salta uniformemente se troppi pixel
+    for (let k = 0; k < n; k++) {
+      const idx = Math.floor(k * stride) * 2;
+      const x = filled[idx], y = filled[idx + 1];
+      this.target[k * 3] = ((x - W / 2) / W) * 9;          // larghezza ~9 unità
+      this.target[k * 3 + 1] = ((H / 2 - y) / H) * 2.3 + 0.4;
+      this.target[k * 3 + 2] = 0.5;
+      // partenza: sparsi in una sfera larga
+      this.pos[k * 3] = (Math.random() - 0.5) * 14;
+      this.pos[k * 3 + 1] = (Math.random() - 0.5) * 8;
+      this.pos[k * 3 + 2] = (Math.random() - 0.5) * 4;
     }
     this.count = n;
     this.geo.setDrawRange(0, n);
