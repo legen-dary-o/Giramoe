@@ -1,6 +1,7 @@
 import { initCursor } from './fx/cursor.js';
 import { Wheel3D } from './fx/wheel3d.js';
 import { HomeWheel } from './fx/homewheel.js';
+import { Stage3D } from './fx/stage3d.js';
 
 initCursor();
 let home = null;
@@ -10,7 +11,15 @@ try {
 } catch (err) {
   console.warn('HomeWheel non disponibile (WebGL?):', err);
 }
-window.addEventListener('resize', () => { if (home) home.resize(); });
+let stage = null;
+try {
+  stage = new Stage3D(document.getElementById('stage-canvas'));
+  document.body.classList.add('webgl-stage');
+  window.__stage = stage; // hook di verifica manuale
+} catch (err) {
+  console.warn('Stage3D non disponibile, fallback DOM:', err);
+}
+window.addEventListener('resize', () => { if (home) home.resize(); if (stage) stage.resize(); });
 
 const socket = io();
 let wheel = null;
@@ -23,6 +32,18 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
   if (home) home.setEnabled(id === 'start-tap-screen');
+  if (stage) {
+    const modes = {
+      'lobby-screen': 'ambient',
+      'triplete-title-screen': 'ambient',
+      'finalist-screen': 'ambient',
+      'game-screen': 'board',
+      'triplete-screen': 'board',
+      'final-screen': 'board',
+      'envelopes-screen': 'envelopes'
+    };
+    stage.setMode(modes[id] || 'hidden');
+  }
 }
 
 // --- Tap to start: sblocca audio, title animation GIRAMOE, poi fase corrente ---
@@ -82,6 +103,7 @@ socket.on('main:gameState', (g) => {
 socket.on('main:scores', ({ scores, currentTurn }) => renderScores(scores, currentTurn));
 
 socket.on('main:spin', ({ winningSegment, spins, value }) => {
+  if (stage) stage.pulse('spin');
   if (!wheel) return;
   setWheelZoom(true);
   Sfx.startSpin();
@@ -107,9 +129,9 @@ function setWheelZoom(on) {
 
 socket.on('main:revealLetter', ({ positions }) => revealSequence(positions));
 
-socket.on('main:solved', () => { Sfx.play('correct'); fxVeil('correct'); });
+socket.on('main:solved', () => { if (stage) stage.pulse('correct'); Sfx.play('correct'); fxVeil('correct'); });
 
-socket.on('main:wrong', () => { Sfx.play('wrong'); fxVeil('wrong'); });
+socket.on('main:wrong', () => { if (stage) stage.pulse('wrong'); Sfx.play('wrong'); fxVeil('wrong'); });
 
 // --- Feedback bordo schermo: velo verde/rosso + shake sull'errore ---
 function fxVeil(kind) {
@@ -363,6 +385,7 @@ socket.on('main:expressStart', () => {
 });
 
 socket.on('main:expressBankrupt', () => {
+  if (stage) stage.pulse('wrong');
   Sfx.play('wrong');
   fxVeil('wrong');
   showResult('BANCAROTTA');
@@ -397,6 +420,7 @@ socket.on('main:giramoeBuzzed', ({ name }) => {
 socket.on('main:giramoeResume', () => hideBuzz());
 
 socket.on('main:giramoeSolved', ({ name, points }) => {
+  if (stage) stage.pulse('correct');
   hideBuzz();
   fxVeil('correct');
   showResult(`${name} +${points}`);
@@ -437,12 +461,14 @@ socket.on('main:tripleteBuzzed', ({ name }) => {
 });
 
 socket.on('main:tripleteResume', () => {
+  if (stage) stage.pulse('wrong');
   Sfx.play('wrong');
   fxVeil('wrong');
   hideBuzz();
 });
 
 socket.on('main:tripleteSolved', ({ board, name, points }) => {
+  if (stage) stage.pulse('correct');
   hideBuzz();
   renderTripleteBoard(board.grid);
   Sfx.play('correct');
