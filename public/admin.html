@@ -10,8 +10,8 @@
   <!-- Pre-game -->
   <div id="admin-pregame" class="screen">
     <div class="mobile-container">
-      <img src="/assets/logo.png" alt="Giramoe" style="width: 120px; margin-bottom: 16px;">
-      <h1 style="font-size: 22px; font-weight: 700; margin-bottom: 24px;">Game Master</h1>
+      <div class="wm phone-wm">GIRAMOE</div>
+      <h1 style="font-size: 13px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-faint); margin: 8px 0 24px;">Game Master</h1>
       <button class="glass-button" id="btn-inizia">Inizia</button>
     </div>
   </div>
@@ -50,11 +50,113 @@
     </div>
   </div>
 
-  <!-- Match End -->
-  <div id="admin-matchend" class="screen hidden">
+  <!-- Triplete: ready (button appears after the 3 wheel boards) -->
+  <div id="admin-tripleteready" class="screen hidden">
     <div class="admin-container">
-      <h1>Fine partita</h1>
-      <div class="admin-player-list" id="admin-standings"></div>
+      <h1>Tabelloni finiti!</h1>
+      <p style="margin-bottom: 22px; color: var(--ink-soft);">Pronti per il gioco finale.</p>
+      <button class="glass-button" id="btn-go-triplete">IL TRIPLETE</button>
+    </div>
+  </div>
+
+  <!-- Triplete: control -->
+  <div id="admin-triplete" class="screen hidden">
+    <div class="admin-container">
+      <h1>IL TRIPLETE</h1>
+      <div class="admin-section" id="triplete-setup">
+        <h2>Argomento e 3 frasi</h2>
+        <input type="text" id="tr-title" class="glass-input" placeholder="Titolo / argomento" autocomplete="off">
+        <input type="text" id="tr-phrase-1" class="glass-input" placeholder="Frase 1" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="tr-phrase-2" class="glass-input" placeholder="Frase 2" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="tr-phrase-3" class="glass-input" placeholder="Frase 3" autocomplete="off" style="margin-top:8px;">
+        <button class="glass-button" id="btn-triplete-start" style="margin-top:10px;">Avvia il Triplete</button>
+        <div class="board-error" id="triplete-error"></div>
+      </div>
+      <div class="admin-section hidden" id="triplete-live">
+        <h2 id="triplete-board-counter">Tabellone 1 / 3</h2>
+        <div class="admin-player-list" id="triplete-scores"></div>
+      </div>
+      <div class="admin-section admin-actions hidden" id="triplete-actions">
+        <button class="glass-button" id="btn-triplete-correct" disabled>Frase indovinata</button>
+        <button class="glass-button" id="btn-triplete-wrong" disabled>Frase sbagliata</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Giramoe (final wheel board) -->
+  <div id="admin-giramoe" class="screen hidden">
+    <div class="admin-container">
+      <h1>GIRAMOE</h1>
+      <div class="admin-section" id="giramoe-setup">
+        <h2>Tabellone finale</h2>
+        <input type="text" id="gi-cat" class="glass-input" placeholder="Categoria" autocomplete="off">
+        <input type="text" id="gi-phrase" class="glass-input" placeholder="Frase" autocomplete="off" style="margin-top:8px;">
+        <button class="glass-button" id="btn-giramoe-setboard" style="margin-top:8px;">Avvia tabellone</button>
+        <div class="board-error" id="giramoe-error"></div>
+      </div>
+      <div class="admin-section hidden" id="giramoe-live">
+        <button class="glass-button" id="btn-giramoe-spin">Gira la ruota</button>
+        <h2 style="margin-top:12px;">Turno: <span id="gi-turn-name">—</span> <span id="gi-mult-tag" class="turn-state-tag"></span></h2>
+        <div class="admin-player-list" id="giramoe-scores"></div>
+      </div>
+      <div class="admin-section admin-actions hidden" id="giramoe-actions">
+        <button class="glass-button" id="btn-giramoe-correct" disabled>Frase indovinata</button>
+        <button class="glass-button" id="btn-giramoe-wrong" disabled>Frase sbagliata</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tie-break -->
+  <div id="admin-tiebreak" class="screen hidden">
+    <div class="admin-container">
+      <h1>Spareggio</h1>
+      <p style="margin-bottom: 16px; color: var(--ink-soft);">I concorrenti girano la ruota dal telefono.</p>
+      <div class="admin-player-list" id="admin-tiebreak-list"></div>
+    </div>
+  </div>
+
+  <!-- Finalist -->
+  <div id="admin-finalist" class="screen hidden">
+    <div class="admin-container">
+      <h1>Finalista</h1>
+      <div class="admin-player-item glass-panel" id="admin-finalist-name"></div>
+      <div class="admin-section" style="margin-top:16px;">
+        <h2>Gioco finale</h2>
+        <input type="text" id="fin-topic" class="glass-input" placeholder="Argomento" autocomplete="off">
+        <input type="text" id="fin-phrase-1" class="glass-input" placeholder="Frase 1" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="fin-phrase-2" class="glass-input" placeholder="Frase 2" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="fin-phrase-3" class="glass-input" placeholder="Frase 3" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="fin-env-1" class="glass-input" placeholder="Busta 1 (testo)" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="fin-env-2" class="glass-input" placeholder="Busta 2 (testo)" autocomplete="off" style="margin-top:8px;">
+        <input type="text" id="fin-env-3" class="glass-input" placeholder="Busta 3 (testo)" autocomplete="off" style="margin-top:8px;">
+        <button class="glass-button" id="btn-start-final" style="margin-top:10px;">Inizia il finale</button>
+        <div class="board-error" id="final-error"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Final control -->
+  <div id="admin-final" class="screen hidden">
+    <div class="admin-container">
+      <h1>Gioco finale</h1>
+      <div class="admin-section">
+        <h2><span id="fin-board-counter">Tabellone 1 / 3</span> · <span id="fin-timer">60s</span></h2>
+        <div class="admin-player-list" id="fin-results"></div>
+        <div id="fin-state" class="turn-state-tag" style="margin-top:8px;"></div>
+      </div>
+      <div class="admin-section admin-actions">
+        <button class="glass-button" id="btn-final-correct" disabled>Frase indovinata</button>
+        <button class="glass-button" id="btn-final-wrong" disabled>Frase sbagliata</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Envelopes -->
+  <div id="admin-envelopes" class="screen hidden">
+    <div class="admin-container">
+      <h1>Buste</h1>
+      <p style="margin-bottom: 12px; color: var(--ink-soft);">Il finalista apre/cambia le verdi. Le rosse le riveli tu.</p>
+      <div class="admin-player-list" id="admin-envelopes-list"></div>
     </div>
   </div>
 

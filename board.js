@@ -113,6 +113,26 @@ function letterPositions(grid, letter) {
   return out;
 }
 
+// All currently-unrevealed letter cells, in row-major order. Used by the Triplete
+// to pick which cell to reveal/flash next.
+function hiddenLetterCells(grid) {
+  const out = [];
+  for (let r = 0; r < grid.length; r++)
+    for (let c = 0; c < grid[r].length; c++) {
+      const cell = grid[r][c];
+      if (cell.type === 'letter' && !cell.revealed) out.push({ row: r, col: c, letter: cell.letter });
+    }
+  return out;
+}
+
+// Reveal a single cell by position. Returns its letter, or null if it isn't a letter cell.
+function revealCellAt(grid, row, col) {
+  const cell = grid[row] && grid[row][col];
+  if (!cell || cell.type !== 'letter') return null;
+  cell.revealed = true;
+  return cell.letter;
+}
+
 function isSolved(grid) {
   for (const row of grid)
     for (const cell of row)
@@ -126,6 +146,22 @@ function revealAll(grid) {
       if (cell.type === 'letter') cell.revealed = true;
 }
 
+// Reveal the first and last letter cell of every word (a word = a contiguous run of
+// letter cells in a row). Single-letter words reveal that one cell. Used by the
+// final game's second board.
+function revealFirstLast(grid) {
+  for (const row of grid) {
+    let c = 0;
+    while (c < row.length) {
+      if (row[c].type !== 'letter') { c++; continue; }
+      const start = c;
+      while (c < row.length && row[c].type === 'letter') c++;
+      row[start].revealed = true;
+      row[c - 1].revealed = true;
+    }
+  }
+}
+
 function isVowel(letter) {
   return VOWELS.has(letter);
 }
@@ -136,6 +172,7 @@ function isConsonant(letter) {
 
 module.exports = {
   normalize, layoutPhrase, buildGrid, createBoard,
-  countOccurrences, revealLetter, letterPositions, isSolved, revealAll, isVowel, isConsonant,
+  countOccurrences, revealLetter, letterPositions, isSolved, revealAll, revealFirstLast, isVowel, isConsonant,
+  hiddenLetterCells, revealCellAt,
   VOWELS, ROW_CAPACITIES, GRID_WIDTH
 };

@@ -5,6 +5,16 @@ const SEGMENTS = [
   300, 700, 500, 'next', 400, 300, 500, 'next'
 ];
 
+// EXPRESS round wheel: the first "PASSA"/next segment becomes EXPRESS.
+const EXPRESS_SEGMENTS = SEGMENTS.map((s, i) => (s === 'next' && i === 6) ? 'express' : s);
+const EXPRESS_VALUE = 500; // every occurrence of a called consonant is worth 500
+
+// GIRAMOE wheel: same as the initial wheel but the 5 special segments are swapped
+// for point values (no specials in the final wheel board).
+const GIRAMOE_SPECIAL_VALUES = { 1: 900, 2: 600, 6: 250, 11: 800, 15: 350 };
+const GIRAMOE_SEGMENTS = SEGMENTS.map((s, i) =>
+  typeof s === 'number' ? s : GIRAMOE_SPECIAL_VALUES[i]);
+
 function createGame(players) {
   return {
     players: players.map(p => ({ id: p.id, name: p.name, roundPoints: 0, bank: 0 })),
@@ -64,6 +74,11 @@ function applySpin(game, segmentIndex) {
   if (seg === 'raddoppia') {
     game.turnState = 'PICK_CONSONANT_DOUBLE';
     return { type: 'raddoppia' };
+  }
+  if (seg === 'express') {
+    // Express mode starts immediately: no spin/letter gate, rapid-fire from here.
+    game.turnState = 'EXPRESS';
+    return { type: 'express' };
   }
   game.lastSpinValue = seg;
   game.turnState = 'PICK_CONSONANT';
@@ -129,7 +144,53 @@ function applySolve(game) {
   return { ok: true, solvedBy: p.id };
 }
 
+// --- EXPRESS mode (express round only) ---
+
+// Full bankruptcy: wipe the turn points AND the player's whole bank, then pass.
+function expressBankrupt(game) {
+  const p = currentPlayer(game);
+  p.roundPoints = 0;
+  p.bank = 0;
+  passTurn(game);
+}
+
+// Rapid-fire letter in express mode. Consonants score 500 x occurrences; vowels are
+// bought for 500 (reveal only, no points). Any absent letter -> full bancarotta + pass.
+function applyExpressLetter(game, letter) {
+  letter = String(letter).toUpperCase();
+  if (game.turnState !== 'EXPRESS') return { ok: false };
+  if (!/^[A-Z]$/.test(letter) || game.usedLetters.includes(letter)) return { ok: false };
+
+  const p = currentPlayer(game);
+  const vowel = board.isVowel(letter);
+  if (vowel) {
+    if (p.roundPoints < 500) return { ok: false, reason: 'cantBuyVowel' };
+    p.roundPoints -= 500;
+  }
+
+  const count = board.countOccurrences(game.board.grid, letter);
+  if (count > 0) {
+    const positions = board.letterPositions(game.board.grid, letter);
+    board.revealLetter(game.board.grid, letter);
+    game.usedLetters.push(letter);
+    if (!vowel) p.roundPoints += EXPRESS_VALUE * count;
+    return { ok: true, present: true, vowel, count, positions, solved: board.isSolved(game.board.grid) };
+  }
+
+  expressBankrupt(game);
+  return { ok: true, present: false, vowel, count: 0, positions: [], bankrupt: true };
+}
+
+// Player tried to solve in express and got it wrong -> full bancarotta + pass.
+function applyExpressWrongSolve(game) {
+  if (game.turnState !== 'EXPRESS') return { ok: false };
+  expressBankrupt(game);
+  return { ok: true, bankrupt: true };
+}
+
 module.exports = {
-  SEGMENTS, createGame, currentPlayer, passTurn, startBoard,
-  applySpin, applyConsonant, canBuyVowel, applyVowel, applySolve
+  SEGMENTS, EXPRESS_SEGMENTS, EXPRESS_VALUE, GIRAMOE_SEGMENTS,
+  createGame, currentPlayer, passTurn, startBoard,
+  applySpin, applyConsonant, canBuyVowel, applyVowel, applySolve,
+  applyExpressLetter, applyExpressWrongSolve, expressBankrupt
 };

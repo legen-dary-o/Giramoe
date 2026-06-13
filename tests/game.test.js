@@ -208,3 +208,115 @@ test('applyVowel includes positions for a present vowel', () => {
   assert.strictEqual(res.present, true);
   assert.strictEqual(res.positions.length, 2);
 });
+
+// --- EXPRESS mode ---
+
+test('EXPRESS_SEGMENTS replaces the first PASSA with express, keeps the rest', () => {
+  assert.strictEqual(game.EXPRESS_SEGMENTS[6], 'express');
+  assert.strictEqual(game.EXPRESS_SEGMENTS[11], 'next');
+  assert.strictEqual(game.EXPRESS_SEGMENTS[15], 'next');
+  assert.strictEqual(game.EXPRESS_SEGMENTS.length, 16);
+  assert.strictEqual(game.EXPRESS_SEGMENTS[0], 1000);
+});
+
+test('landing on express enters EXPRESS turn state immediately', () => {
+  const g = newGame('CECE');
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+  const res = game.applySpin(g, 6); // express
+  assert.deepStrictEqual(res, { type: 'express' });
+  assert.strictEqual(g.turnState, 'EXPRESS');
+});
+
+test('express consonant scores 500 x occurrences and keeps firing', () => {
+  const g = newGame('CECE');
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+  game.applySpin(g, 6);
+  const res = game.applyExpressLetter(g, 'C'); // 2 occurrences
+  assert.strictEqual(res.present, true);
+  assert.strictEqual(res.count, 2);
+  assert.strictEqual(g.players[0].roundPoints, 1000); // 500 x 2
+  assert.strictEqual(g.turnState, 'EXPRESS');
+  assert.ok(g.usedLetters.includes('C'));
+});
+
+test('express absent consonant = full bancarotta (turn AND bank) + pass', () => {
+  const g = newGame('CECE');
+  g.players[0].bank = 8000;
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+  game.applySpin(g, 6);
+  game.applyExpressLetter(g, 'C'); // +1000
+  const res = game.applyExpressLetter(g, 'Z'); // absent
+  assert.strictEqual(res.present, false);
+  assert.strictEqual(res.bankrupt, true);
+  assert.strictEqual(g.players[0].roundPoints, 0);
+  assert.strictEqual(g.players[0].bank, 0);
+  assert.strictEqual(g.currentTurnIndex, 1);
+  assert.strictEqual(g.turnState, 'MUST_SPIN');
+});
+
+test('express vowel costs 500, reveals, scores no points', () => {
+  const g = newGame('CECE');
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+  game.applySpin(g, 6);
+  game.applyExpressLetter(g, 'C'); // +1000 -> roundPoints 1000
+  const res = game.applyExpressLetter(g, 'E'); // vowel: -500, present, no points
+  assert.strictEqual(res.present, true);
+  assert.strictEqual(res.vowel, true);
+  assert.strictEqual(g.players[0].roundPoints, 500); // 1000 - 500
+});
+
+test('express vowel below 500 round points is rejected (no-op)', () => {
+  const g = newGame('CECE');
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+  game.applySpin(g, 6);
+  const res = game.applyExpressLetter(g, 'E'); // roundPoints 0
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(g.players[0].roundPoints, 0);
+  assert.strictEqual(g.turnState, 'EXPRESS');
+});
+
+test('express absent vowel = full bancarotta', () => {
+  const g = newGame('CC EE');
+  g.players[0].bank = 3000;
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+  game.applySpin(g, 6);
+  game.applyExpressLetter(g, 'C'); // 2 C -> +1000
+  const res = game.applyExpressLetter(g, 'A'); // vowel, absent (paid 500 then bankrupt)
+  assert.strictEqual(res.present, false);
+  assert.strictEqual(res.bankrupt, true);
+  assert.strictEqual(g.players[0].bank, 0);
+  assert.strictEqual(g.currentTurnIndex, 1);
+});
+
+test('express letter that completes the board reports solved', () => {
+  const g = newGame('OK');
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+  game.applySpin(g, 6);
+  game.applyExpressLetter(g, 'K');
+  const res = game.applyExpressLetter(g, 'O');
+  assert.strictEqual(res.present, true);
+  assert.strictEqual(res.solved, true);
+});
+
+test('express wrong solve = full bancarotta + pass', () => {
+  const g = newGame('CECE');
+  g.players[0].bank = 4000;
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+  game.applySpin(g, 6);
+  game.applyExpressLetter(g, 'C'); // +1000
+  const res = game.applyExpressWrongSolve(g);
+  assert.strictEqual(res.bankrupt, true);
+  assert.strictEqual(g.players[0].roundPoints, 0);
+  assert.strictEqual(g.players[0].bank, 0);
+  assert.strictEqual(g.currentTurnIndex, 1);
+});
+
+test('express correct solve banks the express points (via applySolve)', () => {
+  const g = newGame('CECE');
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+  game.applySpin(g, 6);
+  game.applyExpressLetter(g, 'C'); // +1000
+  const res = game.applySolve(g);
+  assert.strictEqual(res.ok, true);
+  assert.strictEqual(g.players[0].bank, 1000);
+});

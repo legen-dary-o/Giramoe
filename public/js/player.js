@@ -10,6 +10,7 @@ let playerWheel = null;
 let myIndex = -1;
 let myName = '';
 let reconnecting = false;
+let expressMode = false; // when true the keyboard fires express letters, no spinning
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -68,11 +69,17 @@ socket.on('player:gameStarted', () => {
   buildKeyboard();
 });
 
+// Express round: back to the wheel game screen (board/keyboard already built).
+socket.on('player:expressRound', () => {
+  showScreen('player-game-screen');
+  document.getElementById('player-nick-display').textContent = myName;
+});
+
 socket.on('player:reconnected', ({ playerIndex, name, phase }) => {
   myIndex = playerIndex; myName = name;
   reconnecting = false;
   saveSession(name);
-  if (phase === 'playing') {
+  if (phase === 'playing' || phase === 'express') {
     showScreen('player-game-screen');
     document.getElementById('player-nick-display').textContent = myName;
     initWheel();
@@ -92,17 +99,184 @@ socket.on('player:turnState', (st) => {
   applyTurnState(st);
 });
 
-socket.on('player:matchEnd', ({ standings }) => {
-  showScreen('player-matchend');
-  const el = document.getElementById('player-standings');
-  el.innerHTML = '';
-  standings.forEach((s, i) => {
-    const row = document.createElement('div');
-    row.className = 'standing-row glass-panel' + (i === 0 ? ' winner' : '');
-    row.innerHTML = `<span>${i + 1}. ${s.name}</span><span>${s.bank}</span>`;
-    el.appendChild(row);
-  });
+// --- Triplete ---
+socket.on('player:tripleteIntro', () => {
+  showScreen('player-triplete-screen');
+  document.getElementById('tr-nick').textContent = myName;
 });
+
+socket.on('player:tripleteState', (st) => applyTripleteState(st));
+
+document.getElementById('btn-buzz').addEventListener('click', () => socket.emit('player:tripleteBuzz'));
+
+function applyTripleteState(st) {
+  document.getElementById('tr-points').textContent = st.points;
+  document.getElementById('tr-board').textContent = `Tabellone ${st.boardNumber}/${st.totalBoards}`;
+  const msg = document.getElementById('tr-message');
+  msg.textContent = st.message;
+  msg.className = 'turn-message ' + (st.buzzedByMe ? 'your-turn' : (st.locked ? 'waiting' : ''));
+  const btn = document.getElementById('btn-buzz');
+  btn.disabled = !st.canBuzz;
+  btn.classList.toggle('buzzed', st.buzzedByMe);
+}
+
+// --- Giramoe (final wheel board) ---
+let giKbBuilt = false;
+socket.on('player:giramoeIntro', () => {
+  showScreen('player-giramoe-screen');
+  document.getElementById('gi-nick').textContent = myName;
+  buildGiramoeKeyboard();
+});
+
+socket.on('player:giramoeState', (st) => applyGiramoeState(st));
+
+document.getElementById('btn-gi-buzz').addEventListener('click', () => socket.emit('player:giramoeBuzz'));
+
+function buildGiramoeKeyboard() {
+  if (giKbBuilt) return;
+  giKbBuilt = true;
+  const kb = document.getElementById('gi-keyboard');
+  kb.innerHTML = '';
+  CONSONANTS.forEach(letter => {
+    const b = document.createElement('button');
+    b.className = 'key';
+    b.textContent = letter;
+    b.dataset.letter = letter;
+    b.addEventListener('click', () => socket.emit('player:giramoeLetter', { letter }));
+    kb.appendChild(b);
+  });
+}
+
+function applyGiramoeState(st) {
+  document.getElementById('gi-points').textContent = st.points;
+  document.getElementById('gi-mult').textContent = st.multiplier ? '×' + st.multiplier : '×—';
+  const msg = document.getElementById('gi-message');
+  msg.textContent = st.message;
+  msg.className = 'turn-message ' + (st.isMyTurn ? 'your-turn' : 'waiting');
+  const kb = document.getElementById('gi-keyboard');
+  kb.classList.toggle('disabled', !st.canCall);
+  document.querySelectorAll('#gi-keyboard .key').forEach(b => {
+    b.disabled = !st.canCall || st.usedLetters.includes(b.dataset.letter);
+  });
+  const buzz = document.getElementById('btn-gi-buzz');
+  buzz.disabled = !st.canBuzz;
+  buzz.classList.toggle('armed', st.canBuzz);
+}
+
+// --- Tie-break + finalist ---
+document.getElementById('btn-tb-spin').addEventListener('click', () => socket.emit('player:tiebreakSpin'));
+
+socket.on('player:tiebreakState', (st) => {
+  showScreen('player-tiebreak-screen');
+  document.getElementById('tb-message').textContent = st.message;
+  const btn = document.getElementById('btn-tb-spin');
+  btn.disabled = !st.canSpin;
+  btn.classList.toggle('armed', st.canSpin);
+});
+
+socket.on('player:finalist', ({ name, isMe }) => {
+  showScreen('player-finalist-screen');
+  document.getElementById('player-finalist-title').textContent =
+    isMe ? 'Sei il finalista! 🏆' : `${name} va alla finale`;
+});
+
+// --- Final game (finalist only) ---
+let finalKbBuilt = false;
+document.getElementById('btn-final-buzz').addEventListener('click', () => socket.emit('player:finalBuzz'));
+
+socket.on('player:finalStart', ({ isFinalist }) => {
+  if (!isFinalist) return; // others keep spectating on the finalist screen
+  showScreen('player-final-screen');
+  buildFinalKeyboard();
+});
+
+socket.on('player:finalState', (st) => applyFinalState(st));
+
+// --- Envelopes ---
+let amFinalist = false;
+document.getElementById('btn-env-change').addEventListener('click', () => socket.emit('player:envelopeChange'));
+
+socket.on('player:envelopesStart', ({ view, isFinalist }) => {
+  amFinalist = isFinalist;
+  showScreen('player-envelopes-screen');
+  applyEnvelopes(view);
+});
+socket.on('player:envelopesState', ({ view, isFinalist }) => {
+  amFinalist = isFinalist;
+  applyEnvelopes(view);
+});
+
+function applyEnvelopes(view) {
+  const msg = document.getElementById('env-message');
+  if (!amFinalist) msg.textContent = 'Apertura buste…';
+  else if (view.state === 'NONE') msg.textContent = 'Nessuna busta verde';
+  else if (view.state === 'CHOOSING') msg.textContent = 'Tocca una busta verde per aprirla';
+  else if (view.changesLeft > 0) msg.textContent = 'Tieni questa o cambia (alla cieca)';
+  else msg.textContent = 'È la tua busta!';
+
+  const row = document.getElementById('player-envelopes-row');
+  row.innerHTML = '';
+  view.envelopes.forEach((e, i) => {
+    const el = document.createElement('div');
+    el.className = 'envelope ' + e.color
+      + (e.revealed ? ' open' : '')
+      + (i === view.current ? ' current' : '')
+      + (e.abandoned ? ' abandoned' : '');
+    el.innerHTML = e.revealed
+      ? `<div class="env-num">${i + 1}</div><div class="env-content">${e.content || ''}</div>`
+      : `<div class="env-num">${i + 1}</div><div class="env-q">?</div>`;
+    if (amFinalist && view.state === 'CHOOSING' && e.color === 'green' && !e.revealed) {
+      el.classList.add('pickable');
+      el.addEventListener('click', () => socket.emit('player:envelopeOpen', { index: i }));
+    }
+    row.appendChild(el);
+  });
+
+  const change = document.getElementById('btn-env-change');
+  const showChange = amFinalist && view.state === 'OPENED' && view.changesLeft > 0;
+  change.style.display = showChange ? '' : 'none';
+  change.textContent = `CAMBIA (${view.changesLeft})`;
+}
+
+function buildFinalKeyboard() {
+  if (finalKbBuilt) return;
+  finalKbBuilt = true;
+  const kb = document.getElementById('final-keyboard');
+  kb.innerHTML = '';
+  CONSONANTS.forEach(letter => {
+    const b = document.createElement('button');
+    b.className = 'key';
+    b.textContent = letter;
+    b.dataset.letter = letter;
+    b.addEventListener('click', () => socket.emit('player:finalPick', { letter }));
+    kb.appendChild(b);
+  });
+  const vr = document.getElementById('final-vowels');
+  vr.innerHTML = '';
+  VOWELS.forEach(letter => {
+    const b = document.createElement('button');
+    b.className = 'key vowel';
+    b.textContent = letter;
+    b.dataset.letter = letter;
+    b.addEventListener('click', () => socket.emit('player:finalPick', { letter }));
+    vr.appendChild(b);
+  });
+}
+
+function applyFinalState(st) {
+  const msg = document.getElementById('final-message');
+  msg.textContent = st.message;
+  msg.className = 'turn-message your-turn';
+  document.querySelectorAll('#final-keyboard .key').forEach(b => {
+    b.disabled = !st.canPickConsonant || st.usedLetters.includes(b.dataset.letter);
+  });
+  document.querySelectorAll('#final-vowels .key').forEach(b => {
+    b.disabled = !st.canPickVowel || st.usedLetters.includes(b.dataset.letter);
+  });
+  const buzz = document.getElementById('btn-final-buzz');
+  buzz.disabled = !st.canBuzz;
+  buzz.classList.toggle('armed', st.canBuzz);
+}
 
 // --- Wheel + spin ---
 function initWheel() {
@@ -128,7 +302,10 @@ function buildKeyboard() {
     b.className = 'key';
     b.textContent = letter;
     b.dataset.letter = letter;
-    b.addEventListener('click', () => socket.emit('player:pickConsonant', { letter }));
+    b.addEventListener('click', () => {
+      if (expressMode) socket.emit('player:expressLetter', { letter });
+      else socket.emit('player:pickConsonant', { letter });
+    });
     kb.appendChild(b);
   });
 
@@ -140,7 +317,8 @@ function buildKeyboard() {
     b.textContent = letter;
     b.dataset.letter = letter;
     b.addEventListener('click', () => {
-      socket.emit('player:buyVowel', { letter });
+      if (expressMode) socket.emit('player:expressLetter', { letter });
+      else socket.emit('player:buyVowel', { letter });
       vp.classList.add('hidden');
     });
     vp.appendChild(b);
@@ -167,6 +345,7 @@ function applyTurnState(st) {
   const container = document.getElementById('player-wheel-container');
 
   markUsedLetters(st.usedLetters);
+  expressMode = st.isMyTurn && st.turnState === 'EXPRESS';
 
   if (!st.isMyTurn) {
     msg.textContent = `Turno di ${st.currentTurnName}`;
@@ -183,6 +362,18 @@ function applyTurnState(st) {
   msg.className = 'turn-message your-turn';
 
   const state = st.turnState;
+
+  if (state === 'EXPRESS') {
+    // Rapid-fire: no wheel, keyboard always live, vowels buyable at >= 500.
+    spinBtn.disabled = true;
+    container.classList.add('disabled');
+    kb.classList.remove('disabled');
+    vowelBtn.disabled = st.roundPoints < 500;
+    vp.classList.add('hidden');
+    msg.textContent = '🚄 EXPRESS! Spara consonanti o compra vocali';
+    return;
+  }
+
   const canSpin = state === 'MUST_SPIN' || state === 'CONTINUE';
   const mustConsonant = state === 'PICK_CONSONANT' || state === 'PICK_CONSONANT_DOUBLE';
 

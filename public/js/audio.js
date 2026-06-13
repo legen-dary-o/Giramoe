@@ -4,7 +4,8 @@ const SOUNDS = {
   spin: new Audio('/assets/spinning-wheel.mp3'),
   letter: new Audio('/assets/lettera_rivelata.mp3'),
   correct: new Audio('/assets/risposta_corretta.mp3'),
-  wrong: new Audio('/assets/risposta_o_lettera_sbagliata.mp3')
+  wrong: new Audio('/assets/risposta_o_lettera_sbagliata.mp3'),
+  buzzer: new Audio('/assets/buzzer.mp3')
 };
 SOUNDS.spin.loop = true;
 

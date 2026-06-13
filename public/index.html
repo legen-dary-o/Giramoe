@@ -8,38 +8,61 @@
   <script src="/js/qrcode.min.js"></script>
 </head>
 <body>
-  <!-- Tap-to-start (unlocks audio, plays the intro video with sound) -->
+  <!-- Stage (three.js) sotto la UI -->
+  <canvas id="stage-canvas" aria-hidden="true"></canvas>
+
+  <!-- Intro: tap per sbloccare audio e partire (niente più video) -->
   <div id="start-tap-screen" class="screen">
-    <div class="mobile-container">
-      <img src="/assets/logo.png" alt="Giramoe" style="width: 220px; margin-bottom: 28px;">
-      <button class="glass-button" id="tap-start-btn">Tocca per iniziare</button>
+    <canvas id="home-canvas" aria-hidden="true"></canvas>
+    <span class="corner-label" style="top:4.5%; left:3.5%;">Giramoe&reg;</span>
+    <span class="corner-label" style="top:4.5%; right:3.5%;">Est. 2026</span>
+    <span class="corner-label" style="bottom:4.5%; left:3.5%;"><span class="live-dot"></span>Live</span>
+    <span class="corner-label" style="bottom:4.5%; right:3.5%;">Show dal vivo &mdash; IT</span>
+    <div id="intro-stage">
+      <div class="eyebrow rise">Giramoe Studio presenta</div>
+      <div class="wm rise">GIRAMOE</div>
+      <div class="intro-wheel-gap" aria-hidden="true"></div>
+      <div class="tagline rise">Il gioco della ruota. Tre giocatori, un finalista.</div>
+      <button class="glass-button rise" id="tap-start-btn" data-cursor-label="Tap">Tocca per iniziare</button>
+      <div class="intro-wait-hint">In attesa dell'host&hellip;</div>
     </div>
   </div>
 
-  <!-- Video Screen -->
-  <div id="video-screen" class="screen hidden">
-    <video id="intro-video" playsinline>
-      <source src="/assets/trailer.mp4" type="video/mp4">
-    </video>
+  <!-- Title animation (GIRAMOE / IL TRIPLETE / EXPRESS) -->
+  <div id="triplete-title-screen" class="screen hidden">
+    <div class="title-stage" id="title-stage">
+      <div class="eyebrow" id="title-eyebrow">Bonus round</div>
+      <div class="wm" id="triplete-title"></div>
+      <hr class="hairline">
+    </div>
   </div>
 
-  <!-- Start Button Screen -->
-  <div id="start-screen" class="screen hidden">
-    <button class="glass-button" id="start-btn" disabled>Inizia</button>
-  </div>
-
-  <!-- Lobby Screen -->
+  <!-- Lobby -->
   <div id="lobby-screen" class="screen hidden">
-    <div class="lobby-container">
-      <img src="/assets/logo.png" alt="Giramoe" class="lobby-logo">
-      <div class="qr-container glass-panel">
-        <canvas id="qr-canvas"></canvas>
+    <div class="lobby-grid">
+      <div class="lobby-col">
+        <div class="col-title">Giocatori</div>
+        <div class="player-slot" id="slot-0">&mdash;<span class="slot-idx">P1</span></div>
+        <div class="player-slot" id="slot-1">&mdash;<span class="slot-idx">P2</span></div>
+        <div class="player-slot" id="slot-2">&mdash;<span class="slot-idx">P3</span></div>
       </div>
-      <p class="lobby-hint">Inquadra il QR per entrare in partita</p>
-      <div class="player-slots" id="player-slots">
-        <div class="player-slot" id="slot-0">—</div>
-        <div class="player-slot" id="slot-1">—</div>
-        <div class="player-slot" id="slot-2">—</div>
+      <div class="lobby-center">
+        <div class="wm">GIRAMOE</div>
+        <div class="qr-container">
+          <canvas id="qr-canvas"></canvas>
+        </div>
+        <p class="lobby-hint">Inquadra per entrare</p>
+      </div>
+      <div class="lobby-col">
+        <div class="col-title">Partita</div>
+        <div class="stat-row"><b>3</b><small>tabelloni</small></div>
+        <div class="stat-row"><b>6</b><small>fasi</small></div>
+        <div class="stat-row"><b>3</b><small>buste finali</small></div>
+      </div>
+      <div class="phases">
+        <span class="ph now"><em>01</em>Tabelloni</span><span class="ph"><em>02</em>Triplete</span>
+        <span class="ph"><em>03</em>Express</span><span class="ph"><em>04</em>Giramoe</span>
+        <span class="ph"><em>05</em>Finale</span><span class="ph"><em>06</em>Buste</span>
       </div>
     </div>
   </div>
@@ -51,9 +74,11 @@
         <div class="wheel-indicator" id="main-wheel-indicator" style="display: none;"></div>
         <canvas id="main-wheel-canvas"></canvas>
       </div>
-      <div class="category-banner glass-panel" id="category-banner"></div>
-      <div class="board-grid" id="board-grid"></div>
-      <div class="players-bar" id="players-bar"></div>
+      <div class="game-right">
+        <div class="category-banner glass-panel" id="category-banner"></div>
+        <div class="board-grid" id="board-grid"></div>
+        <div class="players-bar" id="players-bar"></div>
+      </div>
     </div>
 
     <div class="result-overlay" id="result-overlay">
@@ -61,22 +86,62 @@
     </div>
   </div>
 
-  <!-- Match End Screen -->
-  <div id="matchend-screen" class="screen hidden">
+  <!-- Triplete: board -->
+  <div id="triplete-screen" class="screen hidden">
     <div class="game-container">
-      <h1 class="matchend-title">Classifica finale</h1>
-      <div class="standings" id="standings"></div>
+      <div class="triplete-tag glass-panel" id="triplete-board-tag">IL TRIPLETE</div>
+      <div class="category-banner glass-panel" id="triplete-category"></div>
+      <div class="board-grid" id="triplete-board-grid"></div>
+      <div class="players-bar" id="triplete-players-bar"></div>
+    </div>
+    <div class="buzz-banner" id="buzz-banner"><span class="buzz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span id="buzz-banner-text"></span></div>
+    <div class="result-overlay" id="triplete-result-overlay">
+      <div class="result-text" id="triplete-result-text"></div>
     </div>
   </div>
+
+  <!-- Finalist Screen -->
+  <div id="finalist-screen" class="screen hidden">
+    <div class="game-container">
+      <h1 class="matchend-title">Finalista</h1>
+      <div class="finalist-name" id="finalist-name"></div>
+      <p class="lobby-hint">va al gioco finale!</p>
+    </div>
+  </div>
+
+  <!-- Final game -->
+  <div id="final-screen" class="screen hidden">
+    <div class="game-container">
+      <div class="final-top">
+        <div class="category-banner glass-panel" id="final-category"></div>
+        <div class="final-timer glass-panel" id="final-timer">60</div>
+      </div>
+      <div class="triplete-tag glass-panel" id="final-board-tag">Tabellone 1/3</div>
+      <div class="board-grid" id="final-board-grid"></div>
+    </div>
+  </div>
+
+  <!-- Envelopes -->
+  <div id="envelopes-screen" class="screen hidden">
+    <div class="game-container">
+      <h1 class="matchend-title">Le buste</h1>
+      <div class="envelopes-row" id="envelopes-row"></div>
+    </div>
+  </div>
+
+  <!-- Feedback bordo schermo (giusta/errata) -->
+  <div class="fx-veil" id="fx-veil" aria-hidden="true"></div>
 
   <!-- Disconnect Overlay -->
   <div class="disconnect-overlay" id="disconnect-overlay">
     <p>In attesa di riconnessione...</p>
   </div>
 
+  <div class="grain" aria-hidden="true"></div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/audio.js"></script>
   <script src="/js/wheel.js"></script>
-  <script src="/js/main.js"></script>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>
