@@ -3,6 +3,7 @@
 // lo sfondo a punti e — dai task successivi — tabellone 3D e buste 3D.
 import * as THREE from '../../vendor/three.module.js';
 import { DotField } from './dotfield.js';
+import { Board3D } from './board3d.js';
 
 export class Stage3D {
   constructor(canvas) {
@@ -20,7 +21,7 @@ export class Stage3D {
     this.scene.add(key, new THREE.AmbientLight(0xffffff, 0.55));
 
     this.dots = new DotField(this.scene);
-    this.board = null;     // Task 7
+    this.board = new Board3D(this.scene, this);
     this.envelopes = null; // Task 8
     this.title = null;     // Task 9
     this.mode = 'hidden';

@@ -189,6 +189,7 @@ socket.on('main:finalReveal', ({ positions }) => {
       const cell = document.querySelector(`#final-board-grid .cell[data-row="${pos.row}"][data-col="${pos.col}"]`);
       if (cell) { cell.classList.add('letter', 'revealed'); cell.classList.remove('blocked', 'edge'); cell.textContent = pos.letter; }
       Sfx.play('letter');
+      if (stage) stage.board.reveal(pos);
     }, i * 420);
   });
 });
@@ -236,6 +237,7 @@ function renderFinalBoard(grid) {
       el.appendChild(div);
     });
   });
+  if (stage) { stage.board.setTarget(el); stage.board.setBoard(grid); }
 }
 
 function renderTiebreak(contenders, current) {
@@ -315,6 +317,7 @@ function renderBoard(grid) {
       el.appendChild(div);
     });
   });
+  if (stage) { stage.board.setTarget(el); stage.board.setBoard(grid); }
 }
 
 function cellAt(row, col) {
@@ -332,6 +335,7 @@ function revealSequence(positions) {
         cell.textContent = pos.letter;
       }
       Sfx.play('letter');
+      if (stage) stage.board.reveal(pos);
     }, i * 420);
   });
 }
@@ -515,6 +519,7 @@ function renderTripleteBoard(grid) {
       el.appendChild(div);
     });
   });
+  if (stage) { stage.board.setTarget(el); stage.board.setBoard(grid); }
 }
 
 function tripleteCellAt(row, col) {
@@ -529,6 +534,7 @@ function revealTripleteCell(cell) {
   el.classList.add('letter', 'revealed');
   el.textContent = cell.letter;
   Sfx.play('letter');
+  if (stage) stage.board.reveal(cell);
 }
 
 // Fase flash board 3: cella visibile per `ms`, poi nascosta di nuovo (a meno che
@@ -539,6 +545,7 @@ function flashTripleteCell(cell, ms) {
   el.classList.add('letter', 'flash');
   el.textContent = cell.letter;
   Sfx.play('letter');
+  if (stage) stage.board.flash(cell, ms);
   setTimeout(() => {
     if (el.classList.contains('revealed')) return;
     el.classList.remove('flash');
