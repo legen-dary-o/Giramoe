@@ -24,6 +24,7 @@ export class Stage3D {
     this.envelopes = null; // Task 8
     this.title = null;     // Task 9
     this.mode = 'hidden';
+    this.setMode('hidden'); // canvas nascosta finché non si entra in una schermata di gioco
     this.resize();
     this._t0 = performance.now();
     this._loop = this._loop.bind(this);
