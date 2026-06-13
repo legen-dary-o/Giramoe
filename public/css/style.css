@@ -137,6 +137,20 @@ html, body {
 .glass-input:focus { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.07); }
 .glass-input::placeholder { color: var(--ink-faint); }
 
+/* Telefoni: i pulsanti d'azione primaria (join/avvio/giro) sono pieni ciano */
+#btn-join, #btn-inizia, #btn-avvia, #btn-spin, #btn-vowel,
+#btn-set-board, #btn-go-triplete, #btn-triplete-start, #btn-giramoe-setboard,
+#btn-giramoe-spin, #btn-start-final, #btn-tb-spin {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+#btn-join:hover, #btn-inizia:hover, #btn-avvia:hover, #btn-spin:hover, #btn-vowel:hover,
+#btn-set-board:hover, #btn-go-triplete:hover, #btn-triplete-start:hover, #btn-giramoe-setboard:hover,
+#btn-giramoe-spin:hover, #btn-start-final:hover, #btn-tb-spin:hover {
+  background: var(--accent); color: #000; border-color: var(--accent);
+}
+
 .hairline { height: 1px; background: var(--hairline); border: none; }
 
 .corner-label {
@@ -347,9 +361,9 @@ html, body {
 .player-slot .slot-idx { margin-left: auto; font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; color: rgba(235, 235, 245, 0.3); }
 
 .qr-container {
-  background: #f5f5f7;
-  padding: 17px;
-  border-radius: 18px;
+  background: var(--ink);
+  padding: 14px;
+  border-radius: var(--r-md);
   border: none;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
 }
@@ -649,11 +663,11 @@ html, body {
   opacity: 0;
 }
 .fx-veil.correct {
-  box-shadow: inset 0 0 0 1px rgba(48, 209, 88, 0.75), inset 0 0 80px rgba(48, 209, 88, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(48, 184, 255, 0.75), inset 0 0 80px rgba(48, 184, 255, 0.22);
   animation: fxFade 1.4s ease both;
 }
 .fx-veil.wrong {
-  box-shadow: inset 0 0 0 1px rgba(255, 69, 58, 0.75), inset 0 0 80px rgba(255, 69, 58, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(245, 245, 247, 0.75), inset 0 0 80px rgba(245, 245, 247, 0.24);
   animation: fxFade 1.4s ease both;
 }
 @keyframes fxFade {
@@ -750,7 +764,7 @@ html, body {
   text-align: center;
   color: var(--ink);
 }
-.final-timer.low { color: var(--red); border-color: rgba(255, 69, 58, 0.5); animation: waitPulse 0.7s ease-in-out infinite; }
+.final-timer.low { color: var(--accent); border-color: rgba(48, 184, 255, 0.5); animation: waitPulse 0.7s ease-in-out infinite; }
 
 .final-results { display: flex; gap: clamp(12px, 2vw, 24px); justify-content: center; }
 .final-result-box {
@@ -766,8 +780,8 @@ html, body {
   background: var(--glass);
   border: var(--glass-border);
 }
-.final-result-box.green { border-color: rgba(48, 209, 88, 0.6); color: var(--green); }
-.final-result-box.red { border-color: rgba(255, 69, 58, 0.6); color: var(--red); }
+.final-result-box.green { border-color: rgba(48, 184, 255, 0.6); color: var(--green); }
+.final-result-box.red { border-color: rgba(245, 245, 247, 0.45); color: var(--red); }
 
 /* === TRIPLETE === */
 
@@ -898,8 +912,8 @@ html, body {
 }
 .turn-message.your-turn {
   color: var(--green);
-  border-color: rgba(48, 209, 88, 0.45);
-  background: rgba(48, 209, 88, 0.08);
+  border-color: rgba(48, 184, 255, 0.45);
+  background: rgba(48, 184, 255, 0.08);
 }
 .turn-message.waiting { color: var(--ink-faint); }
 
@@ -958,16 +972,16 @@ html, body {
   letter-spacing: 3px;
   color: var(--ink);
   background: radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02) 60%), rgba(28, 28, 31, 0.9);
-  border: 1px solid rgba(255, 69, 58, 0.65);
-  box-shadow: 0 0 34px rgba(255, 69, 58, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--shadow-md);
+  border: 1px solid rgba(245, 245, 247, 0.65);
+  box-shadow: 0 0 34px rgba(48, 184, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--shadow-md);
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.25s ease, background-color 0.25s ease;
 }
 .buzz-button:not(:disabled):active { transform: scale(0.94); }
 .buzz-button.buzzed {
-  background: radial-gradient(circle at 35% 28%, #ff6b61, var(--red) 60%, #b3271e);
-  color: #fff;
-  box-shadow: 0 0 50px rgba(255, 69, 58, 0.55), var(--shadow-md);
+  background: radial-gradient(circle at 35% 28%, rgba(48, 184, 255, 0.85), var(--accent) 60%, rgba(13, 36, 51, 0.95));
+  color: #000;
+  box-shadow: 0 0 50px rgba(48, 184, 255, 0.55), var(--shadow-md);
   animation: buzzPulse 0.8s ease-in-out infinite;
 }
 .buzz-button:disabled { opacity: 0.35; }
@@ -987,16 +1001,16 @@ html, body {
   letter-spacing: 3px;
   color: var(--ink);
   background: rgba(28, 28, 31, 0.9);
-  border: 1px solid rgba(255, 69, 58, 0.65);
-  box-shadow: 0 0 24px rgba(255, 69, 58, 0.18);
+  border: 1px solid rgba(245, 245, 247, 0.65);
+  box-shadow: 0 0 24px rgba(48, 184, 255, 0.18);
   cursor: pointer;
   transition: transform 0.12s ease, background-color 0.25s ease, box-shadow 0.25s ease;
 }
 .buzz-pill:not(:disabled):active { transform: scale(0.97); }
 .buzz-pill:disabled { opacity: 0.35; }
 .buzz-pill.armed {
-  background: linear-gradient(150deg, #ff6b61, var(--red));
-  color: #fff;
+  background: linear-gradient(150deg, rgba(48, 184, 255, 0.85), var(--accent));
+  color: #000;
   animation: buzzPulse 0.8s ease-in-out infinite;
 }
 
@@ -1069,8 +1083,8 @@ html, body {
   color: var(--accent);
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(10, 132, 255, 0.12);
-  border: 1px solid rgba(10, 132, 255, 0.35);
+  background: rgba(48, 184, 255, 0.12);
+  border: 1px solid rgba(48, 184, 255, 0.35);
 }
 
 .admin-scorenums { font-size: 13px; color: var(--ink-soft); }
@@ -1087,7 +1101,7 @@ html, body {
 .admin-actions .glass-button { flex: 1; padding: 15px 10px; font-size: 14px; }
 
 #btn-solve {
-  border-color: rgba(48, 209, 88, 0.6);
+  border-color: rgba(48, 184, 255, 0.6);
   color: var(--green);
 }
 #btn-solve:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
@@ -1100,7 +1114,7 @@ html, body {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 69, 58, 0.6);
+  border: 1px solid rgba(245, 245, 247, 0.45);
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
@@ -1114,7 +1128,7 @@ html, body {
 
 .admin-player-item.score-flash { animation: scoreFlash 0.7s ease; }
 @keyframes scoreFlash {
-  0% { background: rgba(10, 132, 255, 0.25); }
+  0% { background: rgba(48, 184, 255, 0.25); }
   100% { background: none; }
 }
 

@@ -5,6 +5,7 @@ import * as THREE from '../../vendor/three.module.js';
 import { DotField } from './dotfield.js';
 import { Board3D } from './board3d.js';
 import { Envelopes3D } from './envelopes3d.js';
+import { TitleDots } from './titledots.js';
 
 export class Stage3D {
   constructor(canvas) {
@@ -24,7 +25,7 @@ export class Stage3D {
     this.dots = new DotField(this.scene);
     this.board = new Board3D(this.scene, this);
     this.envelopes = new Envelopes3D(this.scene, this);
-    this.title = null;     // Task 9
+    this.title = new TitleDots(this.scene);
     this.mode = 'hidden';
     this.setMode('hidden'); // canvas nascosta finché non si entra in una schermata di gioco
     this.resize();

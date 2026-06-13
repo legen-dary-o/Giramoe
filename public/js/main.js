@@ -79,7 +79,7 @@ socket.on('main:state', ({ phase }) => { currentPhase = phase; applyPhaseScreen(
 socket.on('main:showLobby', ({ url, players }) => {
   currentPhase = 'lobby';
   QRCode.toCanvas(document.getElementById('qr-canvas'), url, {
-    width: 220, margin: 2, color: { dark: '#1d1d1f', light: '#f5f5f7' }
+    width: 220, margin: 2, color: { dark: '#000000', light: '#f5f5f7' }
   });
   updatePlayerSlots(players);
   applyPhaseScreen();
@@ -489,14 +489,15 @@ const TITLE_EYEBROWS = {
   'EXPRESS': 'Bonus round'
 };
 function playTitleAnimation(word) {
-  const stage = document.getElementById('title-stage');
+  const titleStage = document.getElementById('title-stage');
   document.getElementById('title-eyebrow').textContent = TITLE_EYEBROWS[word] || 'Bonus round';
   document.getElementById('triplete-title').textContent = word;
   showScreen('triplete-title-screen');
+  if (stage) stage.title.show(word);
   // riavvia le animazioni di entrata
-  stage.classList.remove('play');
-  void stage.offsetWidth;
-  stage.classList.add('play');
+  titleStage.classList.remove('play');
+  void titleStage.offsetWidth;
+  titleStage.classList.add('play');
 }
 
 function renderTripleteBoard(grid) {
