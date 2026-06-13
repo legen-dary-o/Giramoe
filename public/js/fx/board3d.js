@@ -25,9 +25,11 @@ export class Board3D {
     this._petrolMat = new THREE.MeshStandardMaterial({ color: PETROL, roughness: 0.55 });
     this._whiteMat = new THREE.MeshStandardMaterial({ color: WHITE, roughness: 0.4 });
     this._frame = 0;
+    this._wantVisible = false;
   }
 
   setVisible(on) {
+    this._wantVisible = on;
     this.group.visible = on;
     // il rect del DOM è misurabile solo a schermo visibile: rilayout al frame dopo
     if (on) requestAnimationFrame(() => this.layout());
@@ -39,6 +41,12 @@ export class Board3D {
     for (const mesh of this.tiles.values()) this.group.remove(mesh);
     this.tiles.clear();
     this.grid = grid;
+    // nota: ogni cella lettera/non-rivelata crea un MeshBasicMaterial bianco
+    // dedicato (non condiviso) perché in update() il flip anima il colore di
+    // material[4] per-tessera (flash ciano→bianco); condividerlo tra tessere
+    // farebbe sì che l'animazione di una tessera ne tinga anche altre.
+    // Il churn è quindi limitato a una creazione per cella per ogni setBoard()
+    // (push del tabellone), non per frame: accettabile.
     for (const t of gridToTiles(grid)) {
       let mats;
       if (t.kind === 'blocked') {
@@ -108,6 +116,10 @@ export class Board3D {
 
   update(t) {
     this._t = t;
+    if (this._wantVisible && this.targetEl) {
+      const op = parseFloat(getComputedStyle(this.targetEl).opacity);
+      this.group.visible = !(op < 0.5); // durante lo spin .wheel-zoom sfuma il board: nascondi le tessere
+    }
     // il rect può muoversi (wheel-zoom, resize della TV): rimisura ~3 volte/s
     if (this.group.visible && ++this._frame % 20 === 0) this.layout();
     for (const mesh of this.tiles.values()) {

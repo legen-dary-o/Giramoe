@@ -1174,7 +1174,20 @@ body.has-custom-cursor, body.has-custom-cursor * { cursor: none !important; }
   .wm, .finalist-name, .title-stage.play .wm { animation: none; background-position: 50% 0; }
   .rise, .title-stage.play .eyebrow, .title-stage.play .hairline { animation: none; opacity: 1; }
   .title-stage .eyebrow, .title-stage .wm, .title-stage .hairline { opacity: 1; }
-  .live-dot, .player-name.active::after { animation: none; }
+  .live-dot,
+  .player-name.active::after,
+  .player-slot.reconnecting::before,
+  #triplete-players-bar .player-name.buzzed::after {
+    animation: none;
+    opacity: 1;
+  }
+  .intro-wait-hint,
+  .disconnect-overlay p,
+  #wait-screen h2, #reconnect-screen h2,
+  .final-timer.low {
+    animation: none;
+    opacity: 1;
+  }
   #stage-canvas { display: none; }
   .screen { transition: none; }
 }

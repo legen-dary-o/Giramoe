@@ -41,7 +41,18 @@ export class Wheel3D {
   }
 
   _buildWheel() {
-    if (this.group) this.scene.remove(this.group);
+    if (this.group) {
+      this.scene.remove(this.group);
+      // libera geometrie/materiali/texture della ruota precedente (evita leak
+      // sulla GPU ad ogni cambio etichette, es. round express)
+      this.group.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) {
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          mats.forEach((m) => { if (m.map) m.map.dispose(); m.dispose(); });
+        }
+      });
+    }
     this._materials = [];
     this.group = new THREE.Group();
     const R = 4, DEPTH = 0.42;
