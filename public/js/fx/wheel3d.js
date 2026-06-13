@@ -75,6 +75,9 @@ export class Wheel3D {
         isTouch: true,
         dotScale: special ? 0.4 : (i % 2 ? 0.62 : 1.0)
       });
+      // punti smorzati a grigio: fanno da texture, non competono con le
+      // etichette bianche (la ruota di gioco deve restare leggibile da lontano)
+      mat.uniforms.uDim.value = special ? 0.5 : 0.6;
       this._materials.push(mat);
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.z = -DEPTH / 2;
@@ -104,26 +107,51 @@ export class Wheel3D {
     const seg = (2 * Math.PI) / this.segments;
     const rr = (SIZE / 2) * 0.96;
 
+    ctx.translate(cx, cx);
+
+    // Separatori radiali tra gli spicchi: gap scuro con filo ciano al centro.
+    // Disegnati sopra il tappeto di punti halftone, danno struttura ai 16 settori.
+    for (let i = 0; i < this.segments; i++) {
+      const a = -Math.PI / 2 + i * seg;
+      ctx.save();
+      ctx.rotate(a);
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(0,0,0,0.88)';
+      ctx.lineWidth = SIZE * 0.013;
+      ctx.beginPath(); ctx.moveTo(rr * 0.12, 0); ctx.lineTo(rr, 0); ctx.stroke();
+      ctx.strokeStyle = ACCENT_CSS;
+      ctx.lineWidth = SIZE * 0.0028;
+      ctx.beginPath(); ctx.moveTo(rr * 0.12, 0); ctx.lineTo(rr, 0); ctx.stroke();
+      ctx.restore();
+    }
+
+    // Cornice esterna ciano
+    ctx.strokeStyle = 'rgba(48,184,255,0.5)';
+    ctx.lineWidth = SIZE * 0.006;
+    ctx.beginPath(); ctx.arc(0, 0, rr, 0, Math.PI * 2); ctx.stroke();
+
+    // Etichette: testo grande con alone scuro → leggibile sopra i punti bianchi.
     for (let i = 0; i < this.segments; i++) {
       const label = this.labels[i];
       if (label == null) continue;
       const special = SPECIAL_STYLE[label];
       const mid = -Math.PI / 2 + i * seg + seg / 2;
       ctx.save();
-      ctx.translate(cx, cx);
       ctx.rotate(mid);
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.95)';
+      ctx.shadowBlur = SIZE * 0.014;
       if (special) {
         ctx.fillStyle = ACCENT_CSS;
-        ctx.font = `700 ${rr * 0.13}px "Space Mono", monospace`;
-        ctx.fillText(special.symbol, rr * 0.92, 0);
-        ctx.font = `700 ${rr * 0.048}px "Space Mono", monospace`;
-        ctx.fillText(special.word, rr * 0.6, 0);
+        ctx.font = `700 ${rr * 0.15}px "Space Mono", monospace`;
+        ctx.fillText(special.symbol, rr * 0.93, 0);
+        ctx.font = `700 ${rr * 0.058}px "Space Mono", monospace`;
+        ctx.fillText(special.word, rr * 0.62, 0);
       } else {
-        ctx.fillStyle = '#f5f5f7';
-        ctx.font = `700 ${rr * 0.085}px "Space Mono", monospace`;
-        ctx.fillText(String(label).toUpperCase(), rr * 0.9, 0);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 ${rr * 0.11}px "Space Mono", monospace`;
+        ctx.fillText(String(label).toUpperCase(), rr * 0.92, 0);
       }
       ctx.restore();
     }
