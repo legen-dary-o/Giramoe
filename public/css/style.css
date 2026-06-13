@@ -835,8 +835,8 @@ html, body {
   box-shadow: var(--glass-edge), var(--shadow-md);
   transition: transform 0.25s var(--ease-out), opacity 0.2s ease, border-color 0.25s ease;
 }
-.envelope.green { border-color: rgba(48, 209, 88, 0.55); }
-.envelope.red { border-color: rgba(255, 69, 58, 0.55); }
+.envelope.green { border-color: rgba(48, 184, 255, 0.6); }
+.envelope.red { border-color: rgba(245, 245, 247, 0.35); }
 .envelope .env-num { font-size: clamp(11px, 1.5vh, 14px); letter-spacing: 2px; color: var(--ink-faint); }
 .envelope .env-q { font-size: clamp(34px, 7vh, 64px); line-height: 1; color: var(--ink-soft); font-weight: 300; }
 .envelope .env-content { font-size: clamp(15px, 2.4vh, 26px); word-break: break-word; }
@@ -845,6 +845,7 @@ html, body {
 .envelope.current { transform: translateY(-4px) scale(1.04); border-color: rgba(255, 255, 255, 0.45); }
 .envelope.open { animation: cellFlip 0.4s var(--ease-out); }
 .envelope.abandoned { opacity: 0.35; }
+.webgl-stage .envelope { visibility: hidden; }
 
 /* === PLAYER PHONE === */
 

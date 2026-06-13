@@ -220,6 +220,7 @@ function renderEnvelopes(row, view) {
       : `<div class="env-num">${i + 1}</div><div class="env-q">?</div>`;
     row.appendChild(el);
   });
+  if (stage) stage.envelopes.set(view);
 }
 
 function renderFinalBoard(grid) {
