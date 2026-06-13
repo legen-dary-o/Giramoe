@@ -280,9 +280,10 @@ function updatePlayerSlots(players) {
 
 function initMainWheel(segments) {
   const canvas = document.getElementById('main-wheel-canvas');
+  const indicator = document.getElementById('main-wheel-indicator');
   // Ruota 3D con fallback alla 2D se WebGL non è disponibile
   try {
-    wheel = new Wheel3D(canvas, { segments: 16, labels: segments, showLabels: true });
+    wheel = new Wheel3D(canvas, { segments: 16, labels: segments, showLabels: true, indicator });
   } catch (err) {
     console.warn('Wheel3D non disponibile, fallback 2D:', err);
     wheel = new Wheel(canvas, { segments: 16, labels: segments, showLabels: true });
