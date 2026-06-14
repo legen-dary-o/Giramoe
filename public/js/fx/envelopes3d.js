@@ -7,6 +7,9 @@ import { createHalftoneMaterial, addBarycentric, ACCENT_CSS } from './halftone.j
 
 const W = 1.7, H = 1.15, D = 0.07;
 const X_SLOTS = [-2.4, 0, 2.4];
+// scritta: parte dentro la busta, sale a fermarsi sopra il bordo alto (niente sovrapposizione)
+const CONTENT_Y_IN = -H * 0.1;
+const CONTENT_Y_OUT = H / 2 + (H * 0.6) / 2 + 0.43; // sopra anche il lembo aperto
 
 export class Envelopes3D {
   constructor(scene, stage) {
@@ -45,16 +48,17 @@ export class Envelopes3D {
     root.add(hinge);
 
     const num = this._textPlane(String(i + 1), 0.5, 0.5, '700 150px "Space Mono", monospace', ACCENT_CSS);
-    num.position.set(0, -H * 0.22, D / 2 + 0.02);
+    num.position.set(0, -H * 0.78, D / 2 + 0.02);
     root.add(num);
 
     const content = this._textPlane('', W * 0.92, H * 0.6, '700 56px "Space Mono", monospace', '#f5f5f7');
-    content.position.set(0, H * 0.08, D / 2 + 0.03);
+    content.position.set(0, CONTENT_Y_IN, D / 2 + 0.03);
+    content.material.opacity = 0;
     content.visible = false;
     root.add(content);
 
     this.group.add(root);
-    return { root, bodyMat, flapMat, edges, hinge, content, num, flapOpen: 0, targetZ: 0, targetScale: 1 };
+    return { root, bodyMat, flapMat, edges, hinge, content, num, flapOpen: 0, targetZ: 0, targetScale: 1, contentRise: 0, contentRiseTarget: 0 };
   }
 
   _textPlane(text, w, h, font, color) {
@@ -109,8 +113,12 @@ export class Envelopes3D {
       it.flapTarget = e.revealed ? -2.4 : 0;
       it.bodyMat.uniforms.uDim.value = e.abandoned ? 0.3 : 1;
       it.flapMat.uniforms.uDim.value = e.abandoned ? 0.3 : 1;
-      it.content.visible = !!e.revealed && !goneAway;
-      if (e.revealed) this._drawText(it.content, e.content || (e.color === 'red' ? '✕' : ''));
+      const showContent = !!e.revealed && !goneAway;
+      it.contentRiseTarget = showContent ? 1 : 0;
+      if (showContent) {
+        it.content.visible = true;
+        this._drawText(it.content, e.content || (e.color === 'red' ? '✕' : ''));
+      }
       // bordo: rivelata green → ciano, red → bianco spento, corrente → bianco pieno
       const edgeColor = e.revealed ? (e.color === 'green' ? ACCENT_CSS : '#9a9aa0') : '#ffffff';
       it.edges.material.color.set(edgeColor);
@@ -128,6 +136,11 @@ export class Envelopes3D {
       it.root.scale.x += (s - it.root.scale.x) * 0.08;
       it.root.scale.y = it.root.scale.z = it.root.scale.x;
       it.hinge.rotation.x += ((it.flapTarget ?? 0) - it.hinge.rotation.x) * 0.07;
+      // scritta: sale fuori dalla busta e si ferma sopra, dissolvenza in entrata
+      it.contentRise += ((it.contentRiseTarget ?? 0) - it.contentRise) * 0.08;
+      it.content.position.y = CONTENT_Y_IN + (CONTENT_Y_OUT - CONTENT_Y_IN) * it.contentRise;
+      it.content.material.opacity = it.contentRise;
+      if (it.contentRise < 0.01 && (it.contentRiseTarget ?? 0) === 0) it.content.visible = false;
       it.bodyMat.uniforms.uTime.value = t;
       it.flapMat.uniforms.uTime.value = t;
     });
