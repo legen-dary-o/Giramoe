@@ -7,16 +7,22 @@
 const { spawn } = require('child_process');
 
 const TUNNEL_TIMEOUT_MS = 25000;
-let started = false;
+let tunnelStarted = false;
 
 console.log('Giramoe — modalità ONLINE');
+
+// 1. BINDING IMMEDIATO: Avviamo SUBITO il server locale sulla porta 3000
+// In questo modo la porta 3000 è occupata e Safari/Cloudflare la troveranno attiva.
+console.log('Avvio il server locale...');
+const server = require('./server');
+
 console.log('Apro il tunnel Cloudflare (attendi ~10 secondi)...\n');
 
 let tunnel;
 try {
-  tunnel = spawn('cloudflared', ['tunnel', '--url', 'http://localhost:3000']);
+  tunnel = spawn('cloudflared', ['tunnel', '--url', 'http://127.0.0.1:3000']); // Usiamo 127.0.0.1 per evitare i capricci di localhost
 } catch (e) {
-  startServer(null);
+  banner(null);
 }
 
 function banner(publicUrl) {
@@ -25,7 +31,7 @@ function banner(publicUrl) {
     console.log('\n' + line);
     console.log('  TUNNEL ATTIVO — apri questi link da QUALSIASI rete:');
     console.log('');
-    console.log(`  • Schermo (sul PC):  http://localhost:3000`);
+    console.log(`  • Schermo (sul PC):  http://127.0.0.1:3000`);
     console.log(`  • Admin (telefono):  ${publicUrl}/admin.html`);
     console.log(`  • Giocatori:         inquadrano il QR (già puntato al tunnel)`);
     console.log('');
@@ -34,23 +40,28 @@ function banner(publicUrl) {
   } else {
     console.log('\n' + line);
     console.log('  ⚠  Tunnel non disponibile → modalità LOCALE (stesso Wi-Fi).');
-    console.log('     La tua rete potrebbe bloccare i tunnel Cloudflare.');
-    console.log('     Apri lo schermo e l\'admin dagli indirizzi qui sotto.');
+    console.log('     Apri lo schermo e l\'admin dagli indirizzi locali.');
     console.log(line + '\n');
   }
 }
 
-function startServer(publicUrl) {
-  if (started) return;
-  started = true;
-  if (publicUrl) process.env.GIRAMOE_PUBLIC_URL = publicUrl;
+function handleTunnelUrl(publicUrl) {
+  if (tunnelStarted) return;
+  tunnelStarted = true;
+
+  // Se il tuo server.js ha bisogno dell'URL dinamico per generare il QR code, 
+  // assicurati che server.js sia in grado di leggere process.env.GIRAMOE_PUBLIC_URL 
+  // anche se è già stato avviato, oppure passaglielo dinamicamente.
+  if (publicUrl) {
+    process.env.GIRAMOE_PUBLIC_URL = publicUrl;
+    // Se server.js ha una funzione per aggiornare il QR, chiamala qui. Ex: server.updateQR(publicUrl);
+  }
   banner(publicUrl);
-  require('./server');
 }
 
 function onOutput(chunk) {
   const match = String(chunk).match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
-  if (match) startServer(match[0]);
+  if (match) handleTunnelUrl(match[0]);
 }
 
 if (tunnel) {
@@ -58,21 +69,19 @@ if (tunnel) {
   tunnel.stderr.on('data', onOutput);
   tunnel.on('error', () => {
     console.error('cloudflared non trovato. Installalo una volta con:  brew install cloudflared');
-    console.error('Oppure usa "npm start" per giocare sulla stessa rete Wi-Fi.\n');
-    startServer(null);
+    banner(null);
   });
 }
 
-// Se il tunnel non produce un URL entro il timeout, parti comunque in locale.
 setTimeout(() => {
-  if (!started) {
-    console.warn('Il tunnel non è pronto in tempo, parto in locale.\n');
-    startServer(null);
+  if (!tunnelStarted) {
+    console.warn('Il tunnel ci sta mettendo troppo, continuo in modalità locale.\n');
+    banner(null);
   }
 }, TUNNEL_TIMEOUT_MS);
 
 function shutdown() {
-  try { if (tunnel) tunnel.kill(); } catch (e) {}
+  try { if (tunnel) tunnel.kill(); } catch (e) { }
   process.exit(0);
 }
 process.on('SIGINT', shutdown);
