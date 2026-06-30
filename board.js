@@ -12,10 +12,31 @@ function normalize(text) {
     .trim();
 }
 
+// The plain A-Z letter behind a (possibly accented) character, or null if it
+// isn't a letter. "È" -> "E", "Ñ" -> "N", "5" -> null. Used so accented glyphs
+// are guessed by their base letter but still drawn with the accent.
+function baseLetter(ch) {
+  const b = String(ch).normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return /^[A-Z]$/.test(b) ? b : null;
+}
+
+// Display-preserving clean: keeps accented letters and apostrophes (both straight
+// and curly, normalised to '), drops other punctuation, collapses spaces. The
+// result is what the board shows; matching still happens on the base letter.
+function cleanDisplay(text) {
+  const up = String(text).normalize('NFC').toUpperCase()
+    .replace(/[‘’ʼ`´]/g, "'");
+  let out = '';
+  for (const ch of up) {
+    if (ch === ' ' || ch === "'" || baseLetter(ch)) out += ch;
+  }
+  return out.replace(/\s+/g, ' ').trim();
+}
+
 // Pack words into 4 rows with capacities ROW_CAPACITIES.
 // Returns { ok:true, rows:[[word,...] x4] } or { ok:false, error }.
 function layoutPhrase(phrase) {
-  const words = normalize(phrase).split(' ').filter(Boolean);
+  const words = cleanDisplay(phrase).split(' ').filter(Boolean);
   if (words.length === 0) return { ok: false, error: 'Frase vuota' };
 
   const rows = [[], [], [], []];
@@ -61,8 +82,14 @@ function buildGrid(rows) {
       }
       const idx = usableCol - pad;
       const ch = (idx >= 0 && idx < content.length) ? content[idx] : null;
-      if (ch && ch !== ' ') {
-        cells.push({ type: 'letter', letter: ch, revealed: false });
+      if (ch === "'") {
+        // Apostrophe: shown from the start, never guessed.
+        cells.push({ type: 'letter', letter: "'", revealed: true });
+      } else if (ch && ch !== ' ' && baseLetter(ch)) {
+        const base = baseLetter(ch);
+        const cell = { type: 'letter', letter: base, revealed: false };
+        if (ch !== base) cell.display = ch; // accented glyph to draw on reveal
+        cells.push(cell);
       } else {
         cells.push({ type: 'blocked' });
       }
@@ -108,7 +135,7 @@ function letterPositions(grid, letter) {
     for (let c = 0; c < grid[r].length; c++) {
       const cell = grid[r][c];
       if (cell.type === 'letter' && cell.letter === letter && !cell.revealed)
-        out.push({ row: r, col: c, letter });
+        out.push({ row: r, col: c, letter: cell.display || cell.letter });
     }
   return out;
 }
@@ -120,7 +147,7 @@ function hiddenLetterCells(grid) {
   for (let r = 0; r < grid.length; r++)
     for (let c = 0; c < grid[r].length; c++) {
       const cell = grid[r][c];
-      if (cell.type === 'letter' && !cell.revealed) out.push({ row: r, col: c, letter: cell.letter });
+      if (cell.type === 'letter' && !cell.revealed) out.push({ row: r, col: c, letter: cell.display || cell.letter });
     }
   return out;
 }
@@ -130,7 +157,7 @@ function revealCellAt(grid, row, col) {
   const cell = grid[row] && grid[row][col];
   if (!cell || cell.type !== 'letter') return null;
   cell.revealed = true;
-  return cell.letter;
+  return cell.display || cell.letter;
 }
 
 function isSolved(grid) {

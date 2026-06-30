@@ -331,6 +331,10 @@ function initWheel() {
 document.getElementById('btn-spin').addEventListener('click', spin);
 function spin() {
   socket.emit('player:spin');
+  // Lock the controls right away: the server ignores spins until this animation
+  // ends, and the next turn-state update (~6s later) re-enables what's allowed.
+  document.getElementById('btn-spin').disabled = true;
+  document.getElementById('player-wheel-container').classList.add('disabled');
 }
 
 // --- Keyboard ---
@@ -368,7 +372,10 @@ function buildKeyboard() {
   });
 
   document.getElementById('btn-vowel').addEventListener('click', () => {
-    document.getElementById('vowel-picker').classList.toggle('hidden');
+    const vp = document.getElementById('vowel-picker');
+    vp.classList.toggle('hidden');
+    // On short phones the picker sits below the fold; pull it into view when opened.
+    if (!vp.classList.contains('hidden')) vp.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
 }
 

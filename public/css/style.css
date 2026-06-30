@@ -241,6 +241,19 @@ html, body {
   padding: 24px;
 }
 
+/* The game screen stacks the wheel, spin button, full keyboard, the "Compra
+   vocale" button AND the vowel picker — taller than a short phone. Anchor it to
+   the top and let it scroll so the vowel button and picker are never clipped
+   below the fold; tighten spacing and the wheel so most phones need no scroll. */
+#player-game-screen .mobile-container {
+  justify-content: flex-start;
+  overflow-y: auto;
+  gap: 12px;
+  padding-top: 16px;
+  padding-bottom: 20px;
+}
+#player-game-screen #player-wheel-container { width: min(58vw, 240px); margin: 2px 0; }
+
 /* === INTRO (start-tap-screen) === */
 
 #start-tap-screen { flex-direction: column; }
