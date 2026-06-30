@@ -60,6 +60,14 @@ let tripleteTimer = null;  // single reveal/flash timer for the bonus round
 let giramoeTimer = null;   // 5s buzz window timer for the giramoe board
 const GIRAMOE_BUZZ_MS = 5000;
 
+// True while a wheel spin is animating on screen. The spin result is applied to
+// the game state immediately, but clients aren't told (scores/turn) until the
+// animation ends ~SPIN_MS later. Without this lock the turn passes server-side
+// at once, so the next player could spin again — stacking spins on the same
+// animation. We refuse any new wheel action until the animation (and its
+// broadcast) completes.
+let wheelSpinning = false;
+
 let finalTimer = null;     // 60s countdown interval for the final game
 const FINAL_TIME_MS = Number(process.env.FINAL_TIME_MS) || 60000;
 const FINAL_TICK_MS = 250;
@@ -80,7 +88,7 @@ function boardView() {
     category: state.g.board.category,
     grid: state.g.board.grid.map(row => row.map(cell => {
       if (cell.type === 'letter') {
-        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null };
+        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? (cell.display || cell.letter) : null };
       }
       return { type: cell.type }; // 'blocked' or 'edge'
     }))
@@ -166,7 +174,7 @@ function tripleteBoardView() {
     totalBoards: triplete.TOTAL_BOARDS,
     grid: b.grid.map(row => row.map(cell => {
       if (cell.type === 'letter') {
-        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null };
+        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? (cell.display || cell.letter) : null };
       }
       return { type: cell.type };
     }))
@@ -392,7 +400,7 @@ function finalBoardView() {
     totalBoards: 3,
     grid: b.grid.map(row => row.map(cell => {
       if (cell.type === 'letter') {
-        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null };
+        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? (cell.display || cell.letter) : null };
       }
       return { type: cell.type };
     }))
@@ -499,7 +507,7 @@ function giramoeBoardView() {
     category: b.category,
     grid: b.grid.map(row => row.map(cell => {
       if (cell.type === 'letter') {
-        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? cell.letter : null };
+        return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? (cell.display || cell.letter) : null };
       }
       return { type: cell.type };
     }))
@@ -664,6 +672,7 @@ io.on('connection', (socket) => {
   socket.on('admin:setBoard', ({ category, phrase }) => {
     if (!isWheelPhase() && state.phase !== 'lobby') return;
     if (!state.g) return;
+    wheelSpinning = false; // fresh board — clear any lingering spin lock
     const startIndex = (state.g.boardNumber - 1) % state.g.players.length;
     const r = game.startBoard(state.g, category, phrase, startIndex, state.g.boardNumber);
     if (!r.ok) return io.to('admin').emit('admin:boardError', r.error);
@@ -672,10 +681,12 @@ io.on('connection', (socket) => {
 
   socket.on('player:spin', () => {
     if (!isWheelPhase() || !state.g || !state.g.board) return;
+    if (wheelSpinning) return; // a previous spin is still animating — ignore
     const pi = socket.playerIndex;
     if (pi !== state.g.currentTurnIndex) return;
     if (state.g.turnState !== 'MUST_SPIN' && state.g.turnState !== 'CONTINUE') return;
 
+    wheelSpinning = true;
     const winningSegment = FORCE_SEGMENT != null ? FORCE_SEGMENT : Math.floor(Math.random() * 16);
     const spins = 5 + Math.floor(Math.random() * 3);
     const result = game.applySpin(state.g, winningSegment);
@@ -687,6 +698,7 @@ io.on('connection', (socket) => {
     io.to(socket.id).emit('player:spinResult', spinData);
 
     setTimeout(() => {
+      wheelSpinning = false; // animation finished — turn/scores are now broadcast
       broadcastScores();
       // Landed on EXPRESS: play the "EXPRESS" animation, player is now in rapid-fire mode.
       if (result.type === 'express') io.to('main').emit('main:expressStart');
@@ -790,7 +802,13 @@ io.on('connection', (socket) => {
     const pi = socket.playerIndex;
     if (pi == null) return;
     const res = triplete.buzz(state.t, pi);
-    if (!res.ok) return;
+    if (!res.ok) {
+      // The buzz was refused (not revealing, already buzzed, or this player is
+      // locked out). Re-send this player's real state so a stale-enabled button
+      // (e.g. after a reconnect or a missed update) snaps back in sync.
+      socket.emit('player:tripleteState', playerTripleteView(pi));
+      return;
+    }
     clearTripleteTimer(); // freeze the reveal while the player answers
     const name = state.g.players[pi] ? state.g.players[pi].name : '';
     io.to('main').emit('main:tripleteBuzzed', { playerIndex: pi, name });

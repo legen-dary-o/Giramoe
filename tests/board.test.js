@@ -43,6 +43,48 @@ test('words never split across rows; long phrase wraps', () => {
   assert.deepStrictEqual(allRowWords.sort(), words.slice().sort());
 });
 
+test('apostrophe is a pre-revealed cell, not a guessable letter', () => {
+  const { board: b } = board.createBoard('X', "L'AMORE");
+  const cells = b.grid.flat().filter(c => c.type === 'letter');
+  // L ' A M O R E -> 7 cells in a row, the apostrophe shown from the start
+  const apos = cells.filter(c => c.letter === "'");
+  assert.strictEqual(apos.length, 1, 'one apostrophe cell');
+  assert.strictEqual(apos[0].revealed, true, 'apostrophe shown immediately');
+  // the apostrophe is not counted as a guessable letter
+  assert.strictEqual(board.countOccurrences(b.grid, "'"), 0);
+  assert.strictEqual(board.hiddenLetterCells(b.grid).some(c => c.letter === "'"), false);
+  // base letters are hidden and guessable
+  assert.strictEqual(board.countOccurrences(b.grid, 'A'), 1);
+  // solving needs only the real letters; the apostrophe never blocks it
+  ['L', 'A', 'M', 'O', 'R', 'E'].forEach(L => board.revealLetter(b.grid, L));
+  assert.strictEqual(board.isSolved(b.grid), true);
+});
+
+test('accented letters guess by base, but reveal with the accent', () => {
+  const { board: b } = board.createBoard('X', 'PERCHÉ');
+  const acc = b.grid.flat().find(c => c.type === 'letter' && c.display);
+  assert.ok(acc, 'an accented cell exists');
+  assert.strictEqual(acc.letter, 'E', 'matched by the base letter E');
+  assert.strictEqual(acc.display, 'É', 'displays the accented glyph');
+  // picking the base E counts and reveals the accented cell too
+  assert.strictEqual(board.countOccurrences(b.grid, 'E'), 2); // E and É
+  // letterPositions reports the glyph to draw (accent preserved on screen)
+  const pos = board.letterPositions(b.grid, 'E').map(p => p.letter).sort();
+  assert.deepStrictEqual(pos, ['E', 'É']);
+  board.revealLetter(b.grid, 'E');
+  assert.strictEqual(board.countOccurrences(b.grid, 'E'), 0);
+});
+
+test("apostrophe and accent together (C'È)", () => {
+  const { board: b } = board.createBoard('X', "C'È");
+  const cells = b.grid.flat().filter(c => c.type === 'letter');
+  assert.deepStrictEqual(cells.map(c => c.letter), ['C', "'", 'E']);
+  const e = cells.find(c => c.letter === 'E');
+  assert.strictEqual(e.display, 'È');
+  assert.strictEqual(e.revealed, false);
+  assert.strictEqual(cells.find(c => c.letter === "'").revealed, true);
+});
+
 test('overflow phrase is rejected with an error', () => {
   const res = board.createBoard('CAT', 'PAROLA ' .repeat(20));
   assert.strictEqual(res.ok, false);
