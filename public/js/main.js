@@ -127,6 +127,23 @@ function setWheelZoom(on) {
   }
 }
 
+// Una lettera è stata chiamata (consonante o vocale): la mostro a schermo come per i
+// punti, così anche chi non gioca quel turno vede la lettera (poi se presente si rivela
+// sul tabellone). Attivo in ruota/express/giramoe, non nel triplete né nel finale.
+socket.on('main:letterCalled', ({ letter }) => showResult(String(letter).toUpperCase()));
+
+// "CONSONANTI/VOCALI FINITE": tutte quelle presenti nel tabellone sono state chiamate.
+socket.on('main:boardStatus', updateBoardStatus);
+function updateBoardStatus(st) {
+  const el = document.getElementById('board-status');
+  if (!el) return;
+  const tags = [];
+  if (st && st.consonantsFinished) tags.push('CONSONANTI FINITE');
+  if (st && st.vowelsFinished) tags.push('VOCALI FINITE');
+  el.innerHTML = tags.map(t => `<span class="board-status-tag">${t}</span>`).join('');
+  el.classList.toggle('hidden', tags.length === 0);
+}
+
 socket.on('main:revealLetter', ({ positions }) => revealSequence(positions));
 
 socket.on('main:solved', () => { if (stage) stage.pulse('correct'); Sfx.play('correct'); fxVeil('correct'); });
@@ -155,6 +172,7 @@ socket.on('main:tiebreakStart', ({ segments, contenders }) => {
   document.getElementById('main-wheel-indicator').style.display = '';
   document.getElementById('category-banner').textContent = 'SPAREGGIO';
   document.getElementById('board-grid').innerHTML = '';
+  updateBoardStatus(null);
   renderTiebreak(contenders, -1);
   applyPhaseScreen();
 });
@@ -215,7 +233,7 @@ function renderEnvelopes(row, view) {
       + (e.revealed ? ' open' : '')
       + (i === view.current ? ' current' : '')
       + (e.abandoned ? ' abandoned' : '')
-      + (view.state === 'KEPT' && i !== view.current ? ' gone' : '');
+      + (view.state === 'KEPT' && i !== view.current && !e.revealed ? ' gone' : '');
     el.innerHTML = e.revealed
       ? `<div class="env-num">${i + 1}</div><div class="env-content">${e.content || ''}</div>`
       : `<div class="env-num">${i + 1}</div><div class="env-q">?</div>`;
@@ -382,6 +400,7 @@ socket.on('main:expressRound', ({ segments }) => {
   document.getElementById('main-wheel-indicator').style.display = '';
   document.getElementById('category-banner').textContent = '';
   document.getElementById('board-grid').innerHTML = '';
+  updateBoardStatus(null);
   applyPhaseScreen();
 });
 
@@ -405,6 +424,7 @@ socket.on('main:giramoeStart', ({ segments }) => {
   document.getElementById('main-wheel-indicator').style.display = '';
   document.getElementById('category-banner').textContent = '';
   document.getElementById('board-grid').innerHTML = '';
+  updateBoardStatus(null);
   playTitleAnimation('GIRAMOE');
   showScreen('triplete-title-screen');
   setTimeout(() => { if (currentPhase === 'giramoe') showScreen('game-screen'); }, 2800);
@@ -443,6 +463,7 @@ function renderGiramoeScores(scores, currentTurn) {
       <div class="pn-info">
         <div class="pn-name">${s.name}</div>
         <div class="pn-score">Punti: ${s.points}</div>
+        <div class="pn-bank">Banca: ${s.bank != null ? s.bank : 0}</div>
       </div>`;
     bar.appendChild(el);
   });

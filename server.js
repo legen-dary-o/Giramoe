@@ -515,18 +515,24 @@ function giramoeBoardView() {
 }
 
 function giramoeScores() {
-  return state.gi.players.map(p => ({ id: p.id, name: p.name, points: p.points }));
+  return state.gi.players.map(p => {
+    const gp = state.g.players.find(x => x.id === p.id);
+    return { id: p.id, name: p.name, points: p.points, bank: gp ? gp.bank : 0 };
+  });
 }
 
 function playerGiramoeView(i) {
   const gi = state.gi;
   const isMyTurn = gi.currentTurnIndex === i;
-  const canCall = isMyTurn && gi.state === 'PLAYING' && !gi.calledThisTurn;
-  const canBuzz = isMyTurn && gi.state === 'PLAYING' && gi.calledThisTurn;
+  const finished = giramoe.consonantsFinished(gi);
+  const canCall = isMyTurn && gi.state === 'PLAYING' && !gi.calledThisTurn && !finished;
+  // Once every consonant is out, the current player can buzz straight away.
+  const canBuzz = isMyTurn && gi.state === 'PLAYING' && (gi.calledThisTurn || finished);
   let message;
   if (gi.state === 'AWAIT_SPIN') message = 'L\'admin sta per girare la ruota…';
   else if (gi.state === 'BUZZED') message = gi.buzzedBy === i ? 'Di\' la soluzione!' : `${gi.players[gi.buzzedBy].name} risponde…`;
   else if (!isMyTurn) message = `Turno di ${gi.players[gi.currentTurnIndex].name}`;
+  else if (finished) message = 'Consonanti finite: prenotati e risolvi!';
   else if (canCall) message = 'Tocca a te: chiama una consonante';
   else if (canBuzz) message = 'Prenotati e risolvi, o passa';
   else message = '';
@@ -543,6 +549,7 @@ function playerGiramoeView(i) {
 
 function broadcastGiramoe() {
   io.to('main').emit('main:giramoeScores', { scores: giramoeScores(), currentTurn: state.gi.currentTurnIndex, multiplier: state.gi.multiplier });
+  emitBoardStatus(state.gi.board.grid);
   io.to('admin').emit('admin:state', adminView());
   state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:giramoeState', playerGiramoeView(i)));
 }
@@ -592,15 +599,24 @@ function broadcastAdminPlayers() {
   });
 }
 
+// "Consonanti/vocali finite" badge for the main display (wheel + express + giramoe
+// boards only — the triplete and final have their own screens and are excluded).
+function emitBoardStatus(grid) {
+  io.to('main').emit('main:boardStatus',
+    grid ? board.boardStatus(grid) : { consonantsFinished: false, vowelsFinished: false });
+}
+
 // Routine update: scores/turn only — never redraws the main board.
 function broadcastScores() {
   io.to('main').emit('main:scores', mainScoresView());
+  emitBoardStatus(state.g && state.g.board ? state.g.board.grid : null);
   broadcastAdminPlayers();
 }
 
 // Full board redraw on the main display (new board / reconnect).
 function broadcastBoard() {
   io.to('main').emit('main:gameState', mainGameView());
+  emitBoardStatus(state.g && state.g.board ? state.g.board.grid : null);
   broadcastAdminPlayers();
 }
 
@@ -619,6 +635,7 @@ io.on('connection', (socket) => {
       socket.emit('main:showLobby', { roomCode: state.roomCode, url: lobbyUrl(), players: lobbyPlayers() });
     } else if ((state.phase === 'playing' || state.phase === 'tripleteReady' || state.phase === 'express') && state.g && state.g.board) {
       socket.emit('main:gameState', mainGameView());
+      socket.emit('main:boardStatus', board.boardStatus(state.g.board.grid));
     } else if (state.phase === 'triplete' && state.t) {
       socket.emit('main:tripleteBoard', tripleteBoardView());
       socket.emit('main:tripleteScores', { scores: tripleteScores(), buzzedBy: state.t.buzzedBy });
@@ -626,6 +643,7 @@ io.on('connection', (socket) => {
       socket.emit('main:giramoeStart', { segments: game.GIRAMOE_SEGMENTS });
       socket.emit('main:giramoeBoard', giramoeBoardView());
       socket.emit('main:giramoeScores', { scores: giramoeScores(), currentTurn: state.gi.currentTurnIndex, multiplier: state.gi.multiplier });
+      socket.emit('main:boardStatus', board.boardStatus(state.gi.board.grid));
     } else if (state.phase === 'tiebreak' && state.tiebreak) {
       socket.emit('main:tiebreakStart', { segments: game.GIRAMOE_SEGMENTS, contenders: tiebreakView().contenders });
       socket.emit('main:tiebreakState', tiebreakView());
@@ -710,6 +728,7 @@ io.on('connection', (socket) => {
     if (socket.playerIndex !== state.g.currentTurnIndex) return;
     const res = game.applyConsonant(state.g, letter);
     if (!res.ok) return;
+    io.to('main').emit('main:letterCalled', { letter: String(letter).toUpperCase() });
     if (res.present) io.to('main').emit('main:revealLetter', { positions: res.positions });
     else io.to('main').emit('main:wrong');
     broadcastScores();
@@ -720,6 +739,7 @@ io.on('connection', (socket) => {
     if (socket.playerIndex !== state.g.currentTurnIndex) return;
     const res = game.applyVowel(state.g, letter);
     if (!res.ok) return;
+    io.to('main').emit('main:letterCalled', { letter: String(letter).toUpperCase() });
     if (res.present) io.to('main').emit('main:revealLetter', { positions: res.positions });
     else io.to('main').emit('main:wrong');
     broadcastScores();
@@ -734,6 +754,7 @@ io.on('connection', (socket) => {
     const actingName = game.currentPlayer(state.g).name;
     const res = game.applyExpressLetter(state.g, letter);
     if (!res.ok) return;
+    io.to('main').emit('main:letterCalled', { letter: String(letter).toUpperCase() });
     if (res.present) {
       io.to('main').emit('main:revealLetter', { positions: res.positions });
       if (res.solved) {
@@ -866,6 +887,7 @@ io.on('connection', (socket) => {
     if (socket.playerIndex !== state.gi.currentTurnIndex) return;
     const res = giramoe.callConsonant(state.gi, letter);
     if (!res.ok) return;
+    io.to('main').emit('main:letterCalled', { letter: String(letter).toUpperCase() });
     if (res.present) {
       io.to('main').emit('main:revealLetter', { positions: res.positions });
       startGiramoeBuzzWindow();
@@ -945,7 +967,8 @@ io.on('connection', (socket) => {
     if (socket.playerIndex !== state.finalistId) return;
     const res = finalgame.pick(state.fg, letter);
     if (!res.ok) return;
-    if (res.present) io.to('main').emit('main:finalReveal', { positions: res.positions });
+    // Board 1 sends no positions until all 4 picks are in (then flips them together).
+    if (res.positions && res.positions.length) io.to('main').emit('main:finalReveal', { positions: res.positions });
     if (res.wrong) {
       state.finalTimeLeft = Math.max(0, state.finalTimeLeft - FINAL_PENALTY_MS);
       io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });

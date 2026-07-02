@@ -298,7 +298,7 @@ function renderGiramoe(gr) {
     }
     const tag = p.id === gr.buzzedBy ? ' 🔔' : (i === gr.currentTurn ? ' ▶' : '');
     item.innerHTML = `<span>${p.name}${tag}</span>
-      <span class="admin-scorenums">P: <b>${p.points}</b></span>`;
+      <span class="admin-scorenums">P: <b>${p.points}</b> · B: <b>${p.bank != null ? p.bank : 0}</b></span>`;
     list.appendChild(item);
   });
 }

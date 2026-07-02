@@ -67,12 +67,19 @@ function pick(fg, letter) {
     if (vowel ? fg.vowelPicked : fg.consonantPicks >= BOARD1_CONSONANTS) return { ok: false };
     fg.usedLetters.push(letter);
     const count = board.countOccurrences(grid, letter);
-    const positions = board.letterPositions(grid, letter);
-    if (count > 0) board.revealLetter(grid, letter);
     if (vowel) fg.vowelPicked = true; else fg.consonantPicks += 1;
     const complete = fg.consonantPicks >= BOARD1_CONSONANTS && fg.vowelPicked;
-    if (complete) fg.state = 'RUNNING';
-    return { ok: true, present: count > 0, positions, complete, startTimer: complete };
+    // Board 1 keeps every pick hidden until all 4 (3 consonants + 1 vowel) are in,
+    // then flips them onto the board together — not one cell at a time.
+    if (!complete) return { ok: true, present: count > 0, positions: [], complete: false, startTimer: false };
+    fg.state = 'RUNNING';
+    let positions = [];
+    fg.usedLetters.forEach(L => {
+      if (BOARD1_REVEAL.includes(L)) return; // the preset N R T E are already shown
+      const pos = board.letterPositions(grid, L);
+      if (pos.length) { board.revealLetter(grid, L); positions = positions.concat(pos); }
+    });
+    return { ok: true, present: count > 0, positions, complete: true, startTimer: true };
   }
 
   if (fg.boardIndex === 2) {

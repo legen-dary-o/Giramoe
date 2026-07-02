@@ -106,8 +106,9 @@ export class Envelopes3D {
     view.envelopes.forEach((e, i) => {
       const it = this.items[i];
       const isCurrent = i === view.current;
-      // Keeping collapses the display to the chosen one: the others shrink and recede.
-      const goneAway = kept && !isCurrent;
+      // Keeping collapses the display to the chosen one: the others shrink and recede —
+      // EXCEPT a revealed one (a red the admin opened), which stays on stage with its text.
+      const goneAway = kept && !isCurrent && !e.revealed;
       it.targetZ = goneAway ? -4 : (isCurrent ? (kept ? 1.3 : 0.9) : 0);
       it.targetScale = goneAway ? 0.001 : (isCurrent ? (kept ? 1.3 : 1.12) : 1);
       it.flapTarget = e.revealed ? -2.4 : 0;
