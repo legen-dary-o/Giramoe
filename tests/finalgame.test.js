@@ -44,6 +44,19 @@ test('board 1: 3 consonants + 1 vowel, then the timer starts', () => {
   assert.strictEqual(finalgame.pick(fg, 'I').ok, false);
 });
 
+test('board 1 keeps picks hidden until all 4 are in, then flips them together', () => {
+  const fg = make(['BACI DAMA', 'X', 'Y']); // B A C I D A M A ; N/R/T/E absent
+  finalgame.pick(fg, 'B');
+  finalgame.pick(fg, 'C');
+  const r3 = finalgame.pick(fg, 'D'); // 3 consonants, still no vowel
+  assert.strictEqual(r3.positions.length, 0, 'nothing revealed after 3 consonants');
+  assert.deepStrictEqual(revealedLetters(finalgame.currentGrid(fg)), [], 'board still hidden');
+  const r4 = finalgame.pick(fg, 'A'); // vowel completes the picks
+  assert.strictEqual(r4.complete, true);
+  assert.ok(r4.positions.length > 0, 'all picks flip together on completion');
+  assert.deepStrictEqual(revealedLetters(finalgame.currentGrid(fg)).sort(), ['A', 'A', 'A', 'B', 'C', 'D']);
+});
+
 test('board 1: cannot pick an already-revealed preset letter (N/R/T/E)', () => {
   const fg = make(['NRT BC', 'X', 'Y']);
   assert.strictEqual(finalgame.pick(fg, 'N').ok, false);

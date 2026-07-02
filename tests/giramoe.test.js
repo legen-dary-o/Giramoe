@@ -129,3 +129,33 @@ test('an absent consonant scores nothing and passes the turn (no buzz)', () => {
   assert.strictEqual(giramoe.buzz(gi, 0).ok, false, 'the caller cannot buzz after an absent letter');
   assert.strictEqual(giramoe.buzz(gi, 1).ok, false, 'the next player must call a letter first');
 });
+
+test('an absent called consonant is not recorded and stays callable on later turns', () => {
+  const gi = make('CECE'); // Z is absent
+  giramoe.setMultiplier(gi, 100);
+  giramoe.callConsonant(gi, 'Z'); // P0 calls Z (absent) -> pass, not recorded
+  assert.ok(!gi.usedLetters.includes('Z'), 'absent letter is not locked out');
+  // P1 can call Z again
+  assert.strictEqual(giramoe.callConsonant(gi, 'Z').ok, true, 'Z is callable again');
+  assert.strictEqual(gi.currentTurnIndex, 2, 'and it passes again');
+});
+
+test('a present called consonant stays locked out for everyone', () => {
+  const gi = make('CECE');
+  giramoe.setMultiplier(gi, 100);
+  giramoe.callConsonant(gi, 'C'); // present -> recorded
+  assert.ok(gi.usedLetters.includes('C'));
+  giramoe.timeout(gi); // pass to P1
+  assert.strictEqual(giramoe.callConsonant(gi, 'C').ok, false, 'C cannot be called again');
+});
+
+test('once every consonant is revealed the current player may buzz without calling', () => {
+  const gi = make('CACA'); // only consonant is C
+  giramoe.setMultiplier(gi, 100);
+  giramoe.callConsonant(gi, 'C'); // reveals all C -> consonants finished, buzz window open
+  assert.strictEqual(giramoe.consonantsFinished(gi), true);
+  giramoe.timeout(gi); // P0 lets the window lapse -> P1's turn, nothing left to call
+  assert.strictEqual(gi.calledThisTurn, false);
+  assert.strictEqual(giramoe.buzz(gi, 1).ok, true, 'P1 buzzes directly, no call needed');
+  assert.strictEqual(gi.state, 'BUZZED');
+});

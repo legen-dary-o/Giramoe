@@ -183,3 +183,14 @@ test('revealCellAt reveals one cell and returns its letter; null off a letter ce
   // an edge corner on row 0 is not a letter cell
   assert.strictEqual(board.revealCellAt(b.grid, 0, 0), null);
 });
+
+test('boardStatus flags consonanti/vocali finite when all of a kind are revealed', () => {
+  const { board: b } = board.createBoard('CAT', 'CASA'); // C S consonants, A A vowels
+  assert.deepStrictEqual(board.boardStatus(b.grid), { consonantsFinished: false, vowelsFinished: false });
+  board.revealLetter(b.grid, 'A'); // both vowels revealed
+  assert.strictEqual(board.boardStatus(b.grid).vowelsFinished, true);
+  assert.strictEqual(board.boardStatus(b.grid).consonantsFinished, false);
+  board.revealLetter(b.grid, 'C');
+  board.revealLetter(b.grid, 'S');
+  assert.strictEqual(board.boardStatus(b.grid).consonantsFinished, true);
+});

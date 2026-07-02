@@ -278,7 +278,9 @@ function applyEnvelopes(view) {
   const showButtons = amFinalist && view.state === 'OPENED' && !envChangeArmed;
   keepBtn.style.display = showButtons ? '' : 'none';
   changeBtn.style.display = showButtons && canChange ? '' : 'none';
-  changeBtn.textContent = `CAMBIA (${view.changesLeft})`;
+  // The label names the envelope you'd switch to when there's a single option;
+  // with more than one green you tap which after pressing CAMBIA.
+  changeBtn.textContent = avail.length === 1 ? `CAMBIA CON LA ${avail[0] + 1}` : 'CAMBIA';
 }
 
 function buildFinalKeyboard() {

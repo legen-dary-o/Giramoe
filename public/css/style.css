@@ -570,6 +570,27 @@ html, body {
 }
 .category-banner:empty { display: none; }
 
+/* "CONSONANTI/VOCALI FINITE": avviso a schermo quando quel tipo di lettera è esaurito */
+.board-status {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.board-status.hidden { display: none; }
+.board-status-tag {
+  font-family: var(--font-mono);
+  font-size: clamp(11px, 1.2vw, 15px);
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #000;
+  background: var(--accent);
+  padding: 6px 20px;
+  border-radius: 999px;
+  animation: waitPulse 1.8s ease-in-out infinite;
+}
+
 /* === BOARD 4×16 (regole invariate, solo skin) === */
 
 .board-grid {

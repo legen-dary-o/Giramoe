@@ -197,9 +197,32 @@ function isConsonant(letter) {
   return /^[A-Z]$/.test(letter) && !VOWELS.has(letter);
 }
 
+// Counts of letter cells split by kind (consonant/vowel), both total and still
+// hidden. Apostrophe cells (letter "'") and structural cells are ignored.
+function letterCounts(grid) {
+  let hiddenConsonants = 0, hiddenVowels = 0, totalConsonants = 0, totalVowels = 0;
+  for (const row of grid)
+    for (const cell of row) {
+      if (cell.type !== 'letter' || !/^[A-Z]$/.test(cell.letter)) continue;
+      if (VOWELS.has(cell.letter)) { totalVowels++; if (!cell.revealed) hiddenVowels++; }
+      else { totalConsonants++; if (!cell.revealed) hiddenConsonants++; }
+    }
+  return { hiddenConsonants, hiddenVowels, totalConsonants, totalVowels };
+}
+
+// A board's "finite" flags: true once EVERY consonant / vowel that appears in the
+// phrase has been revealed (only meaningful when the phrase contains that kind).
+function boardStatus(grid) {
+  const c = letterCounts(grid);
+  return {
+    consonantsFinished: c.totalConsonants > 0 && c.hiddenConsonants === 0,
+    vowelsFinished: c.totalVowels > 0 && c.hiddenVowels === 0
+  };
+}
+
 module.exports = {
   normalize, layoutPhrase, buildGrid, createBoard,
   countOccurrences, revealLetter, letterPositions, isSolved, revealAll, revealFirstLast, isVowel, isConsonant,
-  hiddenLetterCells, revealCellAt,
+  hiddenLetterCells, revealCellAt, letterCounts, boardStatus,
   VOWELS, ROW_CAPACITIES, GRID_WIDTH
 };

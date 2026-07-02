@@ -51,24 +51,33 @@ function callConsonant(gi, letter) {
   if (gi.state !== 'PLAYING' || gi.calledThisTurn) return { ok: false };
   if (!board.isConsonant(letter) || gi.usedLetters.includes(letter)) return { ok: false };
 
-  gi.usedLetters.push(letter);
   const count = board.countOccurrences(gi.board.grid, letter);
   if (count > 0) {
     const positions = board.letterPositions(gi.board.grid, letter);
     board.revealLetter(gi.board.grid, letter);
+    gi.usedLetters.push(letter);   // only a present, called letter is locked out
     currentPlayer(gi).points += gi.multiplier * count;
     gi.calledThisTurn = true; // only a present consonant opens the buzz window
     return { ok: true, present: true, count, positions };
   }
-  // Absent consonant: scores nothing and can't be solved on -> pass to the next player.
+  // Absent consonant: NOT recorded, so it stays callable on later turns (players
+  // must remember which letters aren't in the phrase). Scores nothing and passes.
   passTurn(gi);
   return { ok: true, present: false, count: 0, positions: [], passed: true };
 }
 
-// Only the current player, and only after they've called a letter, may buzz.
+// Every consonant that appears in the phrase has been revealed -> nothing left to call.
+function consonantsFinished(gi) {
+  return board.boardStatus(gi.board.grid).consonantsFinished;
+}
+
+// Only the current player may buzz, and normally only after they've called a present
+// letter. Once every consonant is revealed there's nothing left to call, so the
+// current player may buzz straight away without calling.
 function buzz(gi, playerId) {
-  if (gi.state !== 'PLAYING' || !gi.calledThisTurn) return { ok: false };
+  if (gi.state !== 'PLAYING') return { ok: false };
   if (playerId !== gi.currentTurnIndex) return { ok: false };
+  if (!gi.calledThisTurn && !consonantsFinished(gi)) return { ok: false };
   gi.buzzedBy = playerId;
   gi.state = 'BUZZED';
   return { ok: true, playerId };
@@ -109,5 +118,5 @@ function bankResult(gi, gamePlayers) {
 
 module.exports = {
   createGiramoe, currentPlayer, setMultiplier, passTurn,
-  callConsonant, buzz, judgeCorrect, judgeWrong, timeout, bankResult
+  callConsonant, consonantsFinished, buzz, judgeCorrect, judgeWrong, timeout, bankResult
 };
