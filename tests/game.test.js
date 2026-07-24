@@ -320,3 +320,27 @@ test('express correct solve banks the express points (via applySolve)', () => {
   assert.strictEqual(res.ok, true);
   assert.strictEqual(g.players[0].bank, 1000);
 });
+
+test('entering express keeps turn points accrued on the wheel; express points add on top', () => {
+  const g = newGame('BACO CENA'); // B x1, C x2
+  g.segments = game.EXPRESS_SEGMENTS.slice();
+
+  // Wheel phase of the express round: score a consonant on a number segment.
+  game.applySpin(g, 0); // 1000
+  game.applyConsonant(g, 'B'); // 1 x 1000 -> roundPoints 1000, state CONTINUE
+  assert.strictEqual(g.players[0].roundPoints, 1000);
+
+  // Keep spinning and land on express: the accrued turn points are NOT reset.
+  const spin = game.applySpin(g, 6);
+  assert.deepStrictEqual(spin, { type: 'express' });
+  assert.strictEqual(g.turnState, 'EXPRESS');
+  assert.strictEqual(g.players[0].roundPoints, 1000, 'accrued turn points survive entering express');
+
+  // Express letter adds on top of the accrued total (500 x 2 occurrences).
+  game.applyExpressLetter(g, 'C');
+  assert.strictEqual(g.players[0].roundPoints, 2000, 'express points stack on the accrued turn points');
+
+  // Solving banks the combined total in one shot.
+  game.applySolve(g);
+  assert.strictEqual(g.players[0].bank, 2000);
+});
