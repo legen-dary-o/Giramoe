@@ -322,6 +322,24 @@ html, body {
 .title-stage.play .wm { animation: glint 3.2s 0.55s ease-in-out infinite, rise 1s 0.25s var(--ease-out) both; }
 .title-stage.play .hairline { animation: rise 0.8s 0.6s var(--ease-out) both; }
 
+/* === ROUND SCENES (Triplete / Express / Giramoe / Finalista / Buste) ===
+   Overlay a schermo intero delle animazioni di round: sta sopra le schermate di
+   gioco ma sotto la grana (z 50). Tutto il resto (geometrie, colori, tempi) è
+   calcolato per frame in public/js/fx/roundscenes.js su un palco logico 1920×1080. */
+
+#round-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: none;
+  overflow: hidden;
+  color: var(--ink);
+  background:
+    radial-gradient(85% 65% at 50% -8%, rgba(48, 56, 74, 0.32), transparent 62%),
+    linear-gradient(180deg, #0a0a0c, #000 64%);
+}
+#round-scene.visible { display: block; }
+
 /* === LOBBY === */
 
 .lobby-grid {

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face { font-family: 'Syne'; src: url('fonts/syne-800.woff2') format('woff2'); font-weight: 800; font-display: block; }
+@font-face { font-family: 'Space Mono'; src: url('fonts/space-mono-400.woff2') format('woff2'); font-weight: 400; font-display: block; }
+@font-face { font-family: 'Space Mono'; src: url('fonts/space-mono-700.woff2') format('woff2'); font-weight: 700; font-display: block; }
+html, body { margin: 0; height: 100%; background: #000; }
+a { color: #30b8ff; text-decoration: none; }
+a:hover { color: #f5f5f7; }
+</style>
+<script>window.OM_SCENES = '[{"name":"Il Triplete","dur":6},{"name":"Express","dur":5.5},{"name":"Giramoe","dur":5},{"name":"Finalista","dur":5},{"name":"Buste","dur":6}]';</script>
+<script>window.OM_PLAYBACK = '{"mode":"loop"}';</script>
+<script>window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "motionEditor": true,
+  "chrome": true,
+  "grain": true,
+  "sound": true
+}/*EDITMODE-END*/;</script>
+</helmet>
+<x-import component-from-global-scope="GiramoeReel" from="./animations-v2.jsx ./tweaks-panel.jsx ./giramoe-audio.js ./giramoe-scenes.jsx?v=11" hint-size="100%,100%"></x-import>
+
+</x-dc>
+</body>
+</html>

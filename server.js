@@ -24,7 +24,8 @@ const SPIN_MS = 6000; // wheel animation duration (must match client)
 // --- Triplete (bonus round) timing ---
 const TRIPLETE_REVEAL_MS = Number(process.env.TRIPLETE_REVEAL_MS) || 1500; // a cell appears every 1.5s
 const TRIPLETE_FLASH_MS = 1000;  // board 3: a flashed cell stays 1s before vanishing
-const TRIPLETE_FLASH_COUNT = 15; // board 3: flashes before the letters stabilize
+// board 3: every letter flashes once, one at a time, before they stabilize
+const TRIPLETE_FLASH_STEP_MS = Number(process.env.TRIPLETE_FLASH_STEP_MS) || TRIPLETE_REVEAL_MS;
 const TRIPLETE_GAP_MS = Number(process.env.TRIPLETE_GAP_MS) || 2800; // pause between boards / before standings
 
 // Optional test/debug hook: force every wheel spin onto a fixed segment index.
@@ -246,14 +247,15 @@ function tripleteTick() {
   if (!t || t.state !== 'REVEALING') return;
   const isBoard3 = t.boardIndex === triplete.TOTAL_BOARDS - 1;
 
-  // Board 3, flash phase: a cell appears for 1s then vanishes, no repeats yet.
-  if (isBoard3 && t.flashCount < TRIPLETE_FLASH_COUNT) {
+  // Board 3, flash phase: a cell appears for 1s then vanishes, no repeats. It runs
+  // until EVERY letter of the board has been shown once; only then do they stabilize.
+  if (isBoard3 && !t.flashDone) {
     const cell = triplete.flashNext(t);
     if (cell) {
       io.to('main').emit('main:tripleteFlash', { cell, ms: TRIPLETE_FLASH_MS });
-      scheduleTripleteTick(TRIPLETE_REVEAL_MS);
+      scheduleTripleteTick(TRIPLETE_FLASH_STEP_MS);
     } else {
-      t.flashCount = TRIPLETE_FLASH_COUNT; // nothing new to flash -> stabilize now
+      t.flashDone = true; // all letters have flashed -> stabilize now
       scheduleTripleteTick(0);
     }
     return;
@@ -338,12 +340,20 @@ function startFinalist() {
   else startTiebreak(top);
 }
 
+// Standings for the finalist animation: bank descending, the finalist first on a tie
+// (after a tie-break the banks are equal).
+function finalistStandings(id) {
+  return state.g.players
+    .map(p => ({ id: p.id, name: p.name, bank: p.bank, winner: p.id === id }))
+    .sort((a, b) => (b.bank - a.bank) || (b.winner - a.winner));
+}
+
 function declareFinalist(id) {
   state.phase = 'finalist';
   state.finalistId = id;
   state.tiebreak = null;
   const f = state.g.players.find(p => p.id === id);
-  io.to('main').emit('main:finalist', { id, name: f.name });
+  io.to('main').emit('main:finalist', { id, name: f.name, standings: finalistStandings(id) });
   io.to('admin').emit('admin:state', adminView());
   state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:finalist', { id, name: f.name, isMe: i === id }));
 }
@@ -648,7 +658,11 @@ io.on('connection', (socket) => {
       socket.emit('main:tiebreakStart', { segments: game.GIRAMOE_SEGMENTS, contenders: tiebreakView().contenders });
       socket.emit('main:tiebreakState', tiebreakView());
     } else if (state.phase === 'finalist' && state.finalistId != null) {
-      socket.emit('main:finalist', { id: state.finalistId, name: state.g.players[state.finalistId].name });
+      socket.emit('main:finalist', {
+        id: state.finalistId,
+        name: state.g.players[state.finalistId].name,
+        standings: finalistStandings(state.finalistId)
+      });
     } else if (state.phase === 'final' && state.fg) {
       socket.emit('main:finalBoard', finalBoardView());
       socket.emit('main:finalTimer', { ms: state.finalTimeLeft });
