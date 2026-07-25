@@ -76,7 +76,8 @@ l'animazione del titolo (stessi colori degli spicchi della ruota) e l'admin inse
 - **Tabelloni 1 e 2:** le caselle compaiono a caso, una ogni **1,5s**, finché il
   tabellone si riempie.
 - **Tabellone 3:** le lettere **lampeggiano** (compaiono ~1s e spariscono, senza
-  ripetersi) per i primi **15 reveal**, poi si **stabilizzano** e restano.
+  ripetersi) **una alla volta finché non sono passate tutte**; solo dopo si
+  **stabilizzano** e restano. Il passo del lampeggio è 1,5s (`TRIPLETE_FLASH_STEP_MS`).
 - Il giocatore si prenota col bottone **PRENOTATI** e dice la frase a voce. L'admin
   preme **Frase indovinata** (+1000) o **Frase sbagliata**. Il reveal si ferma alla
   prenotazione e riprende — **senza azzerarsi** — dopo una risposta errata.
@@ -183,6 +184,8 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 - `public/admin.html` + `js/admin.js` — console admin (telefono)
 - `public/play.html` + `js/player.js` — vista giocatore (telefono)
 - `public/js/wheel.js` — disegno e animazione della ruota (Canvas)
+- `public/js/fx/roundscenes.js` — le 5 animazioni di round a schermo intero (Triplete,
+  Express, Giramoe, Finalista, Buste), palco logico 1920×1080 scalato
 - `public/js/audio.js` — effetti sonori del main display
 - `public/css/style.css` — stile liquid glass condiviso
 - `public/assets/` — i 5 file audio (incl. `buzzer.mp3` del Triplete)
@@ -190,6 +193,11 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 
 ## Note
 
+- **Animazioni di round:** i cinque stacchi (IL TRIPLETE 6s, EXPRESS 5,5s, GIRAMOE 5s,
+  Finalista 5s, Buste 6s) sono animazioni a schermo intero in `public/js/fx/roundscenes.js`.
+  Con `prefers-reduced-motion` si riducono al solo wordmark statico. Per provarle senza
+  partita, dalla console del main display: `__scenes.play('triplete')` (o `express`,
+  `giramoe`, `finalista`, `buste`); `__scenes.skip()` le chiude subito.
 - **Audio:** gli effetti partono **solo dal main display** e si attivano al primo tocco sulla schermata "Tocca per iniziare" (i browser bloccano l'audio senza un click). I 5 suoni sono in `public/assets/`.
 - Quando un giocatore indovina una lettera presente, le sue occorrenze si scoprono **una alla volta** sul tabellone, con un suono per ognuna.
 - L'animazione della ruota e l'audio girano solo con la scheda del main display **in primo piano** (limite del browser su `requestAnimationFrame`/autoplay).

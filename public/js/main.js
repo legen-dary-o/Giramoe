@@ -2,8 +2,13 @@ import { initCursor } from './fx/cursor.js';
 import { Wheel3D } from './fx/wheel3d.js';
 import { HomeWheel } from './fx/homewheel.js';
 import { Stage3D } from './fx/stage3d.js';
+import { RoundScenes } from './fx/roundscenes.js';
 
 initCursor();
+// Animazioni di round a schermo intero (sostituiscono la vecchia title animation
+// nei cinque stacchi: Triplete, Express, Giramoe, Finalista, Buste).
+const scenes = new RoundScenes(document.getElementById('round-scene'));
+window.__scenes = scenes; // hook di verifica manuale (__scenes.play('triplete'))
 let home = null;
 try {
   home = new HomeWheel(document.getElementById('home-canvas'));
@@ -179,10 +184,12 @@ socket.on('main:tiebreakStart', ({ segments, contenders }) => {
 
 socket.on('main:tiebreakState', (tb) => renderTiebreak(tb.contenders, tb.current));
 
-socket.on('main:finalist', ({ name }) => {
+socket.on('main:finalist', ({ name, standings }) => {
+  const entering = currentPhase !== 'finalist'; // su riconnessione non si rigioca l'animazione
   currentPhase = 'finalist';
   document.getElementById('finalist-name').textContent = name;
   showScreen('finalist-screen');
+  if (entering) scenes.play('finalista', { name, standings });
 });
 
 // --- Final game ---
@@ -218,10 +225,12 @@ socket.on('main:finalBuzzed', () => {
 });
 
 socket.on('main:envelopes', (view) => {
+  const entering = currentPhase !== 'envelopes'; // solo la prima volta: poi sono aggiornamenti
   currentPhase = 'envelopes';
   hideBuzz();
   renderEnvelopes(document.getElementById('envelopes-row'), view);
   applyPhaseScreen();
+  if (entering) scenes.play('buste');
 });
 
 // Render display-only delle 3 buste (la TV principale).
@@ -389,8 +398,9 @@ function showResult(text) {
 socket.on('main:tripleteTitle', () => {
   currentPhase = 'triplete';
   tripleteBoardReady = false;
-  playTitleAnimation('IL TRIPLETE');
+  showTitleCard('IL TRIPLETE');   // carta d'attesa sotto l'animazione
   applyPhaseScreen();
+  scenes.play('triplete').then(applyPhaseScreen);
 });
 
 // --- Express round ---
@@ -405,9 +415,8 @@ socket.on('main:expressRound', ({ segments }) => {
 });
 
 socket.on('main:expressStart', () => {
-  playTitleAnimation('EXPRESS');
-  showScreen('triplete-title-screen');
-  setTimeout(() => { if (currentPhase === 'express') showScreen('game-screen'); }, 2800);
+  showTitleCard('EXPRESS');
+  scenes.play('express').then(() => { if (currentPhase === 'express') showScreen('game-screen'); });
 });
 
 socket.on('main:expressBankrupt', () => {
@@ -419,15 +428,16 @@ socket.on('main:expressBankrupt', () => {
 
 // --- GIRAMOE (final wheel board) ---
 socket.on('main:giramoeStart', ({ segments }) => {
+  const entering = currentPhase !== 'giramoe'; // su riconnessione il server rimanda l'evento
   currentPhase = 'giramoe';
   if (wheel) updateWheelLabels(segments);
   document.getElementById('main-wheel-indicator').style.display = '';
   document.getElementById('category-banner').textContent = '';
   document.getElementById('board-grid').innerHTML = '';
   updateBoardStatus(null);
-  playTitleAnimation('GIRAMOE');
-  showScreen('triplete-title-screen');
-  setTimeout(() => { if (currentPhase === 'giramoe') showScreen('game-screen'); }, 2800);
+  if (!entering) return applyPhaseScreen();
+  showTitleCard('GIRAMOE');
+  scenes.play('giramoe').then(() => { if (currentPhase === 'giramoe') showScreen('game-screen'); });
 });
 
 socket.on('main:giramoeBoard', (b) => {
@@ -504,19 +514,26 @@ socket.on('main:tripleteSolved', ({ board, name, points }) => {
   showTripleteResult(`${name} +${points}`);
 });
 
-// --- Title animation condivisa: eyebrow contestuale + wordmark con glint.
-//     Usata per GIRAMOE (intro e round finale), IL TRIPLETE, EXPRESS. ---
+// --- Title animation: eyebrow contestuale + wordmark con glint + punti convergenti.
+//     Ora serve solo all'intro GIRAMOE del tap iniziale: i cinque stacchi di round
+//     hanno le animazioni dedicate di fx/roundscenes.js. ---
 const TITLE_EYEBROWS = {
   'GIRAMOE': 'Giramoe Studio presenta',
   'IL TRIPLETE': 'Bonus round',
   'EXPRESS': 'Bonus round'
 };
 function playTitleAnimation(word) {
+  showTitleCard(word);
+  if (stage) stage.title.show(word);
+}
+
+// La stessa schermata, ma statica: sta sotto l'animazione di round e resta come
+// carta d'attesa quando l'animazione finisce (es. mentre l'host scrive le frasi).
+function showTitleCard(word) {
   const titleStage = document.getElementById('title-stage');
   document.getElementById('title-eyebrow').textContent = TITLE_EYEBROWS[word] || 'Bonus round';
   document.getElementById('triplete-title').textContent = word;
   showScreen('triplete-title-screen');
-  if (stage) stage.title.show(word);
   // riavvia le animazioni di entrata
   titleStage.classList.remove('play');
   void titleStage.offsetWidth;

@@ -33,7 +33,8 @@ function createTriplete(players, title, phrases) {
       lockedOut: [],                          // player ids locked for the current board
       buzzedBy: null,                         // player id currently being judged
       flashCount: 0,                          // board-3 flashes performed this board
-      flashed: []                             // board-3 cell keys already flashed
+      flashed: [],                            // board-3 cell keys already flashed
+      flashDone: false                        // board-3: every letter has flashed once
     }
   };
 }
@@ -110,6 +111,7 @@ function nextBoard(t) {
   t.buzzedBy = null;
   t.flashCount = 0;
   t.flashed = [];
+  t.flashDone = false;
   t.state = 'REVEALING';
   return { ok: true, boardIndex: t.boardIndex };
 }
