@@ -71,9 +71,9 @@ test('giramoe: la vocale costa 500, apre la prenotazione e accende il banner',
       await wait(150);
     }
 
-    // --- GIRAMOE: "CECE CREME" -> consonanti C x3, R, M; unica vocale E x4 ---
+    // --- GIRAMOE: "CECE CREME TENERE" -> consonanti C x3, R x2, M, T, N; unica vocale E x7 ---
     assert.strictEqual(adminState.phase, 'giramoe', 'siamo nel tabellone giramoe');
-    admin.emit('admin:giramoeSetBoard', { category: 'CIBO', phrase: 'CECE CREME' });
+    admin.emit('admin:giramoeSetBoard', { category: 'CIBO', phrase: 'CECE CREME TENERE' });
     await wait(200);
     admin.emit('admin:giramoeSpin');
     await wait(300);
@@ -115,14 +115,51 @@ test('giramoe: la vocale costa 500, apre la prenotazione e accende il banner',
     await wait(150);
     assert.strictEqual(adminState.giramoe.buzzedBy, null, 'niente prenotazione senza una mossa');
 
-    // P1 compra la E: -500, 4 occorrenze rivelate, vocali finite -> banner.
+    // Vocale assente: i 500 sono comunque persi, niente prenotazione, turno passato.
+    const revealsBeforeMiss = m.reveals.length;
+    players[0].emit('player:giramoeVowel', { letter: 'U' });
+    await wait(200);
+    assert.strictEqual(adminState.giramoe.players[0].points, 250, '750 - 500 anche se la U non c\'è');
+    assert.strictEqual(m.reveals.length, revealsBeforeMiss, 'niente da rivelare');
+    assert.strictEqual(adminState.giramoe.currentTurn, 1, 'turno passato dopo la vocale assente');
+    players[0].emit('player:giramoeBuzz');
+    await wait(150);
+    assert.strictEqual(adminState.giramoe.buzzedBy, null, 'nessuna finestra aperta dalla vocale assente');
+
+    // P2 e P3 bruciano il turno, poi P1 rifà cassa con la R (2 occorrenze) -> 750.
+    players[1].emit('player:giramoeLetter', { letter: 'Z' });
+    await wait(150);
+    players[2].emit('player:giramoeLetter', { letter: 'Z' });
+    await wait(150);
+    assert.strictEqual(adminState.giramoe.currentTurn, 0, 'torna a P1');
+    players[0].emit('player:giramoeLetter', { letter: 'R' });
+    await wait(200);
+    assert.strictEqual(adminState.giramoe.players[0].points, 750, '250 + 250 x 2');
+    players[0].emit('player:giramoeBuzz');
+    await wait(150);
+    admin.emit('admin:giramoeWrong');
+    await wait(150);
+    players[1].emit('player:giramoeLetter', { letter: 'Z' });
+    await wait(150);
+    players[2].emit('player:giramoeLetter', { letter: 'Z' });
+    await wait(150);
+    assert.strictEqual(adminState.giramoe.currentTurn, 0, 'di nuovo a P1, con 750 punti');
+
+    // P1 compra la E: -500, 7 occorrenze rivelate, vocali finite -> banner.
     const revealsBefore = m.reveals.length;
     players[0].emit('player:giramoeVowel', { letter: 'E' });
     await wait(200);
     assert.strictEqual(adminState.giramoe.players[0].points, 250, '750 - 500, la vocale non dà punti');
     assert.strictEqual(m.reveals.length, revealsBefore + 1, 'lettera rivelata sul tabellone');
-    assert.strictEqual(m.reveals[m.reveals.length - 1].positions.length, 4, 'tutte e 4 le E');
+    assert.strictEqual(m.reveals[m.reveals.length - 1].positions.length, 7, 'tutte e 7 le E');
     assert.ok(m.status && m.status.vowelsFinished, 'banner vocali finite acceso');
+
+    // Azione del turno già spesa con la vocale: la consonante viene rifiutata.
+    const revealsAfterVowel = m.reveals.length;
+    players[0].emit('player:giramoeLetter', { letter: 'M' });
+    await wait(150);
+    assert.strictEqual(m.reveals.length, revealsAfterVowel, 'niente consonante dopo la vocale');
+    assert.strictEqual(adminState.giramoe.players[0].points, 250, 'e nessun punto aggiuntivo');
 
     // L'acquisto ha aperto la finestra: ora la prenotazione passa.
     players[0].emit('player:giramoeBuzz');
