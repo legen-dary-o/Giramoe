@@ -93,12 +93,16 @@ _keyword: express bancarotta, lettera assente, sbaglio_
 ## Fase 4 — Giramoe
 
 **D:** Come funziona la fase Giramoe?
-**R:** L'admin (Moe) gira una ruota che ha solo punteggi: il valore ottenuto diventa il moltiplicatore. Poi i giocatori a turno chiamano una consonante ciascuno; ogni consonante presente vale quel moltiplicatore × le sue occorrenze. Non si comprano vocali.
+**R:** L'admin (Moe) gira una ruota che ha solo punteggi: il valore ottenuto diventa il moltiplicatore. Poi i giocatori a turno fanno una sola mossa ciascuno: chiamano una consonante — ogni consonante presente vale quel moltiplicatore × le sue occorrenze — oppure comprano una vocale a 500 punti. Comprare la vocale esclude la consonante per quel turno, e viceversa.
 _keyword: giramoe, quarta fase, moltiplicatore, moe_
 
 **D:** In Giramoe come ci si prenota per rispondere?
-**R:** Dopo aver chiamato una consonante presente hai pochi secondi (5) per prenotarti e dire la frase. Se la consonante è assente, niente prenotazione e passi il turno.
+**R:** Dopo aver chiamato una consonante presente o comprato una vocale presente hai pochi secondi (5) per prenotarti e dire la frase. Se la lettera è assente niente prenotazione e passi il turno. Quando tutte le consonanti sono state rivelate ti puoi prenotare subito, senza chiamare né comprare nulla.
 _keyword: giramoe prenotarsi, 5 secondi, buzz_
+
+**D:** In Giramoe si possono comprare le vocali?
+**R:** Sì, costano 500 punti come sempre, scalati dai punti che stai accumulando nel Giramoe (quindi ti serve almeno una consonante presa prima). La vocale viene solo rivelata e non dà punti, ma apre la prenotazione. Se non è nel tabellone i 500 sono persi e passi il turno — e quella vocale resta comprabile da chiunque, come le consonanti assenti.
+_keyword: giramoe vocali, comprare vocale giramoe, vocale giramoe_
 
 **D:** In Giramoe chi incassa i punti?
 **R:** Solo il giocatore che risolve la frase incassa in banca i punti che ha accumulato. Tutti gli altri non incassano nulla.
