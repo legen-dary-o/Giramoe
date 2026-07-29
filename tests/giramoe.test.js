@@ -198,3 +198,87 @@ test('canBuyVowel è falso prima dello spin e quando le vocali sono finite', () 
   assert.strictEqual(giramoe.vowelsFinished(gi), true);
   assert.strictEqual(giramoe.canBuyVowel(gi, 0), false, 'niente più vocali da comprare');
 });
+
+// Porta il gioco al secondo turno di P0 con 750 punti in tasca e la parola intatta
+// tranne le C: P1 e P2 bruciano il turno con una consonante assente.
+function primed(phrase = 'CECE BACA') {
+  const gi = make(phrase);
+  giramoe.setMultiplier(gi, 250);
+  giramoe.callConsonant(gi, 'C'); // P0: 3 occorrenze -> 750
+  giramoe.timeout(gi);            // -> P1
+  giramoe.callConsonant(gi, 'Z'); // assente -> P2
+  giramoe.callConsonant(gi, 'Z'); // assente -> P0
+  assert.strictEqual(gi.currentTurnIndex, 0);
+  assert.strictEqual(gi.players[0].points, 750);
+  return gi;
+}
+
+test('vocale presente: costa 500, non dà punti, si rivela e apre la prenotazione', () => {
+  const gi = primed();
+  const res = giramoe.buyVowel(gi, 'E'); // "CECE BACA" -> 2 E
+  assert.strictEqual(res.ok, true);
+  assert.strictEqual(res.present, true);
+  assert.strictEqual(res.count, 2);
+  assert.strictEqual(gi.players[0].points, 250, '750 - 500, nessun punto per la vocale');
+  assert.ok(gi.usedLetters.includes('E'), 'vocale presente bruciata per tutti');
+  assert.strictEqual(gi.calledThisTurn, true, 'azione del turno spesa');
+  assert.strictEqual(gi.currentTurnIndex, 0, 'il turno non passa');
+  assert.strictEqual(giramoe.buzz(gi, 0).ok, true, 'la prenotazione è ora possibile');
+});
+
+test('vocale assente: costa comunque 500, passa il turno e resta comprabile', () => {
+  const gi = primed(); // in "CECE BACA" la U non c'è
+  const res = giramoe.buyVowel(gi, 'U');
+  assert.strictEqual(res.ok, true);
+  assert.strictEqual(res.present, false);
+  assert.strictEqual(res.passed, true);
+  assert.strictEqual(gi.players[0].points, 250, 'i 500 sono persi');
+  assert.ok(!gi.usedLetters.includes('U'), 'la vocale assente non è bruciata');
+  assert.strictEqual(gi.currentTurnIndex, 1, 'turno passato');
+  assert.strictEqual(gi.calledThisTurn, false);
+  assert.strictEqual(giramoe.buzz(gi, 0).ok, false, 'chi ha comprato non si prenota');
+});
+
+test('con meno di 500 punti la vocale non si compra', () => {
+  const gi = make('CECE BACA');
+  giramoe.setMultiplier(gi, 100);
+  giramoe.callConsonant(gi, 'C'); // P0 -> 300
+  giramoe.timeout(gi);
+  giramoe.callConsonant(gi, 'Z');
+  giramoe.callConsonant(gi, 'Z'); // -> P0, 300 punti
+  assert.strictEqual(giramoe.buyVowel(gi, 'E').ok, false);
+  assert.strictEqual(gi.players[0].points, 300, 'niente addebito su un acquisto rifiutato');
+});
+
+test('consonante e vocale si escludono nello stesso turno', () => {
+  const gi = primed();
+  // dopo l'acquisto niente consonante
+  assert.strictEqual(giramoe.buyVowel(gi, 'E').ok, true);
+  assert.strictEqual(giramoe.callConsonant(gi, 'B').ok, false, 'niente consonante dopo la vocale');
+  // e viceversa, in un turno pulito
+  const gi2 = primed();
+  assert.strictEqual(giramoe.callConsonant(gi2, 'B').ok, true);
+  assert.strictEqual(giramoe.buyVowel(gi2, 'E').ok, false, 'niente vocale dopo la consonante');
+  assert.strictEqual(gi2.players[0].points, 1000, '750 + 250, nessun addebito');
+});
+
+test('non si comprano consonanti, vocali già rivelate né vocali prima dello spin', () => {
+  const gi = primed();
+  assert.strictEqual(giramoe.buyVowel(gi, 'B').ok, false, 'B non è una vocale');
+  assert.strictEqual(giramoe.buyVowel(gi, 'E').ok, true);
+  giramoe.timeout(gi);            // -> P1
+  giramoe.callConsonant(gi, 'Z'); // -> P2
+  giramoe.callConsonant(gi, 'Z'); // -> P0 (250 punti: sotto soglia)
+  gi.players[0].points = 900;
+  assert.strictEqual(giramoe.buyVowel(gi, 'E').ok, false, 'E è già stata rivelata');
+});
+
+test('con le consonanti finite la vocale è opzionale: la prenotazione resta libera', () => {
+  const gi = make('CACA'); // unica consonante C, unica vocale A
+  giramoe.setMultiplier(gi, 250);
+  giramoe.callConsonant(gi, 'C'); // P0 -> 500, consonanti finite
+  assert.strictEqual(giramoe.consonantsFinished(gi), true);
+  giramoe.timeout(gi); // -> P1, che è a 0 punti
+  assert.strictEqual(giramoe.canBuyVowel(gi, 1), false, 'P1 non può comprare');
+  assert.strictEqual(giramoe.buzz(gi, 1).ok, true, 'ma si prenota lo stesso, senza spendere');
+});
