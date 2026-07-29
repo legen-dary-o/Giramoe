@@ -37,6 +37,28 @@ export class Board3D {
 
   setTarget(el) { this.targetEl = el; }
 
+  // Le tessere 3D vivono finché vive il loro host DOM. Cambiando fase senza
+  // buttarle restavano disegnate sotto la schermata nuova: è così che all'inizio
+  // dell'express la ruota finiva sopra il tabellone del Triplete ancora a video.
+  clear() {
+    for (const mesh of this.tiles.values()) this.group.remove(mesh);
+    this.tiles.clear();
+    this.grid = null;
+    this.targetEl = null;
+    this.group.visible = false;
+  }
+
+  // `.screen.hidden` è opacity:0 ma resta nel layout, quindi né il rect né
+  // l'opacità della griglia bastano a capire se siamo ancora a video: va guardata
+  // la schermata che la ospita.
+  _targetShowing() {
+    const el = this.targetEl;
+    if (!el || !el.isConnected || !this.tiles.size) return false;
+    const screen = el.closest('.screen');
+    if (screen && screen.classList.contains('hidden')) return false;
+    return parseFloat(getComputedStyle(el).opacity) >= 0.5;
+  }
+
   setBoard(grid) {
     for (const mesh of this.tiles.values()) this.group.remove(mesh);
     this.tiles.clear();
@@ -116,10 +138,9 @@ export class Board3D {
 
   update(t) {
     this._t = t;
-    if (this._wantVisible && this.targetEl) {
-      const op = parseFloat(getComputedStyle(this.targetEl).opacity);
-      this.group.visible = !(op < 0.5); // durante lo spin .wheel-zoom sfuma il board: nascondi le tessere
-    }
+    // durante lo spin .wheel-zoom sfuma il board (e fra una fase e l'altra la
+    // schermata ospite sparisce del tutto): in entrambi i casi via le tessere
+    if (this._wantVisible) this.group.visible = this._targetShowing();
     // il rect può muoversi (wheel-zoom, resize della TV): rimisura ~3 volte/s
     if (this.group.visible && ++this._frame % 20 === 0) this.layout();
     for (const mesh of this.tiles.values()) {

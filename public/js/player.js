@@ -28,8 +28,35 @@ if (_saved) {
   myName = _saved.name;
   reconnecting = true;
   showScreen('reconnect-screen');
-  socket.emit('player:reconnect', { roomCode, name: _saved.name });
 }
+
+// Il riaggancio va rifatto a OGNI connessione, non solo al caricamento della
+// pagina. Quando la socket cade (schermo bloccato, cambio app, rete) socket.io
+// torna su con una socket nuova che per il server è un anonimo senza
+// playerIndex: i tasti restano accesi ma ogni tocco viene ignorato, e sembra che
+// il telefono si sia impallato finché non si ricarica la pagina.
+let silentResync = false;
+let attached = false; // il server sa chi siamo su QUESTA socket
+
+function reattach() {
+  const saved = loadSession();
+  if (!saved) return;
+  myName = saved.name;
+  // già in partita: riaggancio invisibile, senza passare dalla schermata d'attesa
+  if (myIndex >= 0) silentResync = true;
+  socket.emit('player:reconnect', { roomCode, name: saved.name });
+}
+
+socket.on('connect', reattach);
+socket.on('disconnect', () => { attached = false; });
+
+// Il telefono torna in mano: ci riagganciamo solo se serve davvero. Un
+// player:reconnect a vuoto farebbe ripartire i timer di round lato server.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (!socket.connected) socket.connect();
+  else if (!attached) reattach();
+});
 
 // --- Join ---
 document.getElementById('btn-join').addEventListener('click', () => {
@@ -45,12 +72,16 @@ document.getElementById('nick-input').addEventListener('keydown', e => {
 // --- Connection events ---
 socket.on('player:joined', ({ playerIndex, name }) => {
   myIndex = playerIndex; myName = name;
+  attached = true;
   reconnecting = false;
   saveSession(name);
   showScreen('wait-screen');
 });
 
 socket.on('player:error', msg => {
+  // Riaggancio silenzioso fallito: siamo già in partita e visibilmente a posto,
+  // non ha senso sparare un alert in faccia al giocatore.
+  if (silentResync) { silentResync = false; return; }
   if (reconnecting) { reconnecting = false; clearSession(); showScreen('join-screen'); return; }
   alert(msg);
 });
@@ -76,9 +107,15 @@ socket.on('player:expressRound', () => {
 });
 
 socket.on('player:reconnected', ({ playerIndex, name, phase }) => {
+  const wasSilent = silentResync;
+  silentResync = false;
   myIndex = playerIndex; myName = name;
+  attached = true;
   reconnecting = false;
   saveSession(name);
+  // Riaggancio a partita in corso: il server manda subito dopo l'evento di fase
+  // giusto, qui non tocchiamo la schermata per non far sfarfallare il telefono.
+  if (wasSilent) return;
   if (phase === 'playing' || phase === 'express') {
     showScreen('player-game-screen');
     document.getElementById('player-nick-display').textContent = myName;
