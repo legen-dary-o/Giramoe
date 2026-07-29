@@ -237,6 +237,7 @@ test('vocale assente: costa comunque 500, passa il turno e resta comprabile', ()
   assert.strictEqual(gi.currentTurnIndex, 1, 'turno passato');
   assert.strictEqual(gi.calledThisTurn, false);
   assert.strictEqual(giramoe.buzz(gi, 0).ok, false, 'chi ha comprato non si prenota');
+  assert.strictEqual(giramoe.buzz(gi, 1).ok, false, 'e il nuovo giocatore di turno deve prima fare la sua mossa');
 });
 
 test('con meno di 500 punti la vocale non si compra', () => {
@@ -262,7 +263,7 @@ test('consonante e vocale si escludono nello stesso turno', () => {
   assert.strictEqual(gi2.players[0].points, 1000, '750 + 250, nessun addebito');
 });
 
-test('non si comprano consonanti, vocali già rivelate né vocali prima dello spin', () => {
+test('non si comprano consonanti né vocali già rivelate', () => {
   const gi = primed();
   assert.strictEqual(giramoe.buyVowel(gi, 'B').ok, false, 'B non è una vocale');
   assert.strictEqual(giramoe.buyVowel(gi, 'E').ok, true);
