@@ -101,8 +101,8 @@ _keyword: giramoe, quarta fase, moltiplicatore, moe_
 _keyword: giramoe prenotarsi, 5 secondi, buzz_
 
 **D:** In Giramoe si possono comprare le vocali?
-**R:** Sì, costano 500 punti come sempre, scalati dai punti che stai accumulando nel Giramoe (quindi ti serve almeno una consonante presa prima). La vocale viene solo rivelata e non dà punti, ma apre la prenotazione. Se non è nel tabellone i 500 sono persi e passi il turno — e quella vocale resta comprabile da chiunque, come le consonanti assenti.
-_keyword: giramoe vocali, comprare vocale giramoe, vocale giramoe, giramoe 500_
+**R:** Sì, costano 500 punti come sempre, scalati dai punti che hai già accumulato nel Giramoe nei turni precedenti. Comprare la vocale è tutta la tua mossa del turno: nello stesso turno non puoi anche chiamare una consonante, e ne compri una sola. La vocale viene solo rivelata e non dà punti, ma apre la prenotazione. Se non è nel tabellone i 500 sono persi e passi il turno — e quella vocale resta comprabile da chiunque, come le consonanti assenti.
+_keyword: giramoe vocali, comprare vocale giramoe, vocale giramoe, giramoe 500, più vocali giramoe, due vocali giramoe_
 
 **D:** In Giramoe chi incassa i punti?
 **R:** Solo il giocatore che risolve la frase incassa in banca i punti che ha accumulato. Tutti gli altri non incassano nulla.

@@ -121,8 +121,8 @@ const SAMIRO_FAQ = [
   },
   {
     q: 'In Giramoe si possono comprare le vocali?',
-    a: 'Sì, costano 500 punti come sempre, scalati dai punti che stai accumulando nel Giramoe (quindi ti serve almeno una consonante presa prima). La vocale viene solo rivelata e non dà punti, ma apre la prenotazione. Se non è nel tabellone i 500 sono persi e passi il turno — e quella vocale resta comprabile da chiunque, come le consonanti assenti.',
-    k: ['giramoe vocali', 'comprare vocale giramoe', 'vocale giramoe', 'giramoe 500']
+    a: 'Sì, costano 500 punti come sempre, scalati dai punti che hai già accumulato nel Giramoe nei turni precedenti. Comprare la vocale è tutta la tua mossa del turno: nello stesso turno non puoi anche chiamare una consonante, e ne compri una sola. La vocale viene solo rivelata e non dà punti, ma apre la prenotazione. Se non è nel tabellone i 500 sono persi e passi il turno — e quella vocale resta comprabile da chiunque, come le consonanti assenti.',
+    k: ['giramoe vocali', 'comprare vocale giramoe', 'vocale giramoe', 'giramoe 500', 'più vocali giramoe', 'due vocali giramoe']
   },
   {
     q: 'In Giramoe chi incassa i punti?',
