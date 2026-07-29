@@ -254,6 +254,18 @@ html, body {
 }
 #player-game-screen #player-wheel-container { width: min(58vw, 240px); margin: 2px 0; }
 
+/* Same story on the giramoe board: consonant keyboard + "Compra vocale" button
+   + vowel picker + the buzz pill overflow a short phone, and there is no other
+   scrollable ancestor (html/body are overflow:hidden), so anchor and scroll here
+   too — otherwise the picker is unreachable. */
+#player-giramoe-screen .mobile-container {
+  justify-content: flex-start;
+  overflow-y: auto;
+  gap: 12px;
+  padding-top: 16px;
+  padding-bottom: 20px;
+}
+
 /* === INTRO (start-tap-screen) === */
 
 #start-tap-screen { flex-direction: column; }
