@@ -159,3 +159,42 @@ test('once every consonant is revealed the current player may buzz without calli
   assert.strictEqual(giramoe.buzz(gi, 1).ok, true, 'P1 buzzes directly, no call needed');
   assert.strictEqual(gi.state, 'BUZZED');
 });
+
+test('canBuyVowel: serve il proprio turno, 500 punti e nessuna azione già fatta', () => {
+  const gi = make('CECE BACA');
+  giramoe.setMultiplier(gi, 250);
+  // prima dello spin nessuno compra: qui lo spin c'è ma P0 ha 0 punti
+  assert.strictEqual(giramoe.canBuyVowel(gi, 0), false, 'senza punti non si compra');
+  giramoe.callConsonant(gi, 'C'); // 3 occorrenze -> P0 a 750
+  assert.strictEqual(gi.players[0].points, 750);
+  assert.strictEqual(giramoe.canBuyVowel(gi, 0), false, 'ha già chiamato in questo turno');
+  assert.strictEqual(giramoe.canBuyVowel(gi, 1), false, 'non è il suo turno');
+  giramoe.timeout(gi); // passa a P1, P0 conserva i 750
+  assert.strictEqual(giramoe.canBuyVowel(gi, 1), false, 'P1 non ha punti');
+  giramoe.callConsonant(gi, 'Z'); // assente -> passa a P2
+  assert.strictEqual(giramoe.canBuyVowel(gi, 2), false);
+  assert.strictEqual(giramoe.canBuyVowel(gi, 0), false, 'P0 ha i punti ma non è il suo turno');
+});
+
+test('canBuyVowel è vero al turno successivo di chi ha accumulato 500+', () => {
+  const gi = make('CECE BACA');
+  giramoe.setMultiplier(gi, 250);
+  giramoe.callConsonant(gi, 'C'); // P0 -> 750
+  giramoe.timeout(gi);            // P1
+  giramoe.callConsonant(gi, 'Z'); // assente -> P2
+  giramoe.callConsonant(gi, 'Z'); // assente -> torna a P0
+  assert.strictEqual(gi.currentTurnIndex, 0);
+  assert.strictEqual(giramoe.canBuyVowel(gi, 0), true);
+});
+
+test('canBuyVowel è falso prima dello spin e quando le vocali sono finite', () => {
+  const gi = make('CECE');
+  gi.players[0].points = 1000;
+  assert.strictEqual(giramoe.canBuyVowel(gi, 0), false, 'stato AWAIT_SPIN');
+  giramoe.setMultiplier(gi, 250);
+  assert.strictEqual(giramoe.vowelsFinished(gi), false);
+  assert.strictEqual(giramoe.canBuyVowel(gi, 0), true);
+  board.revealLetter(gi.board.grid, 'E'); // unica vocale di "CECE"
+  assert.strictEqual(giramoe.vowelsFinished(gi), true);
+  assert.strictEqual(giramoe.canBuyVowel(gi, 0), false, 'niente più vocali da comprare');
+});

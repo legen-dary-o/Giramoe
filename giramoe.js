@@ -1,5 +1,7 @@
 const board = require('./board');
 
+const VOWEL_COST = 500; // prezzo di una vocale, come negli altri round
+
 // GIRAMOE — the final wheel board. The admin spins the wheel once for a multiplier
 // V; players then take turns calling ONE consonant each (no vowels). A present
 // consonant scores V x occurrences for that player and opens a short window to buzz
@@ -71,6 +73,21 @@ function consonantsFinished(gi) {
   return board.boardStatus(gi.board.grid).consonantsFinished;
 }
 
+// Ogni vocale presente nella frase è stata rivelata -> non c'è più niente da comprare.
+function vowelsFinished(gi) {
+  return board.boardStatus(gi.board.grid).vowelsFinished;
+}
+
+// Il giocatore di turno può comprare una vocale al posto di chiamare una consonante:
+// una sola azione per turno, quindi l'acquisto si chiude appena una lettera è stata
+// chiamata (e viceversa: callConsonant rifiuta già quando calledThisTurn è vero).
+function canBuyVowel(gi, playerIndex) {
+  if (gi.state !== 'PLAYING' || gi.calledThisTurn) return false;
+  if (playerIndex !== gi.currentTurnIndex) return false;
+  if (vowelsFinished(gi)) return false;
+  return gi.players[playerIndex].points >= VOWEL_COST;
+}
+
 // Only the current player may buzz, and normally only after they've called a present
 // letter. Once every consonant is revealed there's nothing left to call, so the
 // current player may buzz straight away without calling.
@@ -117,6 +134,8 @@ function bankResult(gi, gamePlayers) {
 }
 
 module.exports = {
+  VOWEL_COST,
   createGiramoe, currentPlayer, setMultiplier, passTurn,
-  callConsonant, consonantsFinished, buzz, judgeCorrect, judgeWrong, timeout, bankResult
+  callConsonant, consonantsFinished, vowelsFinished, canBuyVowel,
+  buzz, judgeCorrect, judgeWrong, timeout, bankResult
 };
