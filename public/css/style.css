@@ -1168,6 +1168,8 @@ html, body {
 .status-dot.disconnected { background: var(--red); }
 
 .board-error { color: var(--red); font-size: 13px; font-weight: 600; margin-top: 8px; min-height: 16px; }
+/* stesso slot, ma per una conferma: niente alert() bloccante sul telefono dell'host */
+.board-error.ok { color: var(--accent); }
 
 .turn-state-tag {
   font-size: 10px;

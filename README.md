@@ -88,9 +88,11 @@ l'animazione del titolo (stessi colori degli spicchi della ruota) e l'admin inse
 
 ## EXPRESS (round)
 
-Dopo il Triplete si torna alla **ruota**: altri **3 tabelloni**, ma uno spicchio
-"PASSA" diventa **EXPRESS** (icona trenino). Chi ci capita entra **subito** in modalità
-express (parte l'animazione "EXPRESS"):
+Dopo il Triplete si torna alla **ruota**: parte lo **stacco di apertura** (stessa
+coreografia del Triplete: la ruota gigante decelera e si ferma sullo **spicchio rosa
+EXPRESS**), poi altri **3 tabelloni**, ma uno spicchio "PASSA" diventa **EXPRESS**
+(icona trenino). Chi ci capita entra **subito** in modalità express (parte l'animazione
+del treno "EXPRESS"):
 
 - **Consonanti a raffica:** ogni occorrenza vale **500**, e si continua a sparare.
 - **Vocali:** si comprano a **500** come al solito (rivelano, niente punti).
@@ -184,8 +186,8 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 - `public/admin.html` + `js/admin.js` — console admin (telefono)
 - `public/play.html` + `js/player.js` — vista giocatore (telefono)
 - `public/js/wheel.js` — disegno e animazione della ruota (Canvas)
-- `public/js/fx/roundscenes.js` — le 5 animazioni di round a schermo intero (Triplete,
-  Express, Giramoe, Finalista, Buste), palco logico 1920×1080 scalato
+- `public/js/fx/roundscenes.js` — le 6 animazioni di round a schermo intero (Triplete,
+  apertura Express, treno Express, Giramoe, Finalista, Buste), palco logico 1920×1080 scalato
 - `public/js/audio.js` — effetti sonori del main display
 - `public/css/style.css` — stile liquid glass condiviso
 - `public/assets/` — i 5 file audio (incl. `buzzer.mp3` del Triplete)
@@ -193,11 +195,21 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 
 ## Note
 
-- **Animazioni di round:** i cinque stacchi (IL TRIPLETE 6s, EXPRESS 5,5s, GIRAMOE 5s,
-  Finalista 5s, Buste 6s) sono animazioni a schermo intero in `public/js/fx/roundscenes.js`.
-  Con `prefers-reduced-motion` si riducono al solo wordmark statico. Per provarle senza
-  partita, dalla console del main display: `__scenes.play('triplete')` (o `express`,
-  `giramoe`, `finalista`, `buste`); `__scenes.skip()` le chiude subito.
+- **Animazioni di round:** gli stacchi (IL TRIPLETE 6s, apertura EXPRESS 6s, treno
+  EXPRESS 5,5s, GIRAMOE 5s, Finalista 5s, Buste 6s) sono animazioni a schermo intero in
+  `public/js/fx/roundscenes.js`. Con `prefers-reduced-motion` si riducono al solo
+  wordmark statico. Per provarle senza partita, dalla console del main display:
+  `__scenes.play('triplete')` (o `expressWheel`, `express`, `giramoe`, `finalista`,
+  `buste`); `__scenes.skip()` le chiude subito.
+  Triplete e apertura Express condividono `WheelLandScene`: cambiano solo colore ed
+  etichetta dello spicchio speciale (rosa scuro `#a11d5c` per l'Express, così la scritta
+  bianca resta leggibile) e il wordmark finale.
+- **Tenuta della partita:** admin, schermo principale e telefoni si **ri-presentano al
+  server a ogni riconnessione** (e quando il telefono torna in primo piano). Senza,
+  socket.io tornava su con una socket nuova che il server non riconosceva più: i tasti
+  sembravano funzionare ma non succedeva niente, e la console admin restava a una
+  schermata vecchia finché non si ricaricava la pagina. Ricaricare ora è innocuo: lo
+  schermo principale rientra dov'era, senza intro.
 - **Audio:** gli effetti partono **solo dal main display** e si attivano al primo tocco sulla schermata "Tocca per iniziare" (i browser bloccano l'audio senza un click). I 5 suoni sono in `public/assets/`.
 - Quando un giocatore indovina una lettera presente, le sue occorrenze si scoprono **una alla volta** sul tabellone, con un suono per ognuna.
 - L'animazione della ruota e l'audio girano solo con la scheda del main display **in primo piano** (limite del browser su `requestAnimationFrame`/autoplay).

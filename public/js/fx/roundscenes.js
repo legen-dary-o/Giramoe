@@ -66,14 +66,36 @@ function titleBlock(parent, { eyebrow, word, size, wmMargin = 26 }) {
 }
 
 // ===========================================================================
-// 1 · IL TRIPLETE — 6.0s. Ruota gigante ripresa da vicinissimo che ci atterra sopra.
+// 1 · Atterraggio su uno spicchio — 6.0s. Ruota gigante ripresa da vicinissimo,
+// sei giri che decelerano e si fermano sullo spicchio speciale (indice 0), poi
+// velo nero e wordmark. La usano IL TRIPLETE e l'apertura del round EXPRESS:
+// stessa coreografia, cambiano solo colore/etichetta dello spicchio e il titolo.
 // ===========================================================================
 const CX = 960, CY = 2060, R = 1950, LABEL_R = R * 0.74;
-const TRIPLETE_LABELS = ['IL TRIPLETE', '900', '700', '500', '800', '600', '2500', '350',
-                         '450', '900', '600', '700', '800', '500', '1000', '650'];
+const WHEEL_VALUES = ['900', '700', '500', '800', '600', '2500', '350',
+                      '450', '900', '600', '700', '800', '500', '1000', '650'];
 
-class TripleteScene {
-  constructor(root) {
+const TRIPLETE_WHEEL = {
+  wedge: '#111114',
+  wedgeLabel: 'IL TRIPLETE',
+  wedgeFont: 'italic 900 74px "Arial Black", Arial, sans-serif',
+  wedgeShadow: '0 0 26px rgba(125,225,255,0.95)',
+  eyebrow: 'Bonus round', word: 'IL TRIPLETE', size: 196
+};
+
+// Rosa scuro, non il #ec4899 della ruota: su quello la scritta bianca si perde.
+// Qui il contrasto con il bianco è ~7.5:1, si legge anche di sfuocato.
+const EXPRESS_WHEEL = {
+  wedge: '#a11d5c',
+  wedgeLabel: 'EXPRESS',
+  wedgeFont: 'italic 900 92px "Arial Black", Arial, sans-serif',
+  wedgeShadow: '0 0 30px rgba(255,160,205,0.9), 0 4px 12px rgba(0,0,0,0.75)',
+  eyebrow: 'Bonus round', word: 'EXPRESS', size: 230
+};
+
+class WheelLandScene {
+  constructor(root, cfg) {
+    const labels = [cfg.wedgeLabel].concat(WHEEL_VALUES);
     this.wrap = el('div', Object.assign({}, fill), root);
     this.blur = el('div', Object.assign({}, fill), this.wrap);
 
@@ -81,21 +103,21 @@ class TripleteScene {
     const face = () => ({ position: 'absolute', left: -R + 'px', top: -R + 'px', width: R * 2 + 'px', height: R * 2 + 'px', borderRadius: '50%' });
     const stops = [];
     for (let i = 0; i < 16; i++) {
-      const c = i === 0 ? '#111114' : SEG[i]; // lo spicchio 0 è quello speciale IL TRIPLETE
+      const c = i === 0 ? cfg.wedge : SEG[i]; // lo spicchio 0 è quello speciale
       stops.push(`${c} ${i * 22.5}deg ${(i + 1) * 22.5}deg`);
     }
     el('div', Object.assign(face(), { background: `conic-gradient(from -11.25deg, ${stops.join(',')})` }), this.wheel);
     el('div', Object.assign(face(), { background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.26) 12%, rgba(255,255,255,0.04) 55%, rgba(0,0,0,0) 86%, rgba(0,0,0,0.18) 100%)' }), this.wheel);
     el('div', Object.assign(face(), { background: 'repeating-conic-gradient(from -11.25deg, rgba(255,255,255,0.9) 0deg 0.14deg, rgba(255,255,255,0) 0.14deg 22.5deg)' }), this.wheel);
     el('div', Object.assign(face(), { boxSizing: 'border-box', border: '22px solid rgba(255,255,255,0.82)' }), this.wheel);
-    TRIPLETE_LABELS.forEach((lab, i) => {
+    labels.forEach((lab, i) => {
       // transform-origin 0 0: senza, ogni numero ruota sul proprio centro e scivola fuori dallo spicchio
       const d = el('div', {
         position: 'absolute', left: '0', top: '0', whiteSpace: 'nowrap', transformOrigin: '0 0',
         transform: `rotate(${i * 22.5}deg) translateY(${-LABEL_R}px) translate(-50%,-50%)`,
-        font: i === 0 ? 'italic 900 74px "Arial Black", Arial, sans-serif' : `800 104px -apple-system, ${DISPLAY}`,
+        font: i === 0 ? cfg.wedgeFont : `800 104px -apple-system, ${DISPLAY}`,
         color: '#fff', letterSpacing: i === 0 ? '1px' : '0',
-        textShadow: i === 0 ? '0 0 26px rgba(125,225,255,0.95)' : '0 4px 10px rgba(0,0,0,0.55)'
+        textShadow: i === 0 ? cfg.wedgeShadow : '0 4px 10px rgba(0,0,0,0.55)'
       }, this.wheel);
       d.textContent = lab;
     });
@@ -111,7 +133,7 @@ class TripleteScene {
     }, this.wrap);
 
     this.veil = el('div', Object.assign({}, fill, { background: '#000', opacity: '0' }), root);
-    this.title = titleBlock(root, { eyebrow: 'Bonus round', word: 'IL TRIPLETE', size: 196 });
+    this.title = titleBlock(root, { eyebrow: cfg.eyebrow, word: cfg.word, size: cfg.size });
     this.title.box.style.paddingTop = '150px'; // non collide con l'etichetta dello spicchio
   }
 
@@ -149,12 +171,30 @@ class TripleteScene {
     this.title.hair.style.width = 90 * enter(w(t, 4.6, 5.3)) + 'px';
   }
 }
-TripleteScene.duration = 6.0;
-TripleteScene.label = () => ({ eyebrow: 'Bonus round', word: 'IL TRIPLETE', size: 196 });
-TripleteScene.cues = [
+
+// Le due varianti concrete. Stessa durata e stesse battute audio: cambia solo la
+// configurazione dello spicchio speciale e del wordmark finale.
+const WHEEL_CUES = [
   [0.005, () => Sfx.startSpin()],
   [0.578, () => Sfx.stopSpin()] // + clack metallico e sub-drop d'impatto: suoni da procurare
 ];
+
+class TripleteScene extends WheelLandScene {
+  constructor(root) { super(root, TRIPLETE_WHEEL); }
+}
+TripleteScene.duration = 6.0;
+TripleteScene.label = () => ({ eyebrow: TRIPLETE_WHEEL.eyebrow, word: TRIPLETE_WHEEL.word, size: TRIPLETE_WHEEL.size });
+TripleteScene.cues = WHEEL_CUES;
+
+// Apertura del round EXPRESS: la ruota si ferma sullo spicchio rosa "EXPRESS".
+// (Diversa dalla scena `express` qui sotto, che parte quando un giocatore ci
+// atterra davvero sopra durante il round.)
+class ExpressWheelScene extends WheelLandScene {
+  constructor(root) { super(root, EXPRESS_WHEEL); }
+}
+ExpressWheelScene.duration = 6.0;
+ExpressWheelScene.label = () => ({ eyebrow: EXPRESS_WHEEL.eyebrow, word: EXPRESS_WHEEL.word, size: EXPRESS_WHEEL.size });
+ExpressWheelScene.cues = WHEEL_CUES;
 
 // ===========================================================================
 // 2 · EXPRESS — 5.5s. Treno frontale che esce dal tunnel, whiteout, wordmark.
@@ -509,6 +549,7 @@ BusteScene.cues = [
 
 const SCENES = {
   triplete: TripleteScene,
+  expressWheel: ExpressWheelScene,
   express: ExpressScene,
   giramoe: GiramoeScene,
   finalista: FinalistaScene,

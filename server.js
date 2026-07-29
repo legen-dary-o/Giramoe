@@ -238,6 +238,7 @@ function scheduleTripleteTick(ms) {
 }
 
 function startTripleteReveal() {
+  if (tripleteTimer) return; // già in corso: una riconnessione non deve farlo ripartire
   if (state.t && state.t.state === 'REVEALING') scheduleTripleteTick(TRIPLETE_REVEAL_MS);
 }
 
@@ -314,7 +315,12 @@ function startExpressRound() {
   state.g.players.forEach(p => { p.roundPoints = 0; });
   io.to('main').emit('main:expressRound', { segments: state.g.segments });
   io.to('admin').emit('admin:state', adminView());
-  state.lobby.forEach(p => io.to(p.socketId).emit('player:expressRound'));
+  state.lobby.forEach((p, i) => {
+    io.to(p.socketId).emit('player:expressRound');
+    // senza questo i telefoni restano con i tasti dell'ultimo turno pre-triplete
+    // finché l'host non imposta il primo tabellone express
+    io.to(p.socketId).emit('player:turnState', playerView(i));
+  });
 }
 
 // Advance after a solved wheel board (normal solve or express auto-complete),
@@ -630,9 +636,32 @@ function broadcastBoard() {
   broadcastAdminPlayers();
 }
 
+// Rete di sicurezza per la console admin: dopo QUALSIASI evento gestito le
+// rimandiamo comunque lo stato completo, una volta sola per giro di event loop.
+// Gli handler continuano a fare le loro emit mirate; questo serve solo perché una
+// singola emit dimenticata (o una transizione automatica a tempo) non lasci l'host
+// con una schermata vecchia — il caso "il gioco è partito ma io ho ancora il form".
+let adminSyncQueued = false;
+function queueAdminSync() {
+  if (adminSyncQueued) return;
+  adminSyncQueued = true;
+  setImmediate(() => {
+    adminSyncQueued = false;
+    try {
+      io.to('admin').emit('admin:state', adminView());
+    } catch (err) {
+      console.error('[giramoe] admin sync fallita:', err);
+    }
+  });
+}
+
 // --- Socket handlers ---
 
 io.on('connection', (socket) => {
+  // Vale per ogni evento in entrata, admin o giocatore: l'handler gira per primo,
+  // la sincronizzazione parte subito dopo (setImmediate) con lo stato risultante.
+  socket.onAny(() => queueAdminSync());
+
   socket.on('admin:init', () => {
     socket.join('admin');
     socket.emit('admin:state', adminView());
@@ -785,7 +814,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('admin:solve', () => {
-    if (!isWheelPhase() || !state.g) return;
+    if (!isWheelPhase() || !state.g || !state.g.board) return;
     game.applySolve(state.g);
     io.to('main').emit('main:gameState', mainGameView()); // fully-revealed board
     io.to('main').emit('main:solved');
@@ -793,7 +822,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('admin:passTurn', () => {
-    if (!isWheelPhase() || !state.g) return;
+    if (!isWheelPhase() || !state.g || !state.g.board) return;
     if (state.g.turnState === 'EXPRESS') {
       // In express, "Frase sbagliata" is a wrong solution attempt -> full bancarotta.
       const bust = game.currentPlayer(state.g).name;
@@ -1131,6 +1160,12 @@ io.on('connection', (socket) => {
     io.to('admin').emit('admin:state', adminView());
   });
 });
+
+// Si gioca dal vivo: un errore isolato in un handler non deve portarsi via la
+// partita intera. Logghiamo e restiamo in piedi — lo stato in memoria è ancora
+// quello buono e i client si risincronizzano da soli.
+process.on('uncaughtException', (err) => console.error('[giramoe] eccezione non gestita:', err));
+process.on('unhandledRejection', (err) => console.error('[giramoe] promise non gestita:', err));
 
 server.listen(PORT, '0.0.0.0', () => {
   const ip = getLocalIP();

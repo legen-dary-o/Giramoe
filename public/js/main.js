@@ -77,9 +77,25 @@ function applyPhaseScreen() {
   else if (currentPhase === 'envelopes') showScreen('envelopes-screen');
 }
 
-socket.emit('main:init');
+// Ri-presentarsi a OGNI connessione, non solo al primo caricamento: socket.io si
+// riconnette con una socket nuova, che non è più nella room 'main' e quindi non
+// riceverebbe più niente fino a un refresh manuale.
+socket.on('connect', () => socket.emit('main:init'));
 
-socket.on('main:state', ({ phase }) => { currentPhase = phase; applyPhaseScreen(); });
+socket.on('main:state', ({ phase }) => {
+  currentPhase = phase;
+  // Refresh a partita in corso: si riprende da dov'era, senza gate del tap né
+  // intro GIRAMOE. L'audio vuole un gesto utente, quindi si sblocca al primo
+  // tocco o tasto che capita.
+  if (!started && phase !== 'video' && phase !== 'lobby') {
+    started = true;
+    document.getElementById('start-tap-screen').classList.add('waiting');
+    const unlock = () => Sfx.unlock();
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('keydown', unlock, { once: true });
+  }
+  applyPhaseScreen();
+});
 
 socket.on('main:showLobby', ({ url, players }) => {
   currentPhase = 'lobby';
@@ -177,6 +193,7 @@ socket.on('main:tiebreakStart', ({ segments, contenders }) => {
   document.getElementById('main-wheel-indicator').style.display = '';
   document.getElementById('category-banner').textContent = 'SPAREGGIO';
   document.getElementById('board-grid').innerHTML = '';
+  if (stage) stage.board.clear();
   updateBoardStatus(null);
   renderTiebreak(contenders, -1);
   applyPhaseScreen();
@@ -404,14 +421,21 @@ socket.on('main:tripleteTitle', () => {
 });
 
 // --- Express round ---
+// Stacco di apertura: la ruota atterra sullo spicchio rosa EXPRESS, poi si torna
+// al tabellone. Serve anche a coprire il passaggio dal Triplete, che prima era un
+// taglio secco sulla schermata di gioco.
 socket.on('main:expressRound', ({ segments }) => {
+  const entering = currentPhase !== 'express'; // su riconnessione non si rigioca l'animazione
   currentPhase = 'express';
   updateWheelLabels(segments);
   document.getElementById('main-wheel-indicator').style.display = '';
   document.getElementById('category-banner').textContent = '';
   document.getElementById('board-grid').innerHTML = '';
+  if (stage) stage.board.clear(); // via le tessere del Triplete, non c'è più il suo tabellone
   updateBoardStatus(null);
-  applyPhaseScreen();
+  if (!entering) return applyPhaseScreen();
+  showTitleCard('EXPRESS');
+  scenes.play('expressWheel').then(() => { if (currentPhase === 'express') showScreen('game-screen'); });
 });
 
 socket.on('main:expressStart', () => {
@@ -434,6 +458,7 @@ socket.on('main:giramoeStart', ({ segments }) => {
   document.getElementById('main-wheel-indicator').style.display = '';
   document.getElementById('category-banner').textContent = '';
   document.getElementById('board-grid').innerHTML = '';
+  if (stage) stage.board.clear();
   updateBoardStatus(null);
   if (!entering) return applyPhaseScreen();
   showTitleCard('GIRAMOE');

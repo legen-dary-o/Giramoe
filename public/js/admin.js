@@ -5,7 +5,23 @@ function showScreen(id) {
   document.getElementById(id).classList.remove('hidden');
 }
 
-socket.emit('admin:init');
+// L'admin è un telefono: la socket cade a ogni blocco schermo, cambio app o
+// sbalzo di rete, e socket.io si riconnette con una socket NUOVA che non è più
+// nella room 'admin'. Senza ri-presentarsi a ogni connect i tasti continuano a
+// funzionare ma la schermata non si aggiorna più — è il caso "ho premuto inizia,
+// il gioco è partito, ma io ho ancora davanti il form delle frasi".
+socket.on('connect', () => socket.emit('admin:init'));
+
+// Stessa cosa quando il telefono torna in primo piano: chiediamo lo stato pieno,
+// così quello che vedi è sempre quello vero anche dopo una pausa lunga.
+function resync() {
+  if (socket.connected) socket.emit('admin:init');
+  else socket.connect();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') resync();
+});
+window.addEventListener('focus', resync);
 
 document.getElementById('btn-inizia').addEventListener('click', () => socket.emit('admin:inizia'));
 document.getElementById('btn-avvia').addEventListener('click', () => socket.emit('admin:startGame'));
@@ -94,10 +110,11 @@ socket.on('admin:state', (s) => {
 
 socket.on('admin:boardError', (err) => showBoardError(err));
 socket.on('admin:boardSolved', ({ boardNumber }) => {
-  showBoardError('');
   document.getElementById('cat-input').value = '';
   document.getElementById('phrase-input').value = '';
-  alert(`Tabellone risolto! Imposta il tabellone ${boardNumber}.`);
+  // Era un alert(): un modale blocca tutta la pagina finché non lo chiudi, e se
+  // compare a schermo spento sembra che la console admin si sia piantata.
+  showBoardNotice(`Tabellone risolto — imposta il tabellone ${boardNumber}.`);
 });
 
 function updateLobby(players) {
@@ -199,7 +216,15 @@ function renderTiebreak(tb) {
 }
 
 function showBoardError(msg) {
-  document.getElementById('board-error').textContent = msg;
+  const el = document.getElementById('board-error');
+  el.classList.remove('ok');
+  el.textContent = msg;
+}
+
+function showBoardNotice(msg) {
+  const el = document.getElementById('board-error');
+  el.classList.add('ok');
+  el.textContent = msg;
 }
 
 const FINAL_STATE_LABEL = {
