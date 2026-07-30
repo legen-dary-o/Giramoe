@@ -4,3 +4,6 @@ node_modules/
 design_handoff_round_animations/
 design_handoff_tv_screens/
 design_handoff_phone_screens/
+
+# i render di riferimento copiati per il confronto: stanno nei bundle di handoff
+public/dev/*.png

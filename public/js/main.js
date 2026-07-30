@@ -3,10 +3,12 @@ import { Wheel3D } from './fx/wheel3d.js';
 import { HomeWheel } from './fx/homewheel.js';
 import { Stage3D } from './fx/stage3d.js';
 import { RoundScenes } from './fx/roundscenes.js';
-import { renderTopBar, renderPlayersBar } from './tv/shell.js';
+import { renderTopBar, renderPlayersBar, renderPhaseStrip } from './tv/shell.js';
 import * as callout from './tv/callout.js';
 
 initCursor();
+// Le sei fasi della schermata iniziale: contenuto fisso, nessun payload.
+renderPhaseStrip(document.getElementById('intro-phases'), 1);
 // Animazioni di round a schermo intero (sostituiscono la vecchia title animation
 // nei cinque stacchi: Triplete, Express, Giramoe, Finalista, Buste).
 const scenes = new RoundScenes(document.getElementById('round-scene'));

@@ -15,6 +15,16 @@
 
 #start-tap-screen { flex-direction: column; }
 
+#start-tap-screen .corner-label {
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(4.5 * var(--u));
+}
+#start-tap-screen .corner-label .live-dot {
+  width: calc(6 * var(--u));
+  height: calc(6 * var(--u));
+  margin-right: calc(9 * var(--u));
+}
+
 #home-canvas {
   position: fixed;
   inset: 0;
@@ -23,41 +33,147 @@
   z-index: 0;
 }
 
-#intro-stage {
-  position: relative;
+/* Velo sopra la ruota perché wordmark e tagline restino leggibili. È una
+   correzione di leggibilità, non uno stile della ruota: quella resta com'è
+   (homewheel.js), per decisione del committente.
+   Il handoff dà `ellipse 42% 26% at 50% 25%, rgba(0,0,0,.88) 24%, transparent
+   72%`, tarato sulla ruota del mockup, che è più spenta di quella vera. Con
+   questa serve più copertura, e a scendere più in basso: la tagline sta a y 358
+   e il bordo alto del disco a y 220. */
+#intro-scrim {
+  position: absolute;
+  inset: 0;
   z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 46% 34% at 50% 22%, rgba(0, 0, 0, 0.93) 45%, transparent 88%);
+}
+
+/* Testo in alto, bottone e fasi in basso: la ruota passa in mezzo. Prima la
+   colonna era centrata e un blocco vuoto (.intro-wheel-gap) le faceva spazio. */
+#intro-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
+  padding-top: calc(126 * var(--u));
   will-change: transform;
 }
-#intro-stage .wm { font-size: clamp(36px, 10vw, 150px); margin-top: 18px; }
-.intro-wheel-gap { height: 48vh; pointer-events: none; }
+#intro-stage .eyebrow {
+  font-size: calc(12 * var(--u));
+  letter-spacing: calc(7 * var(--u));
+  color: rgba(245, 245, 247, 0.42);
+  animation-delay: 0.1s;
+}
+#intro-stage .wm {
+  margin-top: calc(26 * var(--u));
+  font-size: calc(184 * var(--u));
+  letter-spacing: -0.035em;
+  line-height: 0.9;
+}
 .tagline {
-  margin-top: 22px;
-  font-size: clamp(15px, 1.7vw, 22px);
-  font-weight: 300;
-  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: calc(20 * var(--u));
+  margin-top: calc(22 * var(--u));
+  font-family: var(--font-mono);
+  font-size: calc(20 * var(--u));
+  font-weight: 400;
+  letter-spacing: calc(1 * var(--u));
+  color: rgba(245, 245, 247, 0.62);
   animation-delay: 0.65s;
 }
-#intro-stage .eyebrow { animation-delay: 0.1s; }
-#tap-start-btn { margin-top: 44px; animation-delay: 0.85s; }
+.tagline .rule {
+  width: calc(120 * var(--u));
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(48, 184, 255, 0.7));
+}
+.tagline .rule:last-child { background: linear-gradient(90deg, rgba(48, 184, 255, 0.7), transparent); }
 
-/* Dopo il tap, in attesa dell'host: bottone via, hint dolce */
+#intro-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(66 * var(--u));
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(40 * var(--u));
+}
+/* Pieno bianco, non più ghost: è l'unica azione della schermata. */
+#tap-start-btn {
+  color: #000;
+  background: var(--ink);
+  border-color: var(--ink);
+  padding: calc(19 * var(--u)) calc(58 * var(--u));
+  font-size: calc(15 * var(--u));
+  letter-spacing: calc(2.5 * var(--u));
+  box-shadow: 0 calc(14 * var(--u)) calc(44 * var(--u)) rgba(0, 0, 0, 0.6);
+  animation-delay: 0.85s;
+}
+#tap-start-btn:hover { background: var(--accent); border-color: var(--accent); color: #000; }
+
+/* Dopo il tap, in attesa dell'host: bottone via, hint dolce al suo posto */
 #start-tap-screen.waiting #tap-start-btn { display: none; }
 .intro-wait-hint {
   display: none;
-  margin-top: 44px;
-  font-size: 12px;
+  font-size: calc(12 * var(--u));
   font-weight: 600;
-  letter-spacing: 3px;
+  letter-spacing: calc(3 * var(--u));
   text-transform: uppercase;
   color: var(--ink-faint);
   animation: waitPulse 2s ease-in-out infinite;
 }
 #start-tap-screen.waiting .intro-wait-hint { display: block; }
+
+/* === STRISCIA DELLE SEI FASI (1a e lobby) ===
+   La riempie renderPhaseStrip() in public/js/tv/shell.js. */
+
+.intro-phases { display: flex; align-items: stretch; }
+.intro-phases .ps-cell {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  padding: 0 calc(34 * var(--u));
+  border-left: 1px solid rgba(255, 255, 255, 0.10);
+}
+.intro-phases .ps-cell:last-child { border-right: 1px solid rgba(255, 255, 255, 0.10); }
+.intro-phases .ps-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(2.5 * var(--u));
+  color: rgba(235, 235, 245, 0.22);
+}
+.intro-phases .ps-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(12 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  color: rgba(235, 235, 245, 0.34);
+}
+.intro-phases .ps-cell.is-now .ps-num { color: var(--accent); }
+.intro-phases .ps-cell.is-now .ps-name { color: var(--ink); }
+
+/* In riga, separate da un trattino invece che da un filetto: lobby */
+.intro-phases.is-inline { align-items: center; }
+.intro-phases.is-inline .ps-cell {
+  flex-direction: row;
+  align-items: center;
+  gap: calc(14 * var(--u));
+  padding: 0 calc(38 * var(--u));
+  border-left: none;
+}
+.intro-phases.is-inline .ps-cell:last-child { border-right: none; }
+.intro-phases.is-inline .ps-name { letter-spacing: calc(3.5 * var(--u)); }
+.intro-phases .ps-sep {
+  width: calc(38 * var(--u));
+  height: 1px;
+  background: var(--hairline);
+}
 
 /* === TITLE SCREEN (GIRAMOE / IL TRIPLETE / EXPRESS) === */
 

@@ -76,6 +76,20 @@ export function renderTopBar(host, opts = {}) {
   host.append(left, rightSide);
 }
 
+// La striscia delle sei fasi, in due disposizioni: nella 1a le celle stanno in
+// colonna separate da un filetto verticale, nella lobby in riga separate da un
+// trattino orizzontale. Stessa lista, stesso stato, due vestiti.
+export function renderPhaseStrip(host, phase = 1, { inline = false } = {}) {
+  host.innerHTML = '';
+  host.classList.toggle('is-inline', inline);
+  PHASES.forEach(([n, name], i) => {
+    if (inline && i > 0) host.append(el('span', 'ps-sep'));
+    const cell = el('div', 'ps-cell' + (i === phase - 1 ? ' is-now' : ''));
+    cell.append(el('span', 'ps-num', n), el('span', 'ps-name', name));
+    host.append(cell);
+  });
+}
+
 // players: [{ name, values, state, tone }]
 //   values  i numeri delle colonne, nello stesso ordine di `cols`
 //   state   'In attesa' | 'Al turno' | 'Prenotato' | 'Bloccata' | 'Usata' | …
