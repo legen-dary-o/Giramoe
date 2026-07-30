@@ -28,6 +28,21 @@ for (const [phrase, category, revealed] of CASES) {
   out[phrase] = Object.assign(out[phrase] || {}, { [revealed || 'VUOTO']: grid });
 }
 
+// Il Triplete rivela CASELLE, non lettere: nessuna combinazione di lettere
+// riproduce il suo riempimento sparso. Qui una casella su tre, con un passo
+// fisso: serve un fixture riproducibile, non un tabellone diverso ogni volta.
+{
+  const phrase = 'MEGLIO UN UOVO OGGI CHE UNA GALLINA DOMANI';
+  const res = board.createBoard('SAGGEZZA POPOLARE', phrase);
+  if (!res.ok) throw new Error(`board.createBoard ha rifiutato "${phrase}": ${res.error}`);
+  let n = 0;
+  out[phrase].CELLE = res.board.grid.map(row => row.map(cell => {
+    if (cell.type !== 'letter') return { type: cell.type };
+    const on = (n++ % 3) === 0;
+    return { type: 'letter', revealed: on, letter: on ? (cell.display || cell.letter) : null };
+  }));
+}
+
 const dest = path.join(__dirname, '..', 'public', 'js', 'dev', 'boards.generated.mjs');
 fs.writeFileSync(dest,
   '// GENERATO da scripts/gen-fixtures.js — non modificare a mano.\n' +

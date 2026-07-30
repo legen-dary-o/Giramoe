@@ -549,6 +549,278 @@ export const GRIDS = {
      "type": "edge"
     }
    ]
+  ],
+  "CELLE": [
+   [
+    {
+     "type": "edge"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "M"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "L"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "U"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "O"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "edge"
+    }
+   ],
+   [
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "O"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "I"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "E"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "A"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    }
+   ],
+   [
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "L"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "N"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "O"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "N"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "blocked"
+    }
+   ],
+   [
+    {
+     "type": "edge"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "edge"
+    }
+   ]
   ]
  },
  "IL GIRO DEL MONDO IN OTTANTA GIORNI": {

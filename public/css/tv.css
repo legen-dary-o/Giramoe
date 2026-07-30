@@ -641,7 +641,8 @@
   border-color: rgba(255, 255, 255, 0.45);
   box-shadow: 0 0 calc(44 * var(--u)) rgba(255, 255, 255, 0.10);
 }
-.pcard.is-buzzed .pc-name { color: var(--ink); }
+.pcard.is-buzzed .pc-name,
+.pcard.is-buzzed .pc-state { color: var(--ink); }
 
 /* === GAME LAYOUT (main display) === */
 
@@ -967,72 +968,6 @@
 /* con WebGL attivo il DOM fa solo da layout: tessere disegnate dallo stage */
 .webgl-stage .board-grid .cell { visibility: hidden; }
 
-/* === PLAYERS BAR === */
-
-.players-bar { display: flex; gap: 14px; }
-
-.player-name {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 22px 11px 12px;
-}
-.player-name.active {
-  border-color: rgba(255, 255, 255, 0.32);
-  background: rgba(32, 32, 36, 0.7);
-}
-.player-name.active::after {
-  content: '';
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: liveBlink 1.6s ease-in-out infinite;
-}
-
-.pn-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
-  background: linear-gradient(150deg, #3c3c40, #232327);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.pn-info { display: flex; flex-direction: column; gap: 1px; }
-.player-name .pn-name { font-size: clamp(13px, 1.8vh, 16px); font-weight: 600; }
-.player-name .pn-score { font-size: clamp(11px, 1.5vh, 13px); font-weight: 500; color: var(--ink-soft); }
-.player-name .pn-bank { font-size: clamp(10px, 1.4vh, 12px); color: var(--ink-faint); }
-
-/* Triplete: stati prenotazione */
-#triplete-players-bar .player-name { opacity: 1; transition: opacity 0.3s ease; }
-#triplete-players-bar .player-name.locked { opacity: 0.3; }
-#triplete-players-bar .player-name.buzzed {
-  border-color: rgba(255, 255, 255, 0.45);
-  background: rgba(40, 40, 44, 0.85);
-}
-#triplete-players-bar .player-name.buzzed::after {
-  content: '';
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--red);
-  animation: liveBlink 0.9s ease-in-out infinite;
-}
-
 /* === RESULT OVERLAY === */
 
 .result-overlay {
@@ -1141,8 +1076,8 @@
 /* `.final-results` / `.final-result-box` erano qui: nessun HTML e nessun JS le
    genera. L'esito dei tre tabelloni del gioco finale oggi non ha un riquadro. */
 
-/* === TRIPLETE === */
-
+/* Targa "Tabellone 1/3": la usa ancora solo il gioco finale (#final-board-tag).
+   Il Triplete non ce l'ha piu': il numero sta nei pip della barra alta. */
 .triplete-tag {
   font-family: var(--font-mono);
   padding: clamp(5px, 0.9vh, 9px) clamp(16px, 2.4vw, 28px);
@@ -1154,24 +1089,163 @@
   border-radius: 999px;
 }
 
-/* Banner "X si è prenotato" */
+/* === 1e · IL TRIPLETE ===
+   Niente ruota: a sinistra le regole del round, a destra categoria e tabellone.
+   Il numero del tabellone sta nei pip della barra alta, non piu' in una targa. */
+
+.tri-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(88 * var(--u));
+  bottom: calc(184 * var(--u));
+  display: flex;
+  gap: calc(56 * var(--u));
+  padding: calc(44 * var(--u)) calc(56 * var(--u)) 0;
+}
+
+.tri-rules {
+  flex: none;
+  width: calc(420 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(34 * var(--u));
+  padding-top: calc(78 * var(--u));
+}
+.tri-head { display: flex; flex-direction: column; gap: calc(14 * var(--u)); }
+.tri-head .eyebrow {
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(5 * var(--u));
+  color: rgba(245, 245, 247, 0.42);
+}
+/* 52px e non di piu': oltre i ~54 "TRIPLETE" esce dalla colonna da 420 e
+   background-clip:text lo taglia a meta' invece di mandarlo a capo. */
+.tri-wm {
+  display: block;
+  font-size: calc(52 * var(--u));
+  line-height: 0.98;
+}
+.tri-hair {
+  width: calc(90 * var(--u));
+  height: 1px;
+  background: rgba(48, 184, 255, 0.8);
+  margin-top: calc(6 * var(--u));
+}
+
+.tri-list { display: flex; flex-direction: column; border-top: 1px solid var(--hairline); }
+.tri-row {
+  display: flex;
+  align-items: baseline;
+  gap: calc(18 * var(--u));
+  padding: calc(20 * var(--u)) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.tri-row:last-child { border-bottom: none; }
+.tri-row b {
+  min-width: calc(110 * var(--u));
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(34 * var(--u));
+  line-height: 1;
+}
+.tri-row b.is-accent { color: var(--accent); }
+.tri-row span {
+  font: 400 calc(15 * var(--u)) / 1.4 -apple-system, sans-serif;
+  color: var(--ink-soft);
+}
+
+.tri-note {
+  padding: calc(20 * var(--u)) calc(24 * var(--u));
+  border-radius: calc(14 * var(--u));
+  background: rgba(48, 184, 255, 0.08);
+  border: 1px solid rgba(48, 184, 255, 0.30);
+}
+.tri-note .lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(12 * var(--u));
+  letter-spacing: calc(2.5 * var(--u));
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.tri-note p {
+  margin-top: calc(8 * var(--u));
+  font: 400 calc(15 * var(--u)) / 1.5 -apple-system, sans-serif;
+  color: rgba(245, 245, 247, 0.6);
+  text-wrap: pretty;
+}
+
+.tri-board {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(40 * var(--u));
+  padding-top: calc(34 * var(--u));
+}
+
+/* Categoria centrata e spaziata fra due filetti (variante b del handoff) */
+.cat-spaced { display: flex; align-items: center; gap: calc(26 * var(--u)); }
+.cat-spaced span:nth-child(2) {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(32 * var(--u));
+  letter-spacing: calc(10 * var(--u));
+}
+.cat-spaced .hair {
+  width: calc(120 * var(--u));
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(48, 184, 255, 0.8));
+}
+.cat-spaced .hair:last-child { background: linear-gradient(90deg, rgba(48, 184, 255, 0.8), transparent); }
+
+#triplete-screen .board-grid {
+  width: calc(1280 * var(--u));
+  gap: calc(8 * var(--u));
+  font-size: calc(50 * var(--u));
+}
+#triplete-screen .cell { border-radius: calc(6 * var(--u)); }
+
+.tri-status {
+  display: flex;
+  align-items: center;
+  gap: calc(18 * var(--u));
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(12 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.tri-status .dot {
+  width: calc(9 * var(--u));
+  height: calc(9 * var(--u));
+  border-radius: 50%;
+  background: var(--accent);
+  animation: liveBlink 1.2s ease-in-out infinite;
+}
+
+/* Banner "X ha prenotato". Vive fuori dalle schermate, accanto a .fx-veil: lo
+   usano il Triplete e il Giramoe, e finche' stava dentro #triplete-screen nel
+   Giramoe non compariva mai (schermata nascosta = figlio non renderizzato). */
 .buzz-banner {
   position: fixed;
-  top: 4vh;
+  top: calc(132 * var(--u));
   left: 50%;
   transform: translateX(-50%) translateY(-150%);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: clamp(10px, 1.6vh, 18px) clamp(22px, 3vw, 40px);
+  gap: calc(16 * var(--u));
+  padding: calc(17 * var(--u)) calc(40 * var(--u));
   border-radius: 999px;
-  background: rgba(24, 24, 27, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(24, 24, 27, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.30);
   color: var(--ink);
-  font-weight: 600;
-  font-size: clamp(16px, 2.6vh, 26px);
-  letter-spacing: 0.5px;
-  box-shadow: var(--shadow-lg);
+  font: 600 calc(26 * var(--u)) -apple-system, sans-serif;
+  letter-spacing: calc(0.5 * var(--u));
+  box-shadow: 0 calc(24 * var(--u)) calc(70 * var(--u)) rgba(0, 0, 0, 0.6);
   z-index: 120;
   opacity: 0;
   transition: transform 0.45s var(--ease-out), opacity 0.35s ease;
@@ -1179,9 +1253,9 @@
 .buzz-banner.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 .buzz-ico {
   display: inline-flex;
-  width: 1.1em;
-  height: 1.1em;
-  color: var(--red);
+  width: calc(26 * var(--u));
+  height: calc(26 * var(--u));
+  color: var(--ink);
   flex-shrink: 0;
 }
 .buzz-ico svg { width: 100%; height: 100%; }

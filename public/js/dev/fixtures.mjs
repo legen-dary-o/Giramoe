@@ -86,8 +86,8 @@ const TV = {
   '1e': () => [
     ['main:state', { phase: 'triplete' }],
     ['main:tripleteBoard', {
-      category: 'SAGGEZZA POPOLARE', boardNumber: 1, totalBoards: 3,
-      grid: GRIDS[SAGGEZZA].VUOTO
+      category: 'SAGGEZZA POPOLARE', boardNumber: 2, totalBoards: 3,
+      grid: GRIDS[SAGGEZZA].CELLE
     }],
     ['main:tripleteScores', {
       scores: [

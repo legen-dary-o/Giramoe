@@ -46,7 +46,6 @@
 
   <!-- Lobby -->
   <div id="lobby-screen" class="screen hidden">
-    <div class="hf-field" aria-hidden="true"></div>
     <header class="tv-topbar" id="lobby-topbar"></header>
     <div class="lobby-grid">
       <div class="lobby-col">
@@ -89,7 +88,6 @@
 
   <!-- Game Screen -->
   <div id="game-screen" class="screen hidden">
-    <div class="hf-field" aria-hidden="true"></div>
     <header class="tv-topbar" id="game-topbar"></header>
     <div class="game-container">
       <div class="game-left">
@@ -125,13 +123,33 @@
 
   <!-- Triplete: board -->
   <div id="triplete-screen" class="screen hidden">
-    <div class="game-container">
-      <div class="triplete-tag glass-panel" id="triplete-board-tag">IL TRIPLETE</div>
-      <div class="category-banner glass-panel" id="triplete-category"></div>
-      <div class="board-grid" id="triplete-board-grid"></div>
-      <div class="players-bar" id="triplete-players-bar"></div>
+    <header class="tv-topbar" id="triplete-topbar"></header>
+    <div class="tri-container">
+      <aside class="tri-rules">
+        <div class="tri-head">
+          <span class="eyebrow">Bonus round</span>
+          <span class="wm tri-wm">IL<br>TRIPLETE</span>
+          <span class="tri-hair"></span>
+        </div>
+        <div class="tri-list">
+          <div class="tri-row"><b>1.000</b><span>per ogni tabellone risolto</span></div>
+          <div class="tri-row"><b class="is-accent">5.000</b><span>se li indovini tutti e tre</span></div>
+          <div class="tri-row"><b>1,5s</b><span>passo di comparsa delle caselle</span></div>
+        </div>
+        <div class="tri-note">
+          <span class="lab">Prenotati e dillo a voce</span>
+          <p>Chi sbaglia resta bloccato finch&eacute; non sbagliano tutti.</p>
+        </div>
+      </aside>
+      <div class="tri-board">
+        <div class="cat-spaced">
+          <span class="hair"></span><span id="triplete-category"></span><span class="hair"></span>
+        </div>
+        <div class="board-grid" id="triplete-board-grid"></div>
+        <div class="tri-status"><span class="dot"></span><span id="triplete-status"></span></div>
+      </div>
     </div>
-    <div class="buzz-banner" id="buzz-banner"><span class="buzz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span id="buzz-banner-text"></span></div>
+    <footer class="tv-players" id="triplete-players-bar"></footer>
     <div class="result-overlay" id="triplete-result-overlay">
       <div class="result-text" id="triplete-result-text"></div>
     </div>
@@ -168,6 +186,10 @@
 
   <!-- Animazioni di round (Triplete / Express / Giramoe / Finalista / Buste) -->
   <div id="round-scene" aria-hidden="true"></div>
+
+  <!-- Banner "X ha prenotato": lo usano Triplete e Giramoe, quindi sta fuori
+       dalle schermate — dentro #triplete-screen nel Giramoe restava invisibile. -->
+  <div class="buzz-banner" id="buzz-banner"><span class="buzz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span id="buzz-banner-text"></span></div>
 
   <!-- Feedback bordo schermo (giusta/errata) -->
   <div class="fx-veil" id="fx-veil" aria-hidden="true"></div>

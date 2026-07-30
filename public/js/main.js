@@ -613,19 +613,36 @@ socket.on('main:tripleteBoard', (b) => {
   currentPhase = 'triplete';
   tripleteBoardReady = true;
   document.getElementById('triplete-category').textContent = b.category;
-  document.getElementById('triplete-board-tag').textContent = `IL TRIPLETE · ${b.boardNumber}/${b.totalBoards}`;
+  // "Bonus round" e non "Triplete": il nome del round e' gia' scritto grande
+  // nella colonna di sinistra, ripeterlo in barra alta non aggiunge niente.
+  renderTopBar(document.getElementById('triplete-topbar'), {
+    left: 'Fase 02 · Bonus round', leftTone: 'dim',
+    board: { number: b.boardNumber, total: b.totalBoards }
+  });
   renderTripleteBoard(b.grid);
   hideBuzz();
+  setTripleteStatus(false);
   applyPhaseScreen();
 });
+
+// Riga sotto il tabellone: dice sempre cosa sta facendo la rivelazione, perche'
+// da lontano la differenza fra "ferma" e "lenta" non si vede.
+function setTripleteStatus(paused) {
+  document.getElementById('triplete-status').textContent = paused
+    ? 'Rivelazione in pausa — prenotazione in corso'
+    : 'Rivelazione in corso';
+}
 
 socket.on('main:tripleteReveal', ({ cell }) => revealTripleteCell(cell));
 socket.on('main:tripleteFlash', ({ cell, ms }) => flashTripleteCell(cell, ms));
 socket.on('main:tripleteScores', ({ scores }) => renderTripleteScores(scores));
 
+// "ha prenotato" e non "si è prenotato/a": il nome di chi gioca non dice il
+// genere, e la TV non deve tirare a indovinare davanti a tutti.
 socket.on('main:tripleteBuzzed', ({ name }) => {
   Sfx.play('buzzer');
-  showBuzz(`${name} si è prenotato!`);
+  showBuzz(`${name} ha prenotato!`);
+  setTripleteStatus(true);
 });
 
 socket.on('main:tripleteResume', () => {
@@ -633,6 +650,7 @@ socket.on('main:tripleteResume', () => {
   Sfx.play('wrong');
   fxVeil('wrong');
   hideBuzz();
+  setTripleteStatus(false);
 });
 
 socket.on('main:tripleteSolved', ({ board, name, points }) => {
@@ -725,23 +743,16 @@ function flashTripleteCell(cell, ms) {
   }, ms);
 }
 
+// Una sola colonna: nel Triplete la banca non si muove, il numero che cambia è
+// il punteggio del round. Gli stati sono invariabili di proposito: da un nome
+// non si deduce il genere di chi gioca.
 function renderTripleteScores(scores) {
-  const bar = document.getElementById('triplete-players-bar');
-  bar.innerHTML = '';
-  scores.forEach((s) => {
-    const el = document.createElement('div');
-    let cls = 'player-name glass-panel';
-    if (s.buzzed) cls += ' buzzed';
-    else if (s.locked) cls += ' locked';
-    el.className = cls;
-    el.innerHTML = `<div class="pn-avatar">${s.name.charAt(0).toUpperCase()}</div>
-      <div class="pn-info">
-        <div class="pn-name">${s.name}</div>
-        <div class="pn-score">Triplete: ${s.points}</div>
-        <div class="pn-bank">Banca: ${s.bank}</div>
-      </div>`;
-    bar.appendChild(el);
-  });
+  renderPlayersBar(document.getElementById('triplete-players-bar'), scores.map((s) => ({
+    name: s.name,
+    values: [s.points],
+    state: s.buzzed ? 'Ha prenotato' : s.locked ? 'Prenotazione bloccata' : 'Può prenotarsi',
+    tone: s.buzzed ? 'buzzed' : s.locked ? 'locked' : null
+  })), ['Triplete']);
 }
 
 function showBuzz(text) {
