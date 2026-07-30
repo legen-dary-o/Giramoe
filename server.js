@@ -442,11 +442,26 @@ function evaluateTiebreak() {
 // --- FINAL game: 3 boards, one shared 60s countdown (solo finalist) ---
 
 function finalBoardView() {
-  const b = state.fg.boards[state.fg.boardIndex];
+  const fg = state.fg;
+  const b = fg.boards[fg.boardIndex];
+  // Una lettera è "presente" se compare nella frase, rivelata o no: la griglia
+  // porta la lettera base su ogni cella, anche su quelle ancora chiuse.
+  const inPhrase = (L) => b.grid.some(row => row.some(c => c.type === 'letter' && c.letter === L));
+  const given = fg.boardIndex === 0 ? finalgame.BOARD1_REVEAL.slice() : [];
+  const picks = fg.usedLetters
+    .filter(L => !given.includes(L))
+    .map(L => ({ letter: L, present: inPhrase(L) }));
   return {
     category: b.category,
-    boardIndex: state.fg.boardIndex,
+    boardIndex: fg.boardIndex,
     totalBoards: 3,
+    // Il gioco finale è di uno solo: il nome sta in barra alta al posto dei
+    // punteggi, e senza questo campo la TV non ce l'ha.
+    finalist: state.finalistId != null ? state.g.players[state.finalistId].name : '',
+    state: fg.state,        // PICKING | RUNNING | BUZZED | DONE
+    given,
+    picks,
+    results: fg.results.slice(),
     grid: b.grid.map(row => row.map(cell => {
       if (cell.type === 'letter') {
         return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? (cell.display || cell.letter) : null };
@@ -478,7 +493,7 @@ function playerFinalView() {
 
 function broadcastFinal() {
   io.to('main').emit('main:finalBoard', finalBoardView());
-  io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });
+  io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft, total: FINAL_TIME_MS });
   io.to('admin').emit('admin:state', adminView());
   if (state.finalistId != null && state.lobby[state.finalistId]) {
     io.to(state.lobby[state.finalistId].socketId).emit('player:finalState', playerFinalView());
@@ -493,7 +508,7 @@ function startFinalCountdown() {
   if (finalTimer || !state.fg || state.fg.state !== 'RUNNING') return;
   finalTimer = setInterval(() => {
     state.finalTimeLeft = Math.max(0, state.finalTimeLeft - FINAL_TICK_MS);
-    io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });
+    io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft, total: FINAL_TIME_MS });
     if (state.finalTimeLeft <= 0) { clearFinalTimer(); finalgame.expire(state.fg); endFinal(); }
   }, FINAL_TICK_MS);
 }
@@ -759,7 +774,7 @@ io.on('connection', (socket) => {
       });
     } else if (state.phase === 'final' && state.fg) {
       socket.emit('main:finalBoard', finalBoardView());
-      socket.emit('main:finalTimer', { ms: state.finalTimeLeft });
+      socket.emit('main:finalTimer', { ms: state.finalTimeLeft, total: FINAL_TIME_MS });
     } else if (state.phase === 'envelopes' && state.env) {
       socket.emit('main:envelopes', envelopesView());
     }
@@ -1099,7 +1114,10 @@ io.on('connection', (socket) => {
     if (res.positions && res.positions.length) io.to('main').emit('main:finalReveal', { positions: res.positions });
     if (res.wrong) {
       state.finalTimeLeft = Math.max(0, state.finalTimeLeft - FINAL_PENALTY_MS);
-      io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });
+      io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft, total: FINAL_TIME_MS });
+      // Tre secondi in meno non si vedono: il display scorre già da solo. Lo
+      // scossone del timer è l'unica cosa che dice che si è appena pagato.
+      io.to('main').emit('main:finalPenalty', { ms: FINAL_PENALTY_MS });
       io.to('main').emit('main:wrong');
       if (state.finalTimeLeft <= 0) { clearFinalTimer(); finalgame.expire(state.fg); return endFinal(); }
     }
