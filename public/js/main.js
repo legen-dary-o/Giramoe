@@ -3,8 +3,9 @@ import { Wheel3D } from './fx/wheel3d.js';
 import { HomeWheel } from './fx/homewheel.js';
 import { Stage3D } from './fx/stage3d.js';
 import { RoundScenes } from './fx/roundscenes.js';
-import { renderTopBar, renderPlayersBar, renderPhaseStrip } from './tv/shell.js';
+import { renderTopBar, renderPlayersBar, renderPhaseStrip, num } from './tv/shell.js';
 import * as callout from './tv/callout.js';
+import * as express from './tv/express.js';
 
 initCursor();
 // Le sei fasi della schermata iniziale: contenuto fisso, nessun payload.
@@ -131,11 +132,12 @@ socket.on('main:gameState', (g) => {
   ensureWheel(g.segments);
   document.getElementById('main-wheel-indicator').style.display = '';
   setCategory(g.board.category);
-  renderTopBar(document.getElementById('game-topbar'), {
-    phase: currentPhase === 'express' ? 3 : 1,
-    accent: currentPhase === 'express' ? 'express' : 'accent',
-    board: { number: g.boardNumber, total: g.totalBoards }
-  });
+  gameMeta = {
+    boardNumber: g.boardNumber, totalBoards: g.totalBoards,
+    expressValue: g.expressValue != null ? g.expressValue : gameMeta.expressValue
+  };
+  express.value(gameMeta.expressValue);
+  applyExpressState(g.expressActive, g.scores, g.currentTurn);
   renderBoard(g.board.grid);
   renderScores(g.scores, g.currentTurn);
   // Dopo un refresh lo spicchio a schermo tornerebbe vuoto: il server lo manda
@@ -144,7 +146,10 @@ socket.on('main:gameState', (g) => {
   applyPhaseScreen();
 });
 
-socket.on('main:scores', ({ scores, currentTurn }) => renderScores(scores, currentTurn));
+socket.on('main:scores', ({ scores, currentTurn, expressActive }) => {
+  applyExpressState(expressActive, scores, currentTurn);
+  renderScores(scores, currentTurn);
+});
 
 socket.on('main:spin', ({ winningSegment, spins, value }) => {
   if (stage) stage.pulse('spin');
@@ -175,11 +180,52 @@ function setCategory(text) {
   document.querySelector('#game-screen .category').hidden = !text;
 }
 
-function setTurnPill(name, express = false) {
+// In raffica il nome sta già nel modulo sotto la ruota e nella barra bassa: la
+// pillola serve a dire che regola vale adesso, non di chi è il turno.
+function setTurnPill(name, isExpress = false) {
   const pill = document.getElementById('turn-pill');
-  document.getElementById('turn-pill-text').textContent = name ? `Turno di ${name}` : '';
-  pill.classList.toggle('is-express', express);
+  document.getElementById('turn-pill-text').textContent =
+    !name ? '' : isExpress ? 'Consonanti a raffica' : `Turno di ${name}`;
+  pill.classList.toggle('is-express', isExpress);
   pill.hidden = !name;
+}
+
+// Pelle magenta della 1f. Segue turnState === 'EXPRESS' (campo `expressActive`
+// dello stato), non la fase: la fase 'express' dura tre tabelloni durante i
+// quali si gioca normalmente, e colorarla tutta direbbe una cosa falsa.
+let expressActive = false;
+function setExpressSkin(on) {
+  expressActive = !!on;
+  document.getElementById('game-screen').classList.toggle('is-express', expressActive);
+}
+
+// Numero del tabellone e prezzo della lettera: la barra alta si ridisegna anche
+// su main:scores — è lì che arriva l'ingresso in raffica — e quel payload non
+// li porta. Restano qui fra un gameState e l'altro.
+let gameMeta = { boardNumber: 1, totalBoards: 3, expressValue: 500 };
+
+function applyExpressState(active, scores, currentTurn) {
+  const before = expressActive;
+  setExpressSkin(active);
+  // Chi entra in raffica parte da zero: senza questo le lettere del giocatore
+  // prima resterebbero appese a quello dopo.
+  if (expressActive && !before) {
+    express.reset();
+    express.player(scores && scores[currentTurn] ? scores[currentTurn].name : '');
+  }
+  renderGameTopBar();
+}
+
+function renderGameTopBar() {
+  renderTopBar(document.getElementById('game-topbar'), expressActive
+    // In raffica la barra alta dice quanto vale una lettera: è l'unica cosa che
+    // serve sapere in quel momento, e le sei fasi tornano appena finisce.
+    ? { pill: { name: 'EXPRESS', note: `${gameMeta.expressValue} a lettera` },
+        accent: 'express',
+        board: { number: gameMeta.boardNumber, total: gameMeta.totalBoards, label: 'Fase 03', pips: false } }
+    : { phase: currentPhase === 'express' ? 3 : 1,
+        accent: currentPhase === 'express' ? 'express' : 'accent',
+        board: { number: gameMeta.boardNumber, total: gameMeta.totalBoards } });
 }
 
 // La barra bassa sta fuori dal .game-container, quindi la classe di stato va
@@ -204,6 +250,7 @@ function setWheelZoom(on) {
 socket.on('main:letterCalled', ({ letter }) => {
   showResult(String(letter).toUpperCase());
   callout.showLetter(String(letter).toUpperCase());
+  if (expressActive) express.letter(letter);
 });
 
 // "CONSONANTI/VOCALI FINITE": tutte quelle presenti nel tabellone sono state chiamate.
@@ -221,6 +268,7 @@ function updateBoardStatus(st) {
 socket.on('main:revealLetter', ({ positions }) => {
   revealSequence(positions);
   callout.showOccurrences(positions.length);
+  if (expressActive) express.occurrence(positions.length);
 });
 
 socket.on('main:solved', () => { if (stage) stage.pulse('correct'); Sfx.play('correct'); fxVeil('correct'); });
@@ -498,16 +546,21 @@ function renderScores(scores, currentTurn) {
   if (lastTurn !== null && currentTurn !== lastTurn) callout.reset();
   lastTurn = currentTurn;
 
-  const express = currentPhase === 'express';
   renderPlayersBar(document.getElementById('players-bar'), scores.map((s, i) => ({
     name: s.name,
     values: [s.roundPoints, s.bank],
-    state: i === currentTurn ? 'Al turno' : 'In attesa',
-    tone: i === currentTurn ? (express ? 'express' : 'active') : null
+    // "Raffica" e non "In express": la colonna dello stato è larga quanto avanza
+    // dopo due punteggi a quattro cifre, e "In express" ci finiva sopra.
+    state: i === currentTurn ? (expressActive ? 'Raffica' : 'Al turno') : 'In attesa',
+    tone: i === currentTurn ? (expressActive ? 'express' : 'active') : null
   })), ['Turno', 'Banca']);
 
   const now = scores[currentTurn];
-  setTurnPill(now ? now.name : null, express);
+  setTurnPill(now ? now.name : null, expressActive);
+  if (expressActive && now) {
+    express.player(now.name);
+    express.points(num(now.roundPoints));
+  }
 }
 
 function showResult(text) {
@@ -540,17 +593,23 @@ socket.on('main:expressRound', ({ segments }) => {
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear(); // via le tessere del Triplete, non c'è più il suo tabellone
   updateBoardStatus(null);
+  setExpressSkin(false); // il round comincia normale: la pelle arriva con la raffica
+  express.reset();
   if (!entering) return applyPhaseScreen();
   showTitleCard('EXPRESS');
   scenes.play('expressWheel').then(() => { if (currentPhase === 'express') showScreen('game-screen'); });
 });
 
+// La pelle magenta la accende `main:gameState` col campo `expressActive`: qui
+// c'è solo lo stacco. Il broadcast dei punteggi che segue porta lo stato vero.
 socket.on('main:expressStart', () => {
   showTitleCard('EXPRESS');
   scenes.play('express').then(() => { if (currentPhase === 'express') showScreen('game-screen'); });
 });
 
 socket.on('main:expressBankrupt', () => {
+  setExpressSkin(false);
+  express.reset();
   if (stage) stage.pulse('wrong');
   Sfx.play('wrong');
   fxVeil('wrong');

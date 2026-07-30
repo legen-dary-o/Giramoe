@@ -542,10 +542,14 @@
   background: linear-gradient(0deg, rgba(10, 10, 12, 0.94), rgba(10, 10, 12, 0.2));
 }
 
+/* Avatar 58 e gap 20 sono i valori della 1g, la schermata dove il handoff stringe
+   la scheda perché le colonne sono tre: qui valgono per tutte, perché con due
+   numeri a quattro cifre gli 8px che si guadagnano sono la differenza fra
+   "Marco" e "Mar…". */
 .pcard {
   display: flex;
   align-items: center;
-  gap: calc(22 * var(--u));
+  gap: calc(20 * var(--u));
   min-width: 0;
   padding: calc(24 * var(--u)) calc(28 * var(--u));
   border-radius: calc(18 * var(--u));
@@ -555,13 +559,13 @@
 .pc-avatar {
   position: relative;
   flex: none;
-  width: calc(62 * var(--u));
-  height: calc(62 * var(--u));
+  width: calc(58 * var(--u));
+  height: calc(58 * var(--u));
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 600 calc(24 * var(--u)) -apple-system, sans-serif;
+  font: 600 calc(23 * var(--u)) -apple-system, sans-serif;
   background: linear-gradient(150deg, #3c3c40, #232327);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
@@ -590,8 +594,12 @@
   letter-spacing: calc(3 * var(--u));
   text-transform: uppercase;
   color: var(--ink-faint);
-  /* "In attesa" su due righe alzerebbe la scheda e sfalserebbe la fila */
+  /* "In attesa" su due righe alzerebbe la scheda e sfalserebbe la fila. Tagliato
+     come il nome: senza, uno stato lungo esce dalla colonna e finisce sopra al
+     punteggio invece di accorciarsi. */
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* Il handoff dà i numeri fra 36 e 40px e il gap fra 26 e 34: qui si sta al
    minimo di entrambi. Con due numeri a quattro cifre per scheda e un terzo di
@@ -785,6 +793,132 @@
   line-height: 1;
 }
 .wm-mod.is-empty b { color: rgba(245, 245, 247, 0.22); }
+
+/* === 1f · EXPRESS ===
+   Stessa schermata della 1c con una pelle diversa. L'interruttore è la classe
+   .is-express su #game-screen, che segue turnState === 'EXPRESS': la fase dura
+   tre tabelloni in cui si gioca normalmente, colorarla tutta sarebbe falso. */
+
+/* Righe di velocità dietro alla scena, mascherate ai lati così non passano
+   sotto al tabellone. */
+.speed-lines {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(200 * var(--u));
+  height: calc(520 * var(--u));
+  background: repeating-linear-gradient(0deg, rgba(244, 63, 127, 0.5) 0 2px, transparent 2px 26px);
+  -webkit-mask-image: linear-gradient(90deg, #000, transparent 34%), linear-gradient(270deg, #000, transparent 34%);
+  mask-image: linear-gradient(90deg, #000, transparent 34%), linear-gradient(270deg, #000, transparent 34%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+#game-screen.is-express .speed-lines { display: block; }
+
+/* I tre moduli lettera/occorrenze/spicchio lasciano il posto al modulo express:
+   in raffica non c'è uno spicchio, e le lettere sono già nel riquadro Raffica. */
+.express-mod,
+.express-boxes,
+.giramoe-mods,
+.buzz-window { display: none; }
+#game-screen.is-express .wheel-modules,
+#game-screen.is-giramoe .wheel-modules { display: none; }
+#game-screen.is-express .express-mod { display: block; }
+#game-screen.is-express .express-boxes { display: flex; }
+
+.express-mod {
+  width: 100%;
+  padding: calc(22 * var(--u)) calc(26 * var(--u));
+  border-radius: calc(16 * var(--u));
+  background: linear-gradient(180deg, rgba(244, 63, 127, 0.14), rgba(22, 22, 26, 0.92));
+  border: 1px solid rgba(244, 63, 127, 0.50);
+}
+.ex-head { display: flex; align-items: center; justify-content: space-between; }
+.ex-head .lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(10.5 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.6);
+}
+.ex-head .who {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(2 * var(--u));
+  text-transform: uppercase;
+  color: var(--express-soft);
+}
+.ex-value {
+  margin-top: calc(12 * var(--u));
+  display: flex;
+  align-items: baseline;
+  gap: calc(14 * var(--u));
+}
+.ex-value b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(52 * var(--u));
+  line-height: 1;
+  color: var(--express-soft);
+}
+.ex-value span {
+  font-family: var(--font-mono);
+  font-size: calc(15 * var(--u));
+  color: rgba(245, 245, 247, 0.6);
+}
+.ex-risk {
+  margin-top: calc(14 * var(--u));
+  padding-top: calc(14 * var(--u));
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font: 400 calc(14 * var(--u)) / 1.5 -apple-system, sans-serif;
+  color: rgba(245, 245, 247, 0.6);
+  text-wrap: pretty;
+}
+.ex-risk b { color: var(--ink); }
+
+.express-boxes { width: 100%; gap: calc(14 * var(--u)); }
+.ex-box {
+  flex: 1;
+  min-width: 0;
+  padding: calc(18 * var(--u)) calc(24 * var(--u));
+  border-radius: calc(14 * var(--u));
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.ex-box.is-express {
+  flex: 1.2;
+  background: rgba(244, 63, 127, 0.10);
+  border-color: rgba(244, 63, 127, 0.42);
+}
+.ex-box .lab {
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(10.5 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.ex-box.is-express .lab { color: var(--express-soft); }
+.ex-box b {
+  display: block;
+  margin-top: calc(8 * var(--u));
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(28 * var(--u));
+  line-height: 1;
+}
+/* Le lettere chiamate si leggono a una a una: mono e spaziate, non un numero */
+.ex-box b.is-letters {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(26 * var(--u));
+  letter-spacing: calc(6 * var(--u));
+}
+.ex-box.is-express b { color: var(--express-soft); }
 
 /* === Ruota TV: ghiera tech + freccia a goccia con attrito ===
    wheel3d espone centro/raggio del disco 3D come --disc-cx/--disc-cy/--disc-r

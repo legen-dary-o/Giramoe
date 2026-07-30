@@ -88,6 +88,7 @@
 
   <!-- Game Screen -->
   <div id="game-screen" class="screen hidden">
+    <div class="speed-lines" aria-hidden="true"></div>
     <header class="tv-topbar" id="game-topbar"></header>
     <div class="game-container">
       <div class="game-left">
@@ -101,6 +102,24 @@
           <div class="wm-mod"><span class="lab">Lettera</span><b id="mod-letter">—</b></div>
           <div class="wm-mod"><span class="lab">Occorrenze</span><b id="mod-count">—</b></div>
         </div>
+        <div class="express-mod" id="express-mod">
+          <div class="ex-head">
+            <span class="lab">Modalit&agrave; express attiva</span>
+            <span class="who" id="ex-who"></span>
+          </div>
+          <div class="ex-value"><b id="ex-value">500</b><span>per ogni occorrenza</span></div>
+          <p class="ex-risk">Lettera assente o soluzione sbagliata: <b>bancarotta totale</b> &mdash; turno e banca a zero.</p>
+        </div>
+        <div class="giramoe-mods" id="giramoe-mods">
+          <div class="gm-mod gm-mult">
+            <span class="lab">Moltiplicatore V</span>
+            <div class="val"><b id="gi-mult">&mdash;</b><span>&times; occorrenze</span></div>
+          </div>
+          <div class="gm-mod gm-info">
+            <span class="lab">Giro unico</span>
+            <p>Girato dall&rsquo;host. Nessuno spicchio speciale.</p>
+          </div>
+        </div>
       </div>
       <div class="game-right">
         <div class="game-head">
@@ -109,9 +128,21 @@
             <span class="name" id="category-banner"></span>
           </div>
           <div class="turn-pill" id="turn-pill" hidden><span class="dot"></span><span id="turn-pill-text"></span></div>
+          <div class="buzz-window" id="buzz-window">
+            <div class="bw-text">
+              <span class="lab">Finestra prenotazione</span>
+              <span class="who" id="bw-who"></span>
+            </div>
+            <div class="bw-ring" id="bw-ring"><span class="bw-disc" id="bw-count">5</span></div>
+          </div>
         </div>
         <div class="board-status hidden" id="board-status"></div>
         <div class="board-grid" id="board-grid"></div>
+        <div class="express-boxes" id="express-boxes">
+          <div class="ex-box"><span class="lab">Raffica</span><b class="is-letters" id="ex-raffica">&mdash;</b></div>
+          <div class="ex-box"><span class="lab">Occorrenze totali</span><b id="ex-occ">0</b></div>
+          <div class="ex-box is-express"><span class="lab">Punti express accumulati</span><b id="ex-points">0</b></div>
+        </div>
       </div>
     </div>
     <footer class="tv-players" id="players-bar"></footer>

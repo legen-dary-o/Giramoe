@@ -126,7 +126,13 @@ function mainGameView() {
     segments: state.g.segments,
     // Il valore dello spicchio uscito resta a schermo per tutto il turno: senza
     // questo campo un refresh della TV lo perderebbe fino al giro dopo.
-    currentWedge: state.g.lastSpinValue
+    currentWedge: state.g.lastSpinValue,
+    // L'accento magenta segue il giocatore dentro l'express, non la fase: la
+    // fase 'express' dura tre tabelloni durante i quali si gioca normalmente.
+    // Nello stato e non solo nell'evento perché dopo un refresh la TV non
+    // avrebbe nessun altro modo di sapere che qualcuno è in raffica.
+    expressActive: state.g.turnState === 'EXPRESS',
+    expressValue: game.EXPRESS_VALUE
   };
 }
 
@@ -625,7 +631,14 @@ function playerView(playerIndex) {
 }
 
 function mainScoresView() {
-  return { scores: publicScores(), currentTurn: state.g.currentTurnIndex };
+  // `expressActive` anche qui e non solo in mainGameView(): l'ingresso in
+  // raffica arriva dopo un giro di ruota, e in quel momento l'unico payload di
+  // stato che parte è questo.
+  return {
+    scores: publicScores(),
+    currentTurn: state.g.currentTurnIndex,
+    expressActive: state.g.turnState === 'EXPRESS'
+  };
 }
 
 function lobbyPlayers() {

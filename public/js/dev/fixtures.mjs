@@ -33,6 +33,19 @@ const GIRAMOE_SEGMENTS = SEGMENTS.map((s, i) => (typeof s === 'number' ? s : GIR
 
 const LOBBY_URL = 'http://192.168.1.72:3000';
 
+// Le posizioni di una lettera si leggono dalla griglia già rivelata, non si
+// scrivono a mano: una coordinata sbagliata farebbe lampeggiare la casella
+// sbagliata e il confronto col render sarebbe bugiardo.
+const positionsOf = (grid, letter) => {
+  const out = [];
+  grid.forEach((row, r) => row.forEach((cell, col) => {
+    if (cell.type === 'letter' && cell.revealed && cell.letter === letter) {
+      out.push({ row: r, col, letter });
+    }
+  }));
+  return out;
+};
+
 // --- forma di envelopesView() ---
 const ENVELOPES = {
   envelopes: [
@@ -101,16 +114,35 @@ const TV = {
   ],
 
   // 1f · Express: Marco dentro l'express, raffica T O N I
-  '1f': () => [
-    ['main:state', { phase: 'express' }],
-    ['main:expressRound', { segments: EXPRESS_SEGMENTS }],
-    ['main:gameState', {
-      board: { category: 'VIAGGI', grid: GRIDS[VIAGGI].TONI },
-      scores: PLAYERS, currentTurn: 0,
-      boardNumber: 1, totalBoards: 3, segments: EXPRESS_SEGMENTS
-    }],
-    ['main:expressStart', {}]
-  ],
+  '1f': (freeze) => {
+    const grid = GRIDS[VIAGGI].TONI;
+    // Marco è in raffica da quattro lettere: i punti del turno sono i suoi punti
+    // express, e nel render valgono 3.500 su una banca da 4.200.
+    const scores = [
+      { ...PLAYERS[0], roundPoints: 3500, bank: 4200 },
+      { ...PLAYERS[1], roundPoints: 0 },
+      { ...PLAYERS[2], roundPoints: 0 }
+    ];
+    const steps = [
+      ['main:state', { phase: 'express' }],
+      ['main:expressRound', { segments: EXPRESS_SEGMENTS }],
+      ['main:gameState', {
+        board: { category: 'VIAGGI', grid },
+        scores, currentTurn: 0,
+        boardNumber: 2, totalBoards: 3, segments: EXPRESS_SEGMENTS,
+        expressActive: true, expressValue: 500
+      }]
+    ];
+    // Raffica e occorrenze sono cronaca del turno, non stato: nessun payload le
+    // porta. `&freeze=raffica` rigioca le quattro chiamate che le riempiono.
+    if (freeze === 'raffica') {
+      for (const letter of ['T', 'O', 'N', 'I']) {
+        steps.push(['main:letterCalled', { letter }]);
+        steps.push(['main:revealLetter', { positions: positionsOf(grid, letter) }]);
+      }
+    }
+    return steps;
+  },
 
   // 1g · Giramoe: moltiplicatore 500, turno di Elia
   '1g': () => [
