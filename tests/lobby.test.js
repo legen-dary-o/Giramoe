@@ -71,3 +71,51 @@ test('lobby: disconnect keeps slot + no overlay; kick frees slot; reconnect by n
   [admin, main, ...p, p2b, p4].forEach(s => { try { s.close(); } catch (e) {} });
   await wait(100);
 });
+
+// Il maxlength del campo sul telefono è solo un suggerimento: il taglio vero lo fa
+// il server, altrimenti un client modificato manderebbe un nome che sul tabellone
+// esce dalla barra dei giocatori.
+test('lobby: il nome viene ripulito e tagliato a 16 caratteri', async () => {
+  const admin = connect();
+  let adminState = null;
+  admin.on('admin:state', s => { adminState = s; });
+  admin.emit('admin:init');
+  await wait(200);
+  admin.emit('admin:inizia'); // riporta la lobby a zero dopo il test precedente
+  await wait(200);
+  const room = adminState.roomCode;
+
+  // 18 caratteri con spazi intorno -> trim + taglio a 16
+  const lungo = connect();
+  let joined = null;
+  lungo.on('player:joined', d => { joined = d; });
+  await wait(80);
+  lungo.emit('player:join', { roomCode: room, name: '  Bartolomeoxxxxxxxx  ' });
+  await wait(200);
+  assert.ok(joined, 'il giocatore entra');
+  assert.strictEqual(joined.name, 'Bartolomeoxxxxxx', 'nome tagliato a 16, senza spazi');
+  assert.strictEqual(adminState.players[0].name, 'Bartolomeoxxxxxx', 'la lobby registra il nome tagliato');
+
+  // un nome di soli spazi non occupa uno slot
+  const vuoto = connect();
+  let err = null;
+  vuoto.on('player:error', m => { err = m; });
+  await wait(80);
+  vuoto.emit('player:join', { roomCode: room, name: '   ' });
+  await wait(200);
+  assert.strictEqual(err, 'Nome non valido');
+  assert.strictEqual(adminState.players.length, 1, 'nessuno slot occupato dal nome vuoto');
+
+  // la riconnessione ritrova il giocatore anche se il telefono rimanda il nome intero
+  const back = connect();
+  let recon = null;
+  back.on('player:reconnected', d => { recon = d; });
+  await wait(80);
+  back.emit('player:reconnect', { roomCode: room, name: '  Bartolomeoxxxxxxxx  ' });
+  await wait(250);
+  assert.ok(recon, 'riconnesso nonostante il nome non normalizzato');
+  assert.strictEqual(recon.name, 'Bartolomeoxxxxxx');
+
+  [admin, lungo, vuoto, back].forEach(s => { try { s.close(); } catch (e) {} });
+  await wait(100);
+});

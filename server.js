@@ -28,6 +28,18 @@ const TRIPLETE_FLASH_MS = 1000;  // board 3: a flashed cell stays 1s before vani
 const TRIPLETE_FLASH_STEP_MS = Number(process.env.TRIPLETE_FLASH_STEP_MS) || TRIPLETE_REVEAL_MS;
 const TRIPLETE_GAP_MS = Number(process.env.TRIPLETE_GAP_MS) || 2800; // pause between boards / before standings
 
+// Nickname length cap. Must stay in sync with the maxlength of #nick-input in
+// public/play.html: the phone enforces it while typing, the server enforces it
+// for real. Beyond ~20 chars the three cards of the players bar stop fitting a
+// 1280px display, so the board would clip the third name.
+const MAX_NAME_LEN = 16;
+
+// The name is what identifies a player on reconnect and on kick, so join and
+// reconnect must normalise it the same way or the lookups stop matching.
+function cleanName(name) {
+  return String(name == null ? '' : name).trim().slice(0, MAX_NAME_LEN);
+}
+
 // Optional test/debug hook: force every wheel spin onto a fixed segment index.
 const FORCE_SEGMENT = process.env.GIRAMOE_FORCE_SEGMENT != null && process.env.GIRAMOE_FORCE_SEGMENT !== ''
   ? Number(process.env.GIRAMOE_FORCE_SEGMENT) : null;
@@ -718,6 +730,8 @@ io.on('connection', (socket) => {
     if (state.roomCode !== roomCode) return socket.emit('player:error', 'Codice stanza non valido');
     if (state.phase !== 'lobby') return socket.emit('player:error', 'La partita non accetta giocatori');
     if (state.lobby.length >= 3) return socket.emit('player:error', 'Lobby piena');
+    name = cleanName(name);
+    if (!name) return socket.emit('player:error', 'Nome non valido');
 
     const playerIndex = state.lobby.length;
     state.lobby.push({ name, socketId: socket.id, connected: true });
@@ -1144,6 +1158,7 @@ io.on('connection', (socket) => {
 
   socket.on('player:reconnect', ({ roomCode, name }) => {
     if (state.roomCode !== roomCode) return socket.emit('player:error', 'Sessione scaduta');
+    name = cleanName(name);
     const p = state.lobby.find(pl => pl.name === name);
     if (!p) return socket.emit('player:error', 'Impossibile riconnettersi');
     p.socketId = socket.id;
