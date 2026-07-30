@@ -1,0 +1,101 @@
+/* ============================================================
+   GIRAMOE — tvOS Dark Pro · variabili, font, reset
+   Caricato da tutte e tre le superfici, per primo: definisce i
+   token che gli altri file usano.
+   Fonte di verità visiva: docs/mockups/index.html (approvato)
+   ============================================================ */
+
+/* === FONT (self-hosted: il gioco gira in LAN senza internet) === */
+@font-face {
+  font-family: 'Syne';
+  src: url('/fonts/syne-800.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/space-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/space-mono-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* === TOKENS === */
+:root {
+  --bg: #000000;
+  --bg-2: #0a0a0c;
+  --ink: #f5f5f7;
+  --ink-soft: rgba(245, 245, 247, 0.55);
+  --ink-faint: rgba(245, 245, 247, 0.38);
+  --accent: #30b8ff;
+  --green: #30b8ff;
+  --red: #f5f5f7;
+
+  --petrol: #0d2433;
+  --panel: #16161a;
+  --glass: #16161a;
+  --glass-border: 1px solid rgba(255, 255, 255, 0.10);
+  --glass-edge: none;
+  --hairline: rgba(255, 255, 255, 0.14);
+
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+
+  --shadow-md: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.6);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* === RESET & BASE === */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-mono);
+  background:
+    radial-gradient(85% 65% at 50% -8%, rgba(48, 56, 74, 0.32), transparent 62%),
+    linear-gradient(180deg, var(--bg-2), var(--bg) 64%);
+  color: var(--ink);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Stage (three.js) sotto tutta la UI */
+#stage-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Grana pellicola sopra tutto tranne overlay/cursore */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* === REDUCED MOTION === */
+
+@media (prefers-reduced-motion: reduce) {
+  #stage-canvas { display: none; }
+}

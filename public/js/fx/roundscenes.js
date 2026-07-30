@@ -10,7 +10,7 @@
 
 const W = 1920, H = 1080;
 
-// --- token (public/css/style.css) ---
+// --- token (public/css/tokens.css) ---
 const INK = '#f5f5f7';
 const INK_SOFT = 'rgba(245,245,247,0.55)';
 const INK_FAINT = 'rgba(245,245,247,0.38)';

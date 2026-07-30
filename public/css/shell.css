@@ -1,0 +1,302 @@
+/* ============================================================
+   GIRAMOE — primitive e impalcatura condivise
+   Quello che sta qui è usato da più di una superficie: bottoni,
+   campi, wordmark, .screen, la ruota comune a TV e telefono, le
+   buste, l'overlay di disconnessione. Se una regola serve a una
+   sola superficie, va nel suo file (tv/phone/admin), non qui.
+   ============================================================ */
+
+/* === PRIMITIVE === */
+
+.glass-panel {
+  background: var(--glass);
+  border: var(--glass-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--glass-edge);
+}
+
+/* Bottone ghost: hairline, si riempie di bianco */
+.glass-button {
+  position: relative;
+  font: 600 15px -apple-system, sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 16px 48px;
+  cursor: pointer;
+  transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease, transform 0.25s var(--ease-out);
+  will-change: transform;
+}
+.glass-button:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.glass-button:active { transform: scale(0.97); }
+.glass-button:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.glass-input {
+  width: 100%;
+  padding: 15px 18px;
+  font: 500 17px -apple-system, sans-serif;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-sm);
+  outline: none;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+}
+.glass-input:focus { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.07); }
+.glass-input::placeholder { color: var(--ink-faint); }
+
+/* Telefoni: i pulsanti d'azione primaria (join/avvio/giro) sono pieni ciano */
+#btn-join, #btn-inizia, #btn-avvia, #btn-spin, #btn-vowel,
+#btn-set-board, #btn-go-triplete, #btn-triplete-start, #btn-giramoe-setboard,
+#btn-giramoe-spin, #btn-start-final, #btn-tb-spin {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+#btn-join:hover, #btn-inizia:hover, #btn-avvia:hover, #btn-spin:hover, #btn-vowel:hover,
+#btn-set-board:hover, #btn-go-triplete:hover, #btn-triplete-start:hover, #btn-giramoe-setboard:hover,
+#btn-giramoe-spin:hover, #btn-start-final:hover, #btn-tb-spin:hover {
+  background: var(--accent); color: #000; border-color: var(--accent);
+}
+
+.hairline { height: 1px; background: var(--hairline); border: none; }
+
+.corner-label {
+  position: absolute;
+  z-index: 4;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 7px;
+  vertical-align: 1px;
+  animation: liveBlink 2.4s ease-in-out infinite;
+}
+@keyframes liveBlink { 50% { opacity: 0.25; } }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 5px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+/* Wordmark: bianco con glint metallico.
+   ATTENZIONE: animare SOLO questo elemento — transform/filter sui figli
+   rompono background-clip: text. */
+.wm {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  background: linear-gradient(105deg, #f5f5f7 42%, #ffffff 49%, #8e94a3 52%, #f5f5f7 60%);
+  background-size: 320% 100%;
+  background-position: 120% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: glint 7s ease-in-out infinite;
+}
+@keyframes glint {
+  0%, 72% { background-position: 120% 0; }
+  88%, 100% { background-position: -120% 0; }
+}
+.rise { animation: rise 1s var(--ease-out) both; }
+.wm.rise { animation: glint 7s ease-in-out infinite, rise 1s var(--ease-out) both; }
+@keyframes rise {
+  0% { opacity: 0; transform: translateY(28px); filter: blur(8px); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
+/* === LAYOUT === */
+
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.45s ease;
+}
+/* `.hidden` deve nascondere qualunque elemento: senza questa regola generica
+   esisteva solo `.screen.hidden`, quindi ogni classList.add('hidden') su una
+   .admin-section non faceva niente e la console admin mostrava setup, pannello
+   live e azioni tutti insieme per tutto il Triplete e tutto il Giramoe. */
+.hidden { display: none; }
+
+/* Le .screen fanno eccezione: si dissolvono con l'opacità per il crossfade,
+   quindi restano nel flusso. Più specifico, quindi vince sulla regola sopra. */
+.screen.hidden {
+  display: flex;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Wordmark in formato telefono: la usano sia play.html sia la schermata
+   pre-partita di admin.html. */
+.phone-wm { font-size: 34px; }
+
+.mobile-container {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+}
+
+/* === RUOTA (TV e telefono) ===
+   La forma del contenitore e il puntatore bianco sono condivisi; la ghiera
+   tech e la freccia a goccia sono solo TV e stanno in tv.css. */
+
+.wheel-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  max-height: 78vh;
+}
+#main-wheel-container { width: 100%; }
+#player-wheel-container { width: min(72vw, 300px); margin: 6px 0; }
+
+#main-wheel-canvas, #player-wheel-canvas {
+  filter: drop-shadow(0 24px 50px rgba(0, 0, 0, 0.55));
+}
+
+/* Puntatore: triangolo di vetro lucido, in tinta con la ghiera */
+.wheel-indicator {
+  position: absolute;
+  top: -3%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 36px;
+  z-index: 3;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 38'%3E%3Cpath d='M3.5 1H26.5C28.9 1 30.3 3.6 29 5.7L17.3 34.6C16.2 36.9 13.8 36.9 12.7 34.6L1 5.7C-0.3 3.6 1.1 1 3.5 1Z' fill='%23f5f5f7'/%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(0 2px 0 var(--accent));
+}
+
+.wheel-container.disabled { opacity: 0.45; pointer-events: none; }
+
+/* === FINALIST / MATCH END === */
+
+.matchend-title {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 3.4vh, 34px);
+  font-weight: 800;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* === ENVELOPES === */
+
+.envelopes-row { display: flex; gap: clamp(12px, 2.4vw, 28px); justify-content: center; flex-wrap: wrap; }
+.envelope {
+  width: clamp(96px, 22vw, 220px);
+  min-height: clamp(72px, 16vh, 150px);
+  padding: clamp(8px, 1.4vh, 16px);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink);
+  font-weight: 600;
+  text-align: center;
+  background: var(--glass);
+  border: var(--glass-border);
+  box-shadow: var(--glass-edge), var(--shadow-md);
+  transition: transform 0.25s var(--ease-out), opacity 0.2s ease, border-color 0.25s ease;
+}
+.envelope.green { border-color: rgba(48, 184, 255, 0.6); }
+.envelope.red { border-color: rgba(245, 245, 247, 0.35); }
+.envelope .env-num { font-size: clamp(11px, 1.5vh, 14px); letter-spacing: 2px; color: var(--ink-faint); }
+.envelope .env-q { font-size: clamp(34px, 7vh, 64px); line-height: 1; color: var(--ink-soft); font-weight: 300; }
+.envelope .env-content { font-size: clamp(15px, 2.4vh, 26px); word-break: break-word; }
+.envelope.pickable { cursor: pointer; }
+.envelope.pickable:active { transform: scale(0.96); }
+.envelope.current { transform: translateY(-4px) scale(1.04); border-color: rgba(255, 255, 255, 0.45); }
+.envelope.open { animation: cellFlip 0.4s var(--ease-out); }
+.envelope.abandoned { opacity: 0.35; }
+.envelope.gone { opacity: 0; transform: scale(0.2); pointer-events: none; }
+.env-actions { display: flex; gap: clamp(8px, 2vw, 16px); justify-content: center; flex-wrap: wrap; }
+.webgl-stage .envelope { visibility: hidden; }
+
+/* === KEYFRAMES CONDIVISE ===
+   Stanno qui, non nel file della superficie che le usa più spesso, perché le
+   usano in due o tre. Un @keyframes assente non si vede nell'impronta dei
+   valori calcolati — `animation` resta scritta uguale — quindi metterle nel
+   file sbagliato sarebbe un guasto silenzioso: l'animazione semplicemente non
+   parte. `waitPulse` serve a .disconnect-overlay p (TV + telefono), a
+   #wait-screen h2 (telefono) e a .intro-wait-hint / .board-status-tag /
+   .final-timer.low (TV). `cellFlip` serve alle celle del tabellone (TV) e a
+   .envelope.open (TV + telefono). */
+
+@keyframes waitPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes cellFlip {
+  0% { transform: rotateX(90deg); filter: brightness(1.5); }
+  100% { transform: none; }
+}
+
+/* === DISCONNECT OVERLAY === */
+
+.disconnect-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 8, 10, 0.72);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.disconnect-overlay.visible { opacity: 1; pointer-events: auto; }
+.disconnect-overlay p {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  animation: waitPulse 1.6s ease-in-out infinite;
+}
+
+/* === REDUCED MOTION === */
+
+@media (prefers-reduced-motion: reduce) {
+  .wm { animation: none; background-position: 50% 0; }
+  .rise { animation: none; opacity: 1; }
+  .live-dot { animation: none; opacity: 1; }
+  .disconnect-overlay p { animation: none; opacity: 1; }
+  .screen { transition: none; }
+}

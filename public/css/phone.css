@@ -1,0 +1,193 @@
+/* ============================================================
+   GIRAMOE — telefono del giocatore (430×932)
+   Solo play.html. Form d'ingresso, tastiera, buzzer, pillole.
+   ============================================================ */
+
+/* Il contenitore verticale di base sta in shell.css: qui solo gli scostamenti
+   delle schermate del telefono. Sono selettori con l'id, quindi vincono sulla
+   regola generica indipendentemente dall'ordine di caricamento dei file. */
+
+/* The game screen stacks the wheel, spin button, full keyboard, the "Compra
+   vocale" button AND the vowel picker — taller than a short phone. Anchor it to
+   the top and let it scroll so the vowel button and picker are never clipped
+   below the fold; tighten spacing and the wheel so most phones need no scroll. */
+#player-game-screen .mobile-container {
+  justify-content: flex-start;
+  overflow-y: auto;
+  gap: 12px;
+  padding-top: 16px;
+  padding-bottom: 20px;
+}
+#player-game-screen #player-wheel-container { width: min(58vw, 240px); margin: 2px 0; }
+
+/* Same story on the giramoe board: consonant keyboard + "Compra vocale" button
+   + vowel picker + the buzz pill overflow a short phone, and there is no other
+   scrollable ancestor (html/body are overflow:hidden), so anchor and scroll here
+   too — otherwise the picker is unreachable. */
+#player-giramoe-screen .mobile-container {
+  justify-content: flex-start;
+  overflow-y: auto;
+  gap: 12px;
+  padding-top: 16px;
+  padding-bottom: 20px;
+}
+
+/* === PLAYER PHONE === */
+
+.join-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 320px;
+  padding: 28px 24px;
+  border-radius: var(--r-lg);
+  background: var(--glass);
+  border: var(--glass-border);
+  box-shadow: var(--glass-edge), var(--shadow-md);
+}
+.join-form .glass-button { width: 100%; }
+
+#wait-screen h2, #reconnect-screen h2 {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  animation: waitPulse 2s ease-in-out infinite;
+}
+
+.score-row { display: flex; gap: 12px; }
+.score-pill {
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--hairline);
+}
+.score-pill b { color: var(--ink); font-weight: 600; }
+
+.turn-message {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  padding: 13px 26px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  transition: all 0.4s ease;
+}
+.turn-message.your-turn {
+  color: var(--green);
+  border-color: rgba(48, 184, 255, 0.45);
+  background: rgba(48, 184, 255, 0.08);
+}
+.turn-message.waiting { color: var(--ink-faint); }
+
+.player-nick {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  position: absolute;
+  bottom: 22px;
+}
+
+/* Tastiera */
+.keyboard {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+}
+.keyboard.disabled { opacity: 0.35; pointer-events: none; }
+
+.key {
+  aspect-ratio: 1 / 1;
+  border-radius: var(--r-sm);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--hairline);
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+.key:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.18); }
+.key.vowel { border-color: rgba(255, 255, 255, 0.35); font-weight: 700; background: rgba(255, 255, 255, 0.10); }
+.key:disabled { opacity: 0.22; cursor: not-allowed; transform: none; }
+
+.vowel-picker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 280px;
+}
+.vowel-picker.hidden { display: none; }
+
+/* Buzzer telefono: cerchio scuro che si arma di ciano */
+.buzz-button {
+  width: min(78vw, 320px);
+  height: min(78vw, 320px);
+  border-radius: 50%;
+  margin: 6vh auto 0;
+  font-size: clamp(24px, 7vw, 40px);
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--ink);
+  background: radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02) 60%), rgba(28, 28, 31, 0.9);
+  border: 1px solid rgba(245, 245, 247, 0.65);
+  box-shadow: 0 0 34px rgba(48, 184, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--shadow-md);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+.buzz-button:not(:disabled):active { transform: scale(0.94); }
+.buzz-button.buzzed {
+  background: radial-gradient(circle at 35% 28%, rgba(48, 184, 255, 0.85), var(--accent) 60%, rgba(13, 36, 51, 0.95));
+  color: #000;
+  box-shadow: 0 0 50px rgba(48, 184, 255, 0.55), var(--shadow-md);
+  animation: buzzPulse 0.8s ease-in-out infinite;
+}
+.buzz-button:disabled { opacity: 0.35; }
+@keyframes buzzPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.buzz-pill {
+  display: block;
+  width: min(86vw, 360px);
+  margin: 16px auto 0;
+  padding: clamp(14px, 2.4vh, 20px);
+  border-radius: 999px;
+  font-size: clamp(17px, 5vw, 24px);
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--ink);
+  background: rgba(28, 28, 31, 0.9);
+  border: 1px solid rgba(245, 245, 247, 0.65);
+  box-shadow: 0 0 24px rgba(48, 184, 255, 0.18);
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+}
+.buzz-pill:not(:disabled):active { transform: scale(0.97); }
+.buzz-pill:disabled { opacity: 0.35; }
+.buzz-pill.armed {
+  background: linear-gradient(150deg, rgba(48, 184, 255, 0.85), var(--accent));
+  color: #000;
+  animation: buzzPulse 0.8s ease-in-out infinite;
+}
+
+/* === REDUCED MOTION === */
+
+@media (prefers-reduced-motion: reduce) {
+  #wait-screen h2, #reconnect-screen h2 {
+    animation: none;
+    opacity: 1;
+  }
+}

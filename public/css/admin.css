@@ -1,0 +1,124 @@
+/* ============================================================
+   GIRAMOE — telefono del Game Master (430×932)
+   Solo admin.html. Console di regia: sezioni, liste, azioni.
+   ============================================================ */
+
+/* === ADMIN === */
+
+.admin-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px;
+  gap: 18px;
+  width: 100%;
+  max-width: 460px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.admin-container h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.admin-section {
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--r-md);
+  background: var(--glass);
+  border: var(--glass-border);
+  box-shadow: var(--glass-edge);
+}
+.admin-section h2 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  margin-bottom: 12px;
+  color: var(--ink-faint);
+}
+.admin-section .glass-button { width: 100%; padding: 14px 12px; font-size: 14px; }
+
+.admin-player-list { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.admin-player-item {
+  padding: 13px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--r-sm);
+}
+.admin-player-item.winner { border-color: rgba(255, 255, 255, 0.4); }
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.status-dot.disconnected { background: var(--red); }
+
+.board-error { color: var(--red); font-size: 13px; font-weight: 600; margin-top: 8px; min-height: 16px; }
+/* stesso slot, ma per una conferma: niente alert() bloccante sul telefono dell'host */
+.board-error.ok { color: var(--accent); }
+
+.turn-state-tag {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(48, 184, 255, 0.12);
+  border: 1px solid rgba(48, 184, 255, 0.35);
+}
+
+.admin-scorenums { font-size: 13px; color: var(--ink-soft); }
+.admin-scorenums b { color: var(--ink); }
+
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+.admin-actions .glass-button { flex: 1; padding: 15px 10px; font-size: 14px; }
+
+#btn-solve {
+  border-color: rgba(48, 184, 255, 0.6);
+  color: var(--green);
+}
+#btn-solve:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+
+.admin-player-item .apl-name { font-weight: 600; }
+.admin-player-item .apl-name.empty { color: var(--ink-faint); font-weight: 500; }
+.admin-player-item .apl-right { display: flex; align-items: center; gap: 12px; }
+
+.kick-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 245, 247, 0.45);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--red);
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.kick-btn:hover { background: var(--red); color: #fff; }
+.kick-btn:active { transform: scale(0.9); }
+
+.admin-player-item.score-flash { animation: scoreFlash 0.7s ease; }
+@keyframes scoreFlash {
+  0% { background: rgba(48, 184, 255, 0.25); }
+  100% { background: none; }
+}
