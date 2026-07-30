@@ -50,4 +50,63 @@ window.__styleSnap = () => {
   return out.sort().join('\n');
 };
 
-console.info('[stylesnap] pronto: __styleSnap()');
+// L'impronta di una superficie è ~800KB: non si porta fuori dalla pagina a mano.
+// La baseline resta in localStorage (stessa origine delle tre pagine) e il diff
+// si calcola qui dentro, così esce solo l'elenco delle differenze.
+//
+// Uso:  await __snapSave('tv')   prima del refactor
+//       await __snapDiff('tv')   dopo → { righe, diverse: 0 } se nulla è cambiato
+
+// I valori di layout dipendono dai font: senza aspettarli, l'impronta di una
+// pagina appena caricata e quella di una pagina calda non combaciano mai.
+const ready = () => document.fonts.ready;
+
+const cut = (line) => {
+  const a = line.indexOf('|');
+  const b = line.indexOf('|', a + 1);
+  return [line.slice(0, b), line.slice(b + 1)];
+};
+
+window.__snapSave = async (key) => {
+  await ready();
+  const snap = window.__styleSnap();
+  localStorage.setItem('snap:' + key, snap);
+  return { key, righe: snap.split('\n').length, byte: snap.length };
+};
+
+window.__snapDiff = async (key, max = 8) => {
+  await ready();
+  const before = localStorage.getItem('snap:' + key);
+  if (before == null) return { errore: `nessuna baseline per '${key}'` };
+
+  // `<head>` fuori dal confronto: non è renderizzato, e il numero di <link> è
+  // proprio la cosa che uno split del CSS cambia per definizione. Tenerlo dentro
+  // segnalerebbe 32 righe di rumore ogni volta, coprendo le differenze vere.
+  const mapOf = (s) => new Map(s.split('\n').map(cut).filter(([k]) => !k.includes('>head')));
+  const a = mapOf(before);
+  const b = mapOf(window.__styleSnap());
+
+  const spariti = [...a.keys()].filter(k => !b.has(k));
+  const nuovi = [...b.keys()].filter(k => !a.has(k));
+  const cambiati = [];
+  for (const [k, va] of a) {
+    const vb = b.get(k);
+    if (vb === undefined || vb === va) continue;
+    // dice QUALE proprietà è cambiata, non solo che qualcosa è cambiato
+    const pa = va.split('§'), pb = vb.split('§');
+    cambiati.push({
+      elemento: k,
+      props: PROPS.map((p, i) => pa[i] === pb[i] ? null : `${p}: ${pa[i]} → ${pb[i]}`).filter(Boolean)
+    });
+  }
+
+  const diverse = spariti.length + nuovi.length + cambiati.length;
+  return {
+    key, righe: a.size, diverse,
+    esito: diverse === 0 ? 'identico' : 'DIVERSO',
+    spariti: spariti.slice(0, max), nuovi: nuovi.slice(0, max),
+    cambiati: cambiati.slice(0, max)
+  };
+};
+
+console.info('[stylesnap] pronto: __styleSnap() · __snapSave(k) · __snapDiff(k)');
