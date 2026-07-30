@@ -181,7 +181,9 @@ function adminView() {
       : null,
     tiebreak: state.phase === 'tiebreak' && state.tiebreak ? tiebreakView() : null,
     finalist: state.finalistId != null && ['finalist', 'final', 'envelopes'].includes(state.phase)
-      ? { id: state.finalistId, name: state.g.players[state.finalistId].name }
+      // La banca serve alla scheda del finalista nella console: è il numero con
+      // cui ha vinto, e senza si vedrebbe solo un nome.
+      ? { id: state.finalistId, name: state.g.players[state.finalistId].name, bank: state.g.players[state.finalistId].bank }
       : null,
     final: state.phase === 'final' && state.fg
       ? {
@@ -191,6 +193,10 @@ function adminView() {
           state: state.fg.state,
           results: state.fg.results.slice(),
           timeLeft: state.finalTimeLeft,
+          // `total` per la barra del timer, `given`/`picks` per le due file di
+          // lettere: la console mostra le stesse cose della TV.
+          total: FINAL_TIME_MS,
+          ...finalLetters(),
           buzzed: state.fg.state === 'BUZZED'
         }
       : null,
@@ -456,7 +462,10 @@ function evaluateTiebreak() {
 
 // --- FINAL game: 3 boards, one shared 60s countdown (solo finalist) ---
 
-function finalBoardView() {
+// Lettere regalate dal tabellone e lettere chiamate dal finalista, con la loro
+// sorte. Le mostrano sia la TV sia la console dell'admin: una funzione sola, o
+// le due superfici prima o poi divergono.
+function finalLetters() {
   const fg = state.fg;
   const b = fg.boards[fg.boardIndex];
   // Una lettera è "presente" se compare nella frase, rivelata o no: la griglia
@@ -466,6 +475,13 @@ function finalBoardView() {
   const picks = fg.usedLetters
     .filter(L => !given.includes(L))
     .map(L => ({ letter: L, present: inPhrase(L) }));
+  return { given, picks };
+}
+
+function finalBoardView() {
+  const fg = state.fg;
+  const b = fg.boards[fg.boardIndex];
+  const { given, picks } = finalLetters();
   return {
     category: b.category,
     boardIndex: fg.boardIndex,
@@ -611,7 +627,11 @@ function giramoeBoardView() {
 function giramoeScores() {
   return state.gi.players.map(p => {
     const gp = state.g.players.find(x => x.id === p.id);
-    return { id: p.id, name: p.name, points: p.points, bank: gp ? gp.bank : 0 };
+    return {
+      id: p.id, name: p.name, points: p.points, bank: gp ? gp.bank : 0,
+      // La console mostra l'ultima mossa di ciascuno: "L ×2 · 1.000"
+      lastLetter: p.lastLetter || null, lastCount: p.lastCount || 0
+    };
   });
 }
 
@@ -870,6 +890,22 @@ io.on('connection', (socket) => {
     io.to('main').emit('main:startGame');
     state.lobby.forEach(p => io.to(p.socketId).emit('player:gameStarted'));
     io.to('admin').emit('admin:state', adminView());
+  });
+
+  // Anteprima della disposizione mentre la frase si scrive. La calcola
+  // board.layoutPhrase, cioè lo stesso codice che poi costruisce il tabellone:
+  // una copia dell'algoritmo nel browser direbbe "ci sta" su frasi che il
+  // server rifiuta un secondo dopo.
+  socket.on('admin:checkPhrase', ({ phrase }) => {
+    const testo = String(phrase == null ? '' : phrase).trim();
+    if (!testo) return socket.emit('admin:phraseCheck', { ok: false, empty: true });
+    const r = board.layoutPhrase(testo);
+    if (!r.ok) return socket.emit('admin:phraseCheck', { ok: false, error: r.error });
+    socket.emit('admin:phraseCheck', {
+      ok: true,
+      rows: r.rows.filter(row => row.length > 0).length,
+      letters: r.rows.flat().join('').length
+    });
   });
 
   socket.on('admin:setBoard', ({ category, phrase }) => {

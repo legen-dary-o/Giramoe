@@ -43,7 +43,7 @@ stato già esistente, nessuno stato nuovo.
 
 **Files:** `server.js`, `giramoe.js`, `tests/admin-payload.integration.test.js`
 
-- [ ] **Step 1: la frase sta nel tabellone? (`admin:checkPhrase`)**
+- [x] **Step 1: la frase sta nel tabellone? (`admin:checkPhrase`)**
 
 Il handoff mostra `✓ Sta in 4 righe · 33 lettere` sotto il campo della frase, prima di
 premere Avvia. Serve la stessa disposizione che usa il server, non una stima: si chiede a
@@ -65,7 +65,7 @@ Prima di scrivere: leggere `board.js` e usare la funzione di disposizione che es
 (quella che `admin:setBoard` chiama per validare). Se restituisce solo `ok/error`, va
 estesa per dire anche righe e lettere — **senza cambiare cosa considera valido**.
 
-- [ ] **Step 2: nel Giramoe, l'ultima lettera di ciascuno**
+- [x] **Step 2: nel Giramoe, l'ultima lettera di ciascuno**
 
 La `1t` mostra `L ×2 · 1.000` per ogni giocatore: la lettera chiamata, quante volte
 compariva, i punti. Oggi `giramoeScores()` dà solo `points`.
@@ -82,25 +82,25 @@ presente:
 
 e in `giramoeScores()`: `lastLetter: p.lastLetter || null, lastCount: p.lastCount || 0`.
 
-- [ ] **Step 3: nel gioco finale, lettere e tempo pieno**
+- [x] **Step 3: nel gioco finale, lettere e tempo pieno**
 
 `adminView().final` guadagna `total: FINAL_TIME_MS` (per la barra), `given` e `picks`
 (le due righe di lettere della `1w`). `finalBoardView()` le calcola già: si estrae la
 parte comune in una funzione invece di ricopiarla.
 
-- [ ] **Step 4: la banca del finalista**
+- [x] **Step 4: la banca del finalista**
 
 `adminView().finalist` diventa `{ id, name, bank }` — la `1v` mostra `7.700` nella scheda
 del finalista.
 
-- [ ] **Step 5: test del payload**
+- [x] **Step 5: test del payload**
 
 Un test end-to-end che arriva alla fase `final` e controlla i campi nuovi
 (`total`, `given`, `picks`, `finalist.bank`) più `admin:checkPhrase` su una frase che ci
 sta e una che non ci sta. Controprova: togliere un campo dal server deve far fallire il
 test.
 
-- [ ] **Step 6: test verdi, commit**
+- [x] **Step 6: test verdi, commit**
 
 ---
 
