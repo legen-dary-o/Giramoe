@@ -4,6 +4,7 @@
 // onSpinEnd, spinning). Spicchi mono a densità alternata, speciali in ciano.
 import * as THREE from '../../vendor/three.module.js';
 import { createHalftoneMaterial, addBarycentric, ACCENT_CSS } from './halftone.js';
+import { boundaryAngle, midAngle } from './wheelgeom.mjs';
 
 // Stessa semantica degli speciali della ruota 2D (wheel.js).
 const SPECIAL_STYLE = {
@@ -90,7 +91,7 @@ export class Wheel3D {
     const seg = (2 * Math.PI) / this.segments;
 
     for (let i = 0; i < this.segments; i++) {
-      const start = -Math.PI / 2 + i * seg;
+      const start = boundaryAngle(i, this.segments);
       const shape = new THREE.Shape();
       shape.moveTo(0, 0);
       const STEPS = 6;
@@ -137,7 +138,6 @@ export class Wheel3D {
     cnv.width = cnv.height = SIZE;
     const ctx = cnv.getContext('2d');
     const cx = SIZE / 2;
-    const seg = (2 * Math.PI) / this.segments;
     const rr = (SIZE / 2) * 0.96;
 
     ctx.translate(cx, cx);
@@ -145,7 +145,7 @@ export class Wheel3D {
     // Separatori radiali tra gli spicchi: gap scuro con filo ciano al centro.
     // Disegnati sopra il tappeto di punti halftone, danno struttura ai 16 settori.
     for (let i = 0; i < this.segments; i++) {
-      const a = -Math.PI / 2 + i * seg;
+      const a = boundaryAngle(i, this.segments);
       ctx.save();
       ctx.rotate(a);
       ctx.lineCap = 'round';
@@ -178,7 +178,7 @@ export class Wheel3D {
       const label = this.labels[i];
       if (label == null) continue;
       const special = SPECIAL_STYLE[label];
-      const mid = -Math.PI / 2 + i * seg + seg / 2;
+      const mid = midAngle(i, this.segments);
       ctx.save();
       ctx.rotate(mid);
       ctx.textAlign = 'right';
@@ -203,7 +203,7 @@ export class Wheel3D {
     // Perni al bordo, uno per separatore: ruotano con la ruota e passano sotto
     // la freccia, che ci fa l'attrito (vedi animazione flap in _tick).
     for (let i = 0; i < this.segments; i++) {
-      const a = -Math.PI / 2 + i * seg;
+      const a = boundaryAngle(i, this.segments);
       const px = Math.cos(a) * rr * 0.985, py = Math.sin(a) * rr * 0.985;
       ctx.beginPath(); ctx.arc(px, py, SIZE * 0.013, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(48,184,255,0.95)';
