@@ -49,7 +49,7 @@ ha ancora speso la sua consonante.
 
 **Files:** `public/js/tv/shell.js`, `public/css/tv.css`
 
-- [ ] **Step 1: `renderTopBar` — tre opzioni nuove**
+- [x] **Step 1: `renderTopBar` — tre opzioni nuove**
 
 ```
 leftTone  'ink' (default) | 'dim' | 'accent'   tinta di `left`
@@ -64,7 +64,7 @@ i pip. Il ramo `board` diventa: etichetta (`board.label || 'Tabellone'`) → pip
 La pillola è `<span class="tb-pill"><b>EXPRESS</b><i></i><span>500 A LETTERA</span></span>`,
 costruita con `createElement` come tutto il resto: `name` e `note` sono dati, non markup.
 
-- [ ] **Step 2: CSS delle tre opzioni** (sezione CORNICE COMUNE di `tv.css`)
+- [x] **Step 2: CSS delle tre opzioni** (sezione CORNICE COMUNE di `tv.css`)
 
 ```css
 .tb-one.is-dim { color: rgba(245, 245, 247, 0.42); }
@@ -81,7 +81,7 @@ costruita con `createElement` come tutto il resto: `name` e `note` sono dati, no
   font-size: calc(11 * var(--u)); letter-spacing: calc(2.5 * var(--u)); color: var(--ink); }
 ```
 
-- [ ] **Step 3: `node --test --test-concurrency=1` verde, commit**
+- [x] **Step 3: `node --test --test-concurrency=1` verde, commit**
 
 ---
 
@@ -89,7 +89,7 @@ costruita con `createElement` come tutto il resto: `name` e `note` sono dati, no
 
 **Files:** `public/index.html`, `public/css/tv.css`, `public/js/main.js`
 
-- [ ] **Step 1: markup di `#triplete-screen`**
+- [x] **Step 1: markup di `#triplete-screen`**
 
 Struttura: barra alta condivisa, corpo a due colonne fra 88 e 184, barra bassa condivisa.
 Sparisce `#triplete-board-tag` (il numero del tabellone lo dicono i pip in barra alta) e
@@ -126,7 +126,7 @@ sparisce `.category-banner` a pillola (categoria centrata spaziata).
 </div>
 ```
 
-- [ ] **Step 2: CSS della `1e`** (nuova sezione TRIPLETE, misure in `--u`)
+- [x] **Step 2: CSS della `1e`** (nuova sezione TRIPLETE, misure in `--u`)
 
 Dal mockup: contenitore `top:88 bottom:184; display:flex; gap:56; padding:44 56 0`.
 Colonna sinistra `width:420; gap:34; padding-top:78`. Titolo Syne 800 **52px**,
@@ -143,10 +143,13 @@ ciano ai lati, nome Syne 800 32px `letter-spacing:10px`, `gap:26`. Tabellone
 
 Banner prenotazione: `top:calc(132*var(--u))`, `padding:17 40`, `background:rgba(24,24,27,.92)`,
 `border:1px solid rgba(255,255,255,.30)`, `box-shadow:0 24px 70px rgba(0,0,0,.6)`, icona 26px,
-testo `-apple-system` 600 26px. `position: absolute` dentro la schermata, non `fixed`: sul palco
-logico `fixed` misurerebbe la finestra, non i 1920×1080.
+testo `-apple-system` 600 26px.
 
-- [ ] **Step 3: `main.js` — barra alta, categoria, riga di stato, barra bassa**
+**Correzione in corsa:** il banner è stato spostato **fuori** da `#triplete-screen`, accanto a
+`.fx-veil`. Lo usa anche il Giramoe (`main:giramoeBuzzed`), e finché stava dentro una schermata
+nascosta lì non compariva mai: bug preesistente, trovato mentre si rifaceva la 1e.
+
+- [x] **Step 3: `main.js` — barra alta, categoria, riga di stato, barra bassa**
 
 `main:tripleteBoard` chiama `renderTopBar(#triplete-topbar, { left: 'Fase 02 · Bonus round',
 leftTone: 'dim', board: { number: b.boardNumber, total: b.totalBoards } })` e scrive la
@@ -170,7 +173,7 @@ Riga di stato: `setTripleteStatus(paused)` scrive
 
 Banner: `showBuzz(\`${name} ha prenotato!\`)` (vedi decisione 2).
 
-- [ ] **Step 4: verifica `?mock=1e` a 1920×1080** contro `screenshots/1e-triplete.png`;
+- [x] **Step 4: verifica `?mock=1e` a 1920×1080** contro `screenshots/1e-triplete.png`;
       `node --test --test-concurrency=1` verde; commit
 
 ---
@@ -180,7 +183,7 @@ Banner: `showBuzz(\`${name} ha prenotato!\`)` (vedi decisione 2).
 **Files:** `server.js`, `public/index.html`, `public/css/tv.css`, `public/js/tv/express.js` (nuovo),
 `public/js/main.js`, `public/js/dev/fixtures.mjs`, `tests/fixtures.test.js`
 
-- [ ] **Step 1: due campi nuovi in `mainGameView()`**
+- [x] **Step 1: due campi nuovi in `mainGameView()`**
 
 ```js
     // Il magenta segue il giocatore dentro l'express, non la fase: la fase dura
@@ -190,7 +193,7 @@ Banner: `showBuzz(\`${name} ha prenotato!\`)` (vedi decisione 2).
     expressValue: game.EXPRESS_VALUE
 ```
 
-- [ ] **Step 2: markup su `#game-screen`**
+- [x] **Step 2: markup su `#game-screen`**
 
 Dentro `#game-screen`, prima della barra alta: `<div class="speed-lines" aria-hidden="true"></div>`.
 Dentro `.game-left`, dopo `.wheel-modules`:
@@ -213,7 +216,7 @@ Dentro `.game-right`, dopo il tabellone:
 </div>
 ```
 
-- [ ] **Step 3: CSS** (nuova sezione EXPRESS)
+- [x] **Step 3: CSS** (nuova sezione EXPRESS)
 
 Righe di velocità: `position:absolute; left:0; right:0; top:calc(200*var(--u));
 height:calc(520*var(--u)); background: repeating-linear-gradient(0deg, rgba(244,63,127,.5) 0 2px,
@@ -236,7 +239,7 @@ passano da `hidden` a visibili con `#game-screen.is-express #express-mod { displ
 (l'attributo `hidden` perde contro una regola `display`, quindi lo stato lo decide la classe
 sulla schermata: un solo punto di verità).
 
-- [ ] **Step 4: `public/js/tv/express.js`**
+- [x] **Step 4: `public/js/tv/express.js`**
 
 Stesso taglio di `callout.js`: modulo piccolo, scrive solo con `textContent`.
 
@@ -259,7 +262,7 @@ function paint() { … #ex-raffica = letters.join(' ') || '—', #ex-occ = occur
 
 Il separatore delle migliaia è già in `shell.js` (`num`): esportarlo da lì invece di riscriverlo.
 
-- [ ] **Step 5: `main.js` — un solo interruttore**
+- [x] **Step 5: `main.js` — un solo interruttore**
 
 ```js
 // Il magenta lo decide lo stato, non l'evento: così un refresh a metà express
@@ -285,7 +288,7 @@ Fuori dall'express la barra resta quella della `1c` con la chip `03` accesa.
 Pillola di turno in tinta express: già fatta nella slice 2 (`.turn-pill.is-express`), cambia
 solo il testo, che diventa `Consonanti a raffica`.
 
-- [ ] **Step 6: fixture `1f` allineato al render**
+- [x] **Step 6: fixture `1f` allineato al render**
 
 Marco a `roundPoints: 3500, bank: 4200` (locale al fixture, non nei `PLAYERS` condivisi) e un
 ramo `freeze === 'raffica'` che spara `main:letterCalled` + `main:revealLetter` per `T O N I`,
@@ -303,7 +306,7 @@ const positionsOf = (grid, letter) => {
 
 `tests/fixtures.test.js`: aggiungere `'raffica'` alla lista `FREEZE`.
 
-- [ ] **Step 7: verifica `?mock=1f&freeze=raffica`** contro `screenshots/1f-express.png`, e
+- [x] **Step 7: verifica `?mock=1f&freeze=raffica`** contro `screenshots/1f-express.png`, e
       `?mock=1c` per controllare che la `1c` non sia cambiata; test verdi; commit
 
 ---
@@ -313,7 +316,7 @@ const positionsOf = (grid, letter) => {
 **Files:** `server.js`, `public/index.html`, `public/css/tv.css`, `public/js/main.js`,
 `tests/giramoe.integration.test.js`
 
-- [ ] **Step 1: evento `main:giramoeWindow`**
+- [x] **Step 1: evento `main:giramoeWindow`**
 
 La finestra di prenotazione da 5s oggi la TV non la vede: `startGiramoeBuzzWindow()` fa partire
 un `setTimeout` e basta. Serve l'anello del mockup.
@@ -339,7 +342,7 @@ const left = state.giramoeWindowUntil - Date.now();
 if (left > 0) socket.emit('main:giramoeWindow', { ms: left, total: GIRAMOE_BUZZ_MS, name: … });
 ```
 
-- [ ] **Step 2: markup su `#game-screen`**
+- [x] **Step 2: markup su `#game-screen`**
 
 In `.game-left`, dopo `#express-mod`:
 
@@ -365,7 +368,7 @@ In `.game-head`, accanto a `.turn-pill`:
 </div>
 ```
 
-- [ ] **Step 3: CSS** (nuova sezione GIRAMOE)
+- [x] **Step 3: CSS** (nuova sezione GIRAMOE)
 
 `#game-screen.is-giramoe .wheel-modules { display: none; }`, `#giramoe-mods { display: flex; }`.
 Modulo moltiplicatore `flex:1.4`,
@@ -378,7 +381,7 @@ Anello: `86×86`, `background: conic-gradient(var(--accent) 0deg var(--deg), rgb
 var(--deg) 360deg)`, disco interno `70px` `#0c0c0f`, cifra Syne 800 32px `--accent`. `--deg` la
 scrive il JS. `@property --deg` non serve: non si anima in CSS, si aggiorna a passi.
 
-- [ ] **Step 4: `main.js`**
+- [x] **Step 4: `main.js`**
 
 `setGiramoeSkin(on)` come l'express. `main:giramoeBoard` imposta barra alta
 (`left: 'Fase 04 · Tabellone finale', leftTone: 'accent',
@@ -403,19 +406,19 @@ cosa due volte.
 **Non** si aggiunge la riga "Giro in corso" con le lettere chiamate: il README la esclude
 esplicitamente.
 
-- [ ] **Step 5: test**
+- [x] **Step 5: test**
 
 In `tests/giramoe.integration.test.js`, aggiungere alla socket `main` un ascolto di
 `main:giramoeWindow` e verificare che dopo una consonante presente sia arrivato con
 `ms === 5000` e il nome giusto, e che dopo una consonante assente **non** arrivi.
 
-- [ ] **Step 6: verifica `?mock=1g`** contro `screenshots/1g-giramoe.png`; test verdi; commit
+- [x] **Step 6: verifica `?mock=1g`** contro `screenshots/1g-giramoe.png`; test verdi; commit
 
 ---
 
 ## Task 5: consegna
 
-- [ ] **Step 1:** `node --test --test-concurrency=1` — tutti verdi
-- [ ] **Step 2:** `?mock=1c`, `1e`, `1f&freeze=raffica`, `1g` riletti a 1920×1080
+- [x] **Step 1:** `node --test --test-concurrency=1` — tutti verdi
+- [x] **Step 2:** `?mock=1c`, `1e`, `1f&freeze=raffica`, `1g` riletti a 1920×1080
 - [ ] **Step 3:** riferire al committente le forme invariabili scelte al posto di
       `Prenotato`/`Bloccata`/`si è prenotato` e aspettare l'ok prima della slice 5
