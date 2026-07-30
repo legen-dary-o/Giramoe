@@ -24,7 +24,7 @@
 - Create: `public/js/dev/fixtures.js`
 - Modify: `public/js/main.js:29`
 
-- [ ] **Step 1: Creare `public/js/dev/mock.js`**
+- [x] **Step 1: Creare `public/js/dev/mock.js`**
 
 ```js
 // Socket finta per lo sviluppo delle schermate: stessa API di socket.io
@@ -99,7 +99,7 @@ export async function installMock(surface) {
 }
 ```
 
-- [ ] **Step 2: Creare il generatore delle griglie**
+- [x] **Step 2: Creare il generatore delle griglie**
 
 `scripts/gen-fixtures.js` — gira in Node, usa `board.js` (lo stesso modulo del server) e scrive
 un file di dati per il browser. Va rieseguito se cambiano le frasi d'esempio.
@@ -152,7 +152,7 @@ node scripts/gen-fixtures.js
 
 Atteso: `scritto …/boards.generated.js 5 frasi`.
 
-- [ ] **Step 3: Creare `public/js/dev/fixtures.js` con il solo fixture `1c`**
+- [x] **Step 3: Creare `public/js/dev/fixtures.js` con il solo fixture `1c`**
 
 I contenuti sono quelli dei mockup: categoria `PROVERBI`, frase
 `NON TUTTE LE CIAMBELLE RIESCONO CON IL BUCO`, lettere rivelate `N T E`, Marco 1.400/3.200,
@@ -219,7 +219,7 @@ export function sequenceFor(surface, screen, freeze) {
 }
 ```
 
-- [ ] **Step 4: Innestare l'harness in `main.js`**
+- [x] **Step 4: Innestare l'harness in `main.js`**
 
 La riga 29 è `const socket = io();`. Va sostituita con:
 
@@ -240,13 +240,13 @@ ritorna una Promise. Con un solo `await` si assegnerebbe la Promise a `socket` e
 **subito** (il replay parte in un `setTimeout`), quindi gli `socket.on(...)` più sotto si
 registrano prima che arrivi il primo payload.
 
-- [ ] **Step 5: Verificare che senza il parametro non cambi nulla**
+- [x] **Step 5: Verificare che senza il parametro non cambi nulla**
 
 Avvia il server con la configurazione `giramoe` di `.claude/launch.json`, apri
 `http://localhost:3000/` e controlla la console: nessun errore, la schermata `Tocca per iniziare`
 compare come prima, e in rete **non** compare `dev/mock.js`.
 
-- [ ] **Step 6: Verificare la `1c` col fixture**
+- [x] **Step 6: Verificare la `1c` col fixture**
 
 Apri `http://localhost:3000/?mock=1c` a 1920×1080.
 
@@ -257,7 +257,7 @@ errore in console. Nessun `[mock] nessun handler per …`.
 Se compare qualche `[mock] nessun handler per X`, il fixture emette un evento che `main.js` non
 ascolta: va corretto il nome dell'evento, non aggiunto un handler.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add public/js/dev/mock.js public/js/dev/fixtures.js public/js/main.js
@@ -276,7 +276,7 @@ split non cambia niente. Sono le schermate **di oggi**, non quelle nuove.
 - Modify: `public/js/player.js:1`
 - Modify: `public/js/admin.js:1`
 
-- [ ] **Step 1: Aggiungere i fixture TV**
+- [x] **Step 1: Aggiungere i fixture TV**
 
 Aggiungi a `TV` in `fixtures.js`, con la stessa forma dei payload del server
 (`tripleteBoardView`, `finalBoardView`, `envelopesView`, `tiebreakView`, `giramoeBoardView`):
@@ -289,7 +289,7 @@ Aggiungi a `TV` in `fixtures.js`, con la stessa forma dei payload del server
 - `1j` — `main:envelopes` con `{ envelopes:[{color:'green',revealed:true,content:'Viaggio a New York'},{color:'red',revealed:false},{color:'green',revealed:false}], current:0, changesLeft:1, state:'CHOOSING' }`
 - `tiebreak` — `main:tiebreakStart` + `main:tiebreakState` con due contendenti, uno col valore uscito
 
-- [ ] **Step 2: Aggiungere i fixture telefono**
+- [x] **Step 2: Aggiungere i fixture telefono**
 
 Popola `PHONE` con: `1a` (nessun payload: è il form di ingresso), `1b`
 (`player:gameStarted`), `1c`/`1d` (`player:turnState` con `turnState:'SPIN'` e `'PICK_CONSONANT'`),
@@ -301,14 +301,14 @@ Popola `PHONE` con: `1a` (nessun payload: è il form di ingresso), `1b`
 Le forme sono quelle di `playerView`, `playerTripleteView`, `playerGiramoeView`,
 `playerFinalView`, `envelopesView` in `server.js`.
 
-- [ ] **Step 3: Aggiungere i fixture admin**
+- [x] **Step 3: Aggiungere i fixture admin**
 
 Popola `ADMIN` con un `admin:state` per fase: `1n` (`phase:'pregame'`), `1o` (`'lobby'`),
 `1p` (`'playing'`), `1q` (`'tripleteReady'`), `1r`/`1s` (`'triplete'` con `triplete.started`
 false/true), `1t` (`'giramoe'`), `1u` (`'tiebreak'`), `1v` (`'finalist'`), `1w` (`'final'`),
 `1x` (`'envelopes'`). La forma è quella di `adminView()`.
 
-- [ ] **Step 4: Innestare l'harness nel telefono e nell'admin**
+- [x] **Step 4: Innestare l'harness nel telefono e nell'admin**
 
 `player.js` e `admin.js` sono script **classici**, non moduli: non possono usare `await import`.
 La riga 1 di entrambi (`const socket = io();`) diventa:
@@ -343,7 +343,7 @@ e sincrono. Quindi `window.__mockSocket` non esisterebbe ancora. Per garantire l
 Stessa modifica in `admin.html` (`surface: 'admin'`) e per `samiro-faq.js` / `samiro.js`, che
 dipendono da `player.js`.
 
-- [ ] **Step 5: Verificare tutte le schermate**
+- [x] **Step 5: Verificare tutte le schermate**
 
 Per ogni id, aprire l'URL e controllare: la schermata giusta è visibile, ha contenuto, console
 senza errori e senza `[mock] nessun handler`.
@@ -354,7 +354,7 @@ http://localhost:3000/play.html?mock=1a  1b  1c  1d  1e  1f  1g  1h  1i  1j  1k 
 http://localhost:3000/admin.html?mock=1n  1o  1p  1q  1r  1s  1t  1u  1v  1w  1x
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add public/js/dev/fixtures.js public/js/player.js public/js/admin.js public/play.html public/admin.html
@@ -365,11 +365,11 @@ git commit -m "chore(dev): fixture per tutte le schermate attuali, harness su te
 
 ## Task A3: Consegna della Parte A
 
-- [ ] **Step 1: Screenshot di controllo**
+- [x] **Step 1: Screenshot di controllo**
 
 Una griglia con le schermate raggiunte via harness, per mostrare che l'attrezzo funziona.
 
-- [ ] **Step 2: Aspettare l'ok prima della Parte B**
+- [x] **Step 2: Aspettare l'ok prima della Parte B**
 
 ---
 
@@ -382,7 +382,7 @@ Questa parte **non deve cambiare un pixel**. È un refactor, e va dimostrato, no
 **Files:**
 - Create: `public/js/dev/stylesnap.js`
 
-- [ ] **Step 1: Creare `public/js/dev/stylesnap.js`**
+- [x] **Step 1: Creare `public/js/dev/stylesnap.js`**
 
 ```js
 // Impronta dei valori calcolati di ogni elemento della pagina. Serve a dimostrare
@@ -436,7 +436,7 @@ window.__styleSnap = () => {
 console.info('[stylesnap] pronto: __styleSnap()');
 ```
 
-- [ ] **Step 2: Caricarlo dall'harness**
+- [x] **Step 2: Caricarlo dall'harness**
 
 In `mock.js`, dentro `installMock`, prima del `setTimeout`:
 
@@ -444,13 +444,13 @@ In `mock.js`, dentro `installMock`, prima del `setTimeout`:
   await import('./stylesnap.js');
 ```
 
-- [ ] **Step 3: Prendere la baseline delle tre superfici**
+- [x] **Step 3: Prendere la baseline delle tre superfici**
 
 Per ognuna delle tre pagine, con un fixture ricco (`?mock=1c`, `play.html?mock=1c`,
 `admin.html?mock=1p`), eseguire `__styleSnap()` dalla console e salvare l'output in
 `scratchpad/snap-<superficie>-prima.txt`.
 
-- [ ] **Step 4: Commit dello strumento**
+- [x] **Step 4: Commit dello strumento**
 
 ```bash
 git add public/js/dev/stylesnap.js public/js/dev/mock.js
@@ -466,7 +466,7 @@ git commit -m "chore(dev): impronta dei valori calcolati, per verificare refacto
 - Delete: `public/css/style.css`
 - Modify: `public/index.html:7`, `public/play.html:7`, `public/admin.html:7`
 
-- [ ] **Step 1: Spostare i blocchi, verbatim**
+- [x] **Step 1: Spostare i blocchi, verbatim**
 
 Le dichiarazioni **non si toccano**: si spostano. Ripartizione per sezione di `style.css`
 (numeri di riga della versione attuale):
@@ -491,7 +491,7 @@ esclusi dalla tabella qui sopra:
 `@media (prefers-reduced-motion: reduce)` in coda a ciascun file. Le regole che riguardano
 primitive condivise (`.wm`, `.screen`) vanno in `shell.css`.
 
-- [ ] **Step 2: Aggiornare i tre `<link>`**
+- [x] **Step 2: Aggiornare i tre `<link>`**
 
 `public/index.html` riga 7 — al posto di `<link rel="stylesheet" href="/css/style.css">`:
 
@@ -519,13 +519,13 @@ primitive condivise (`.wm`, `.screen`) vanno in `shell.css`.
 
 L'ordine conta: `tokens` definisce le variabili, `shell` le usa, il file di superficie sovrascrive.
 
-- [ ] **Step 3: Cancellare `style.css`**
+- [x] **Step 3: Cancellare `style.css`**
 
 ```bash
 git rm public/css/style.css
 ```
 
-- [ ] **Step 4: Verificare che nessun riferimento sia rimasto**
+- [x] **Step 4: Verificare che nessun riferimento sia rimasto**
 
 ```bash
 grep -rn "style.css" public/ docs/ README.md server.js
@@ -534,7 +534,7 @@ grep -rn "style.css" public/ docs/ README.md server.js
 Atteso: nessuna riga in `public/`. Le occorrenze in `docs/` e `README.md` sono descrizioni da
 aggiornare nello Step 6.
 
-- [ ] **Step 5: Il diff dei valori calcolati deve essere vuoto**
+- [x] **Step 5: Il diff dei valori calcolati deve essere vuoto**
 
 Ricarica le tre pagine con gli stessi fixture della baseline, esegui `__styleSnap()`, salva in
 `scratchpad/snap-<superficie>-dopo.txt` e confronta:
@@ -546,12 +546,12 @@ for s in tv phone admin; do echo "== $s"; diff "$SCRATCH/snap-$s-prima.txt" "$SC
 Atteso: `identico` per tutte tre. **Qualunque riga di diff è un blocco spostato nel file
 sbagliato**: va corretta prima di committare, non giustificata.
 
-- [ ] **Step 6: Aggiornare la struttura nel README**
+- [x] **Step 6: Aggiornare la struttura nel README**
 
 In `README.md`, la voce `public/css/style.css — stile liquid glass condiviso` diventa l'elenco dei
 cinque file con una riga a testa su cosa contengono.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -567,7 +567,7 @@ Tre blocchi non sono referenziati da nessun HTML né da nessun JS.
 **Files:**
 - Modify: `public/css/tv.css`
 
-- [ ] **Step 1: Confermare che sono orfani**
+- [x] **Step 1: Confermare che sono orfani**
 
 ```bash
 for c in standing-row final-results final-result-box; do
@@ -578,17 +578,17 @@ done
 Atteso: `nessun uso` per `.standing-row` e `.final-results`. `.final-result-box` va verificato:
 se `admin.js` o `main.js` lo generano, **non** è orfano e resta.
 
-- [ ] **Step 2: Rimuovere solo quelli confermati orfani**
+- [x] **Step 2: Rimuovere solo quelli confermati orfani**
 
 Cancella da `tv.css` i blocchi corrispondenti (in `style.css` erano alle righe 839, 873, 874 e
 relative varianti `.green` / `.red`).
 
-- [ ] **Step 3: Rieseguire il diff dei valori calcolati**
+- [x] **Step 3: Rieseguire il diff dei valori calcolati**
 
 Stessa procedura del Task B2 Step 5. Atteso: ancora `identico` — se una regola era davvero
 orfana, non toccava nessun elemento.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add public/css/tv.css
@@ -599,7 +599,7 @@ git commit -m "refactor(css): via i blocchi orfani (.standing-row, .final-result
 
 ## Task B4: Consegna della Parte B
 
-- [ ] **Step 1: Riportare l'esito del diff**
+- [x] **Step 1: Riportare l'esito del diff**
 
 Non screenshot: il numero di righe confrontate e `identico` per le tre superfici.
 
