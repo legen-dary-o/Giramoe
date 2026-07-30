@@ -14,6 +14,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Le pagine e i fixture di sviluppo (public/dev, public/js/dev) servono solo a
+// costruire e rivedere le schermate: fuori da sviluppo non sono raggiungibili.
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && /^\/(dev|js\/dev)\//.test(req.path)) {
+    return res.status(404).end();
+  }
+  next();
+});
 app.use(express.static(require('path').join(__dirname, 'public')));
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
