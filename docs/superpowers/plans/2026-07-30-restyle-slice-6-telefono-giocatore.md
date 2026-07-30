@@ -281,7 +281,7 @@ nota `Una busta scartata non si può ripescare`.
 
 ## Task 6: consegna
 
-- [ ] **Step 1:** `node --test --test-concurrency=1` — tutti verdi
-- [ ] **Step 2:** tutte le tredici a 430×932, più un giro sulla TV (`?mock=1c`) per controllare
+- [x] **Step 1:** `node --test --test-concurrency=1` — tutti verdi
+- [x] **Step 2:** tutte le tredici a 430×932, più un giro sulla TV (`?mock=1c`) per controllare
       che i campi nuovi del server non abbiano mosso niente
-- [ ] **Step 3:** riferire al committente e aspettare l'ok prima della slice 7 (telefono admin)
+- [x] **Step 3:** riferire al committente e aspettare l'ok prima della slice 7 (telefono admin)
