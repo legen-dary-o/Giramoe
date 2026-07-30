@@ -1597,6 +1597,264 @@ export const GRIDS = {
      "type": "edge"
     }
    ]
+  ],
+  "PRIMULT": [
+   [
+    {
+     "type": "edge"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "M"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "I"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "R"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "I"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "I"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "N"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "edge"
+    }
+   ],
+   [
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "M"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "E"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "B"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "A"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "C"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "E"
+    }
+   ],
+   [
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "S"
+    },
+    {
+     "type": "letter",
+     "revealed": false,
+     "letter": null
+    },
+    {
+     "type": "letter",
+     "revealed": true,
+     "letter": "I"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    }
+   ],
+   [
+    {
+     "type": "edge"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "blocked"
+    },
+    {
+     "type": "edge"
+    }
+   ]
   ]
  }
 };

@@ -389,20 +389,68 @@ const FINAL_PILL = {
   BUZZED: 'Risposta in corso'
 };
 
+// I tre tabelloni si giocano in modo diverso, e la colonna di sinistra lo dice
+// cambiando contenuto invece che posto: 1 lettere regalate + 4 scelte, 2 la
+// regola (non si sceglie niente), 3 le chiamate senza limite di posti.
+const FINAL_RULES = [
+  null,
+  { lab: 'Prima e ultima', text: 'Prima e ultima lettera di ogni parola. Nessuna scelta: si va a colpo d’occhio.' },
+  { lab: 'Ogni errore', text: 'Una lettera assente costa 3 secondi.' }
+];
+const FINAL_PICK_CAP = [
+  'Scelte dal finalista — 3 consonanti + 1 vocale',
+  '',
+  'Chiamate dal finalista — consonanti illimitate + 1 vocale'
+];
+
 function applyFinalBoard(b) {
-  renderTiles(document.getElementById('fin-given'),
-    (b.given || []).map(l => ({ letter: l, kind: 'given' })));
-  // Quattro posti fissi sul tabellone 1: i buchi si vedono, così si capisce
-  // quante scelte restano senza doverle contare.
+  const given = document.getElementById('fin-given');
+  const givenCap = document.getElementById('fin-given-cap');
+  const picksRow = document.getElementById('fin-picks');
+  const picksCap = document.getElementById('fin-picks-cap');
+  const rule = document.getElementById('fin-rule');
+  const board1 = b.boardIndex === 0;
+  const board2 = b.boardIndex === 1;
+
+  renderTiles(given, (b.given || []).map(l => ({ letter: l, kind: 'given' })));
+  given.hidden = !board1;
+  givenCap.hidden = !board1;
+
   const picks = (b.picks || []).map(p => ({
     letter: p.letter,
     kind: p.present ? (VOCALI.includes(p.letter) ? 'vowel' : 'pick') : 'wrong'
   }));
-  while (picks.length < 4) picks.push({ kind: 'empty' });
-  renderTiles(document.getElementById('fin-picks'), picks);
+  // Quattro posti fissi solo sul tabellone 1: i buchi si vedono, così si capisce
+  // quante scelte restano senza doverle contare. Sul 3 non c'è un numero.
+  if (board1) while (picks.length < 4) picks.push({ kind: 'empty' });
+  renderTiles(picksRow, picks);
+  picksRow.hidden = board2;
+  picksCap.textContent = FINAL_PICK_CAP[b.boardIndex] || '';
+  picksCap.hidden = board2 || !picks.length;
+
+  const r = FINAL_RULES[b.boardIndex];
+  rule.hidden = !r;
+  if (r) {
+    document.getElementById('fin-rule-lab').textContent = r.lab;
+    document.getElementById('fin-rule-text').textContent = r.text;
+  }
+
   renderFinalCards(b.boardIndex, b.results || []);
   document.getElementById('fin-pill-text').textContent = FINAL_PILL[b.state] || '';
 }
+
+// La penalità del tabellone 3: il numero scatta e passa al magenta insieme alla
+// barra. Tre secondi in meno su un display che scorre non si vedrebbero.
+socket.on('main:finalPenalty', () => {
+  const clock = document.querySelector('#final-screen .fin-clock');
+  if (!clock) return;
+  clock.classList.remove('is-penalty');
+  void clock.offsetWidth; // riavvia l'animazione se due errori arrivano vicini
+  clock.classList.add('is-penalty');
+  // `&freeze=penalita` la lascia accesa: serve all'harness per fotografarla.
+  if (new URLSearchParams(location.search).get('freeze') === 'penalita') return;
+  setTimeout(() => clock.classList.remove('is-penalty'), 420);
+});
 
 socket.on('main:finalTimer', ({ ms, total }) => {
   document.getElementById('final-timer').textContent = Math.ceil(ms / 1000);

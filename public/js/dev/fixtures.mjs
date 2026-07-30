@@ -179,6 +179,43 @@ const TV = {
     ['main:finalTimer', { ms: 42000, total: 60000 }]
   ],
 
+  // 1h2 · tabellone 2 del gioco finale: prima e ultima lettera di ogni parola,
+  // nessuna scelta. Il handoff non lo disegna: è disegno nostro.
+  '1h2': () => [
+    ['main:state', { phase: 'final' }],
+    ['main:finalBoard', {
+      category: 'CANZONI ITALIANE', boardIndex: 1, totalBoards: 3,
+      finalist: 'Marco', state: 'RUNNING',
+      given: [], picks: [], results: [true, null, null],
+      grid: GRIDS[CANZONI].PRIMULT
+    }],
+    ['main:finalTimer', { ms: 31000, total: 60000 }]
+  ],
+
+  // 1h3 · tabellone 3: vuoto, consonanti illimitate, ogni assente costa 3s.
+  // `&freeze=penalita` fa arrivare la penalità per fotografare lo scossone.
+  '1h3': (freeze) => {
+    const steps = [
+      ['main:state', { phase: 'final' }],
+      ['main:finalBoard', {
+        category: 'CANZONI ITALIANE', boardIndex: 2, totalBoards: 3,
+        finalist: 'Marco', state: 'RUNNING',
+        given: [],
+        picks: [
+          { letter: 'N', present: true }, { letter: 'S', present: true },
+          { letter: 'Z', present: false }, { letter: 'T', present: true },
+          { letter: 'B', present: true }, { letter: 'Q', present: false },
+          { letter: 'E', present: true }
+        ],
+        results: [true, false, null],
+        grid: GRIDS[CANZONI].NRTELMCI
+      }],
+      ['main:finalTimer', { ms: 14000, total: 60000 }]
+    ];
+    if (freeze === 'penalita') steps.push(['main:finalPenalty', { ms: 3000 }]);
+    return steps;
+  },
+
   // 1j · buste: la prima verde aperta, una rossa, una verde scambiabile
   '1j': () => [
     ['main:state', { phase: 'envelopes' }],

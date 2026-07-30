@@ -28,6 +28,20 @@ for (const [phrase, category, revealed] of CASES) {
   out[phrase] = Object.assign(out[phrase] || {}, { [revealed || 'VUOTO']: grid });
 }
 
+// Tabellone 2 del gioco finale: prima e ultima lettera di ogni parola. Non è
+// una combinazione di lettere, è una regola sua — la applica board.js, lo stesso
+// modulo del server.
+{
+  const phrase = 'MI RITORNI IN MENTE BELLA COME SEI';
+  const res = board.createBoard('CANZONI ITALIANE', phrase);
+  if (!res.ok) throw new Error(`board.createBoard ha rifiutato "${phrase}": ${res.error}`);
+  board.revealFirstLast(res.board.grid);
+  out[phrase].PRIMULT = res.board.grid.map(row => row.map(cell =>
+    cell.type === 'letter'
+      ? { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? (cell.display || cell.letter) : null }
+      : { type: cell.type }));
+}
+
 // Il Triplete rivela CASELLE, non lettere: nessuna combinazione di lettere
 // riproduce il suo riempimento sparso. Qui una casella su tre, con un passo
 // fisso: serve un fixture riproducibile, non un tabellone diverso ogni volta.

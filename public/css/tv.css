@@ -1371,6 +1371,31 @@
 /* Sotto i 10 secondi: stesso trattamento di prima (.final-timer.low) */
 .fin-clock.is-low .fin-time b { color: var(--accent); animation: waitPulse 0.7s ease-in-out infinite; }
 
+/* Penalità del tabellone 3: il timer scatta e diventa magenta insieme alla
+   barra. Il magenta è l'unico colore d'allarme del tema (--red è bianco).
+   @keyframes qui e non in shell.css: la usa solo la TV — una keyframe nel file
+   sbagliato non si vede nell'impronta dei valori calcolati, sparisce e basta
+   (vedi tests/css.test.js). */
+@keyframes finalShake {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(calc(-10 * var(--u))); }
+  40% { transform: translateX(calc(9 * var(--u))); }
+  60% { transform: translateX(calc(-6 * var(--u))); }
+  80% { transform: translateX(calc(3 * var(--u))); }
+}
+.fin-clock.is-penalty .fin-time { animation: finalShake 0.42s var(--ease-out); }
+.fin-clock.is-penalty .fin-time b,
+.fin-clock.is-penalty .fin-time span { color: var(--express); }
+.fin-clock.is-penalty .fin-bar i {
+  background: var(--express);
+  box-shadow: 0 0 calc(16 * var(--u)) rgba(244, 63, 127, 0.7);
+}
+/* Con il movimento ridotto resta il colore: l'informazione è quella, lo
+   scossone è solo l'enfasi. */
+@media (prefers-reduced-motion: reduce) {
+  .fin-clock.is-penalty .fin-time { animation: none; }
+}
+
 .fin-letters { display: flex; flex-direction: column; gap: calc(16 * var(--u)); }
 .fin-letters .cap {
   font-family: var(--font-mono);
@@ -1405,6 +1430,33 @@
 /* Il posto ancora da riempire: stessa misura, cosi' la fila non salta quando
    arriva la lettera. */
 .tile.is-empty { border: 1px dashed rgba(255, 255, 255, 0.14); }
+
+/* Tabelloni 2 e 3: il handoff non li disegna. Invece di inventare due layout,
+   la colonna delle lettere cambia contenuto restando dov'e' — sul 2 una
+   scheda-regola al posto delle tessere, sul 3 le chiamate senza posti fissi. */
+.fin-rule {
+  padding: calc(20 * var(--u)) calc(24 * var(--u));
+  border-radius: calc(14 * var(--u));
+  background: rgba(48, 184, 255, 0.08);
+  border: 1px solid rgba(48, 184, 255, 0.30);
+}
+.fin-rule .lab { display: block; color: var(--accent); letter-spacing: calc(2.5 * var(--u)); }
+.fin-rule p {
+  margin-top: calc(8 * var(--u));
+  font: 400 calc(15 * var(--u)) / 1.5 -apple-system, sans-serif;
+  color: rgba(245, 245, 247, 0.6);
+  text-wrap: pretty;
+}
+/* Il tabellone 3 non ha limite di chiamate: la fila va a capo invece di
+   schiacciare le tessere. */
+.fin-rule[hidden], .tile-row[hidden], .fin-letters .cap[hidden] { display: none; }
+/* Una lettera assente costa 3 secondi: stesso magenta dello scossone del timer,
+   cosi' la tessera e il numero si leggono come la stessa cosa. */
+.tile.is-wrong {
+  background: rgba(244, 63, 127, 0.10);
+  border: 1px solid rgba(244, 63, 127, 0.55);
+  color: var(--express-soft);
+}
 
 .fin-board {
   flex: 1;
