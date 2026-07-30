@@ -81,6 +81,16 @@ export async function installMock(surface, { autoStart = true } = {}) {
     // Le scene di round coprono lo schermo per 5-6s: in mock si saltano, così la
     // schermata è subito confrontabile col render. `&scenes=1` le lascia partire.
     if (!params.has('scenes') && window.__scenes) window.__scenes.skip();
+
+    // La TV resta sull'intro finché qualcuno non tocca: è un gate vero, non un
+    // dettaglio. Le fasi di gioco lo scavalcano da sole (chi ricarica a partita
+    // in corso non deve ritoccare), la lobby no. Qui il tocco lo dà l'harness,
+    // passando dal bottone come farebbe una persona.
+    const tap = document.getElementById('tap-start-btn');
+    if (tap && !document.getElementById('start-tap-screen').classList.contains('hidden')) {
+      tap.click();
+      await new Promise(r => setTimeout(r, 3200)); // l'intro dura 3s
+    }
     console.info(`[mock] ${surface}/${screen} pronto`, steps.length, 'passi');
   };
 

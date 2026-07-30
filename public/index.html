@@ -46,32 +46,45 @@
 
   <!-- Lobby -->
   <div id="lobby-screen" class="screen hidden">
+    <div class="hf-field" aria-hidden="true"></div>
+    <header class="tv-topbar" id="lobby-topbar"></header>
     <div class="lobby-grid">
       <div class="lobby-col">
-        <div class="col-title">Giocatori</div>
-        <div class="player-slot" id="slot-0">&mdash;<span class="slot-idx">P1</span></div>
-        <div class="player-slot" id="slot-1">&mdash;<span class="slot-idx">P2</span></div>
-        <div class="player-slot" id="slot-2">&mdash;<span class="slot-idx">P3</span></div>
+        <div class="col-head"><span class="lab">Giocatori</span><span class="max">MAX 3</span></div>
+        <div class="lobby-slots" id="lobby-slots"></div>
       </div>
       <div class="lobby-center">
-        <div class="wm">GIRAMOE</div>
-        <div class="qr-container">
+        <div class="lab">Inquadra per entrare</div>
+        <div class="qr-plate">
           <canvas id="qr-canvas"></canvas>
+          <div class="qr-badge" aria-hidden="true">G</div>
         </div>
-        <p class="lobby-hint">Inquadra per entrare</p>
+        <div class="qr-url"><span>oppure apri</span><b id="lobby-url"></b></div>
       </div>
       <div class="lobby-col">
-        <div class="col-title">Partita</div>
-        <div class="stat-row"><b>3</b><small>tabelloni</small></div>
-        <div class="stat-row"><b>6</b><small>fasi</small></div>
-        <div class="stat-row"><b>3</b><small>buste finali</small></div>
-      </div>
-      <div class="phases">
-        <span class="ph now"><em>01</em>Tabelloni</span><span class="ph"><em>02</em>Triplete</span>
-        <span class="ph"><em>03</em>Express</span><span class="ph"><em>04</em>Giramoe</span>
-        <span class="ph"><em>05</em>Finale</span><span class="ph"><em>06</em>Buste</span>
+        <span class="lab">Come si gioca</span>
+        <div class="howto">
+          <div class="howto-step">
+            <span class="n">01</span>
+            <div><b>Gira la ruota</b><span>Chiama una consonante: se c&rsquo;&egrave;, vale valore &times; occorrenze.</span></div>
+          </div>
+          <div class="howto-step">
+            <span class="n">02</span>
+            <div><b>Compra le vocali</b><span>500 punti l&rsquo;una, da spendere sui punti del turno.</span></div>
+          </div>
+          <div class="howto-step">
+            <span class="n">03</span>
+            <div><b>Risolvi a voce</b><span>Chi ha pi&ugrave; banca dopo sei fasi va al gioco finale.</span></div>
+          </div>
+        </div>
+        <div class="stat-boxes">
+          <div class="stat-box"><b>6</b><span>Fasi</span></div>
+          <div class="stat-box"><b>7</b><span>Tabelloni</span></div>
+          <div class="stat-box"><b>3</b><span>Buste</span></div>
+        </div>
       </div>
     </div>
+    <footer class="intro-phases is-inline" id="lobby-phases"></footer>
   </div>
 
   <!-- Game Screen -->

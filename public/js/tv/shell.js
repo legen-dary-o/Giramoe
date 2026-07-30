@@ -27,6 +27,7 @@ const num = (v) =>
 
 // opts:
 //   phase    1..6, quale chip è attiva
+//   left     etichetta libera al posto delle chip (la lobby: "Sala d'attesa")
 //   compact  true → una sola etichetta "Fase 0N · <nome>" al posto delle 6 chip
 //   accent   'accent' (default) | 'express' — tinta della chip attiva
 //   board    { number, total } → "Tabellone" + pip + contatore 01/03
@@ -40,7 +41,9 @@ export function renderTopBar(host, opts = {}) {
   const left = el('div', 'tb-side');
   left.append(el('span', 'tb-wm', 'GIRAMOE'), el('span', 'tb-div'));
 
-  if (compact) {
+  if (opts.left) {
+    left.append(el('span', 'tb-one', opts.left));
+  } else if (compact) {
     const [n, name] = PHASES[phase - 1];
     left.append(el('span', 'tb-one', `Fase ${n} · ${name}`));
   } else {

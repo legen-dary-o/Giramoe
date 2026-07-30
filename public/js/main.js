@@ -109,9 +109,15 @@ socket.on('main:state', ({ phase }) => {
 
 socket.on('main:showLobby', ({ url, players }) => {
   currentPhase = 'lobby';
+  // 375px e correzione 'H': la pastiglia col marchio al centro copre dei
+  // moduli, e con la correzione di default il codice smetterebbe di leggersi.
   QRCode.toCanvas(document.getElementById('qr-canvas'), url, {
-    width: 220, margin: 2, color: { dark: '#000000', light: '#f5f5f7' }
+    width: 375, margin: 1, errorCorrectionLevel: 'H',
+    color: { dark: '#000000', light: '#f5f5f7' }
   });
+  // Senza schema: da tre metri "192.168.1.72:3000" si copia, "http://" e' rumore.
+  document.getElementById('lobby-url').textContent = url.replace(/^https?:\/\//, '');
+  renderPhaseStrip(document.getElementById('lobby-phases'), 1, { inline: true });
   updatePlayerSlots(players);
   applyPhaseScreen();
 });
@@ -361,18 +367,50 @@ socket.on('main:playerReconnected', () =>
 
 // --- rendering helpers ---
 
+const MAX_PLAYERS = 3;
+
 function updatePlayerSlots(players) {
-  for (let i = 0; i < 3; i++) {
-    const slot = document.getElementById(`slot-${i}`);
+  const host = document.getElementById('lobby-slots');
+  host.innerHTML = '';
+  let collegati = 0;
+
+  for (let i = 0; i < MAX_PLAYERS; i++) {
     const p = players[i];
-    slot.innerHTML = `${p ? p.name : '—'}<span class="slot-idx">P${i + 1}</span>`;
-    if (p) {
-      slot.classList.add('filled');
-      slot.classList.toggle('reconnecting', p.connected === false);
-    } else {
-      slot.classList.remove('filled', 'reconnecting');
-    }
+    const away = p && p.connected === false;
+    if (p && !away) collegati++;
+
+    const slot = document.createElement('div');
+    slot.className = 'lslot' + (p ? (away ? ' is-away' : '') : ' is-free');
+
+    const av = document.createElement('div');
+    av.className = 'av';
+    if (p) av.textContent = p.name.charAt(0).toUpperCase();
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    const nome = document.createElement('span');
+    nome.className = 'nome';
+    nome.textContent = p ? p.name : 'In attesa…'; // i nomi li scrivono i giocatori
+    const stato = document.createElement('span');
+    stato.className = 'stato';
+    // Il mockup scrive COLLEGATO / COLLEGATA, cioè decide il genere dal nome:
+    // sbaglia appena il nome non è quello che si aspetta. "IN LINEA" è
+    // invariabile e dice la stessa cosa.
+    stato.textContent = !p ? 'SLOT LIBERO' : away ? 'RICONNESSIONE…' : 'IN LINEA';
+    info.append(nome, stato);
+
+    const idx = document.createElement('span');
+    idx.className = 'idx';
+    idx.textContent = 'P' + (i + 1);
+
+    slot.append(av, info, idx);
+    host.append(slot);
   }
+
+  renderTopBar(document.getElementById('lobby-topbar'), {
+    left: "Sala d'attesa",
+    right: `${collegati} di ${MAX_PLAYERS} collegati`
+  });
 }
 
 function initMainWheel(segments) {

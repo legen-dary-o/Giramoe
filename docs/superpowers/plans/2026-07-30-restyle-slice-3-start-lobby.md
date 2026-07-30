@@ -23,7 +23,7 @@ la mostra diversa: quella parte non si copia.
 
 **Files:** `public/index.html`, `public/css/tv.css`
 
-- [ ] **Step 1: Markup di `#start-tap-screen`**
+- [x] **Step 1: Markup di `#start-tap-screen`**
 
 Le quattro corner label restano dove sono (già giuste). Cambia il resto:
 
@@ -44,7 +44,7 @@ Le quattro corner label restano dove sono (già giuste). Cambia il resto:
 Via `.intro-wheel-gap`: serviva a spingere il testo sopra la ruota quando la colonna era
 centrata. Ora il testo sta in alto e il blocco bottone/fasi in basso, la ruota passa in mezzo.
 
-- [ ] **Step 2: CSS della `1a`** (in `tv.css`, sezione INTRO, misure `calc(N * var(--u))`)
+- [x] **Step 2: CSS della `1a`** (in `tv.css`, sezione INTRO, misure `calc(N * var(--u))`)
 
 Scrim: `position:absolute; inset:0; background: radial-gradient(ellipse 42% 26% at 50% 25%,
 rgba(0,0,0,.88) 24%, transparent 72%)` — è una correzione di leggibilità sul wordmark, non uno
@@ -72,7 +72,7 @@ l'ultima anche `border-right`; numero Space Mono 700 11px `letter-spacing:2.5px`
 600 12px `letter-spacing:3px` uppercase; fase attiva numero `--accent` e nome `--ink`, le altre
 `rgba(235,235,245,.22)` e `rgba(235,235,245,.34)`.
 
-- [ ] **Step 3: Riempire la striscia da `tv/shell.js`**
+- [x] **Step 3: Riempire la striscia da `tv/shell.js`**
 
 Nuova funzione, stesse `PHASES` già esportate:
 
@@ -85,13 +85,13 @@ export function renderPhaseStrip(host, phase = 1, { inline = false } = {}) { /* 
 `inline:false` → celle con `border-left` (1a). `inline:true` → celle separate da
 `<span class="ps-sep">` da `38×1px` (lobby).
 
-- [ ] **Step 4: Verificare**
+- [x] **Step 4: Verificare**
 
 `http://localhost:3000/` a 1920×1080, confronto con `screenshots/1a-start.png`. La ruota deve
 essere **identica a prima**: confrontare con un `git stash` o con lo screenshot precedente.
 Poi il tap: il bottone sparisce e resta `In attesa dell'host…`, la striscia fasi resta.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ---
 
@@ -99,12 +99,12 @@ Poi il tap: il bottone sparisce e resta `In attesa dell'host…`, la striscia fa
 
 **Files:** `public/index.html`, `public/css/tv.css`, `public/js/main.js`, `public/js/tv/shell.js`
 
-- [ ] **Step 1: `renderTopBar` accetta un'etichetta libera a sinistra**
+- [x] **Step 1: `renderTopBar` accetta un'etichetta libera a sinistra**
 
 Oggi a sinistra mette o le sei chip o `Fase 0N · nome`. La lobby vuole `Sala d'attesa`.
 Aggiungere l'opzione `left: <stringa>`, che vince su `compact`.
 
-- [ ] **Step 2: Markup di `#lobby-screen`**
+- [x] **Step 2: Markup di `#lobby-screen`**
 
 ```html
     <header class="tv-topbar" id="lobby-topbar"></header>
@@ -129,7 +129,7 @@ Aggiungere l'opzione `left: <stringa>`, che vince su `compact`.
 Le tre righe `Come si gioca` e i tre riquadri sono statici: nessun dato dal server.
 Copy dal README §1b, da riportare alla lettera.
 
-- [ ] **Step 3: CSS della lobby**
+- [x] **Step 3: CSS della lobby**
 
 Griglia `1fr auto 1fr`, `gap:76px`, `padding:0 84px`, fra 88px e 96px (assoluta come la 1c).
 Scheda giocatore: `padding:22px 26px`, `border-radius:16px`, `background:var(--panel)`,
@@ -142,33 +142,33 @@ Piastra QR: `background:var(--ink)`, `padding:20px`, `border-radius:20px`,
 Striscia bassa: `height:96px`, `border-top` hairline,
 `background: linear-gradient(0deg, rgba(10,10,12,.9), transparent)`.
 
-- [ ] **Step 4: `updatePlayerSlots` scrive le schede nuove**
+- [x] **Step 4: `updatePlayerSlots` scrive le schede nuove**
 
 Riscrive `#lobby-slots` con `document.createElement` (i nomi arrivano dai giocatori: niente
 `innerHTML`). Stato: `COLLEGATO` normale, `RICONNESSIONE…` quando `connected === false`,
 `SLOT LIBERO` quando lo slot è vuoto. Aggiorna anche il contatore in barra alta
 (`N di 3 collegati`) e `#lobby-url`.
 
-- [ ] **Step 5: QR a 375px con correzione alta**
+- [x] **Step 5: QR a 375px con correzione alta**
 
 In `main:showLobby`, `QRCode.toCanvas` passa da `{ width: 220, margin: 2 }` a
 `{ width: 375, margin: 1, errorCorrectionLevel: 'H' }`.
 ⚠ Il badge `G` al centro copre dei moduli: **senza livello H il QR non si legge più**. Va
 verificato inquadrandolo davvero, non a occhio.
 
-- [ ] **Step 6: Verificare**
+- [x] **Step 6: Verificare**
 
 `?mock=1b` a 1920×1080 contro `screenshots/1b-lobby-qr.png`, e il QR letto col telefono.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ---
 
 ## Task 3: Consegna
 
-- [ ] **Step 1:** `node --test --test-concurrency=1 tests/*.test.js` — nessun test tocca queste
+- [x] **Step 1:** `node --test --test-concurrency=1 tests/*.test.js` — nessun test tocca queste
   schermate, devono restare 137 PASS.
-- [ ] **Step 2:** Screenshot `1a` e `1b` accanto ai render.
+- [x] **Step 2:** Screenshot `1a` e `1b` accanto ai render.
 - [ ] **Step 3:** Aspettare l'ok prima della slice 4.
 
 ## Fuori scope
