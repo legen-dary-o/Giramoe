@@ -99,7 +99,20 @@ in express. Fuori da quello stato la fase 03 è **identica** alla fase 01.
 
 Stessa regola sul telefono: `1e` solo in express, altrimenti `1c` / `1d`.
 
-### 4. Animazioni — invariate
+### 4. La ruota della schermata iniziale resta com'è
+
+Il disco halftone decorativo della `1a` (`public/js/fx/homewheel.js`) **non si tocca**. Il handoff
+chiedeva di alzare densità e luminosità dei punti fino all'aspetto del mockup e di aggiungere una
+ghiera (`border:1px solid rgba(48,184,255,.32)` + `box-shadow:0 0 60px rgba(48,184,255,.10)`) e un
+mozzo da 118px: **niente di tutto questo**. Resta la ruota di oggi.
+
+Tutto il resto della `1a` si fa: eyebrow, wordmark Syne 800 184px col glint, la riga
+`Il gioco della ruota` fra due filetti ciano, il bottone **pieno bianco** al posto del ghost, la
+striscia delle 6 fasi in basso, le corner label. Resta anche lo **scrim** sopra il disco
+(`radial-gradient(ellipse 42% 26% at 50% 25%, rgba(0,0,0,.88) 24%, transparent 72%)`): non è un
+cambio di stile della ruota, è quello che tiene leggibile il wordmark sopra i punti.
+
+### 5. Animazioni — invariate
 
 `public/js/fx/roundscenes.js` (le 6 scene di round), `wheelFly`/`wheelBack`, `cellFlip`,
 `liveBlink`, `waitPulse`, `glint`, `buzzPulse`, `.fx-veil`, `.result-overlay`,
@@ -107,7 +120,7 @@ Stessa regola sul telefono: `1e` solo in express, altrimenti `1c` / `1d`.
 com'è. Unico vincolo da verificare a ogni slice: le nuove barre alta/bassa non devono passare
 sopra `#round-scene`.
 
-### 5. Gioco finale — tabelloni 2 e 3
+### 6. Gioco finale — tabelloni 2 e 3
 
 Scheletro della `1h` invariato: timer 230px a sinistra, tabellone 1040px al centro, colonna
 `Tabelloni` a destra.
