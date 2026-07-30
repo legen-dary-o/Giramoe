@@ -81,7 +81,7 @@ subito se il passo dei punti regge quando il disco è piccolo.
 **Files:** `public/js/phone/shell.js` (nuovo), `public/play.html`, `public/css/phone.css`,
 `public/js/player.js`, `server.js`, `public/js/dev/fixtures.mjs`
 
-- [ ] **Step 1: `public/js/phone/shell.js`**
+- [x] **Step 1: `public/js/phone/shell.js`**
 
 ```js
 // La cornice del telefono giocatore: barra alta, schede statistiche, banner di
@@ -96,7 +96,7 @@ export function renderBanner(host, { text, tone })          // tone: null | 'acc
 modulo **prima** degli script classici e appeso a `window.PhoneShell`, come già fa `play.html`
 con la socket finta: un solo percorso di caricamento, uguale in sviluppo e in produzione.
 
-- [ ] **Step 2: i posti liberi e chi è già dentro (server)**
+- [x] **Step 2: i posti liberi e chi è già dentro (server)**
 
 `1a` scrive `Posto 1 di 3 · servono 3 giocatori` e `1b` elenca i collegati: oggi il telefono
 non ha nessuno dei due dati. Il server manda a **tutti** i socket (anche a chi non è ancora
@@ -112,7 +112,7 @@ function broadcastLobbyToPhones() {
 
 Va chiamata dove oggi si manda `main:playerJoined`, più una volta su `connection`.
 
-- [ ] **Step 3: `1a` ingresso**
+- [x] **Step 3: `1a` ingresso**
 
 Colonna centrata `padding:0 28px 60px`, `gap:44px`; campo halftone col buco
 (`ellipse 74% 30% at 50% 46%, transparent 60%`). Eyebrow `Giramoe Studio` Space Mono 600 10px
@@ -124,7 +124,7 @@ primario `Entra` → contatore dei posti.
 Il campo di testo **non scende sotto i 16px**: sotto quella soglia iOS zooma al focus e la
 schermata salta.
 
-- [ ] **Step 4: `1b` attesa e `1m` riconnessione**
+- [x] **Step 4: `1b` attesa e `1m` riconnessione**
 
 `1b`: indicatore 74px (cerchio ciano con pallino `liveBlink 1.8s`), titolo `Ci siamo quasi`
 Syne 800 30px, riga di spiegazione, lista dei collegati con dot, nome, badge `TU` e slot vuoti
@@ -135,7 +135,7 @@ Syne 800 30px, riga di spiegazione, lista dei collegati con dot, nome, badge `TU
 
 Fixture nuovo `1m` (oggi non c'è) e `1a`/`1b` aggiornati col payload `player:lobby`.
 
-- [ ] **Step 5: verifica `?mock=1a`, `1b`, `1m` a 430×932; test verdi; commit**
+- [x] **Step 5: verifica `?mock=1a`, `1b`, `1m` a 430×932; test verdi; commit**
 
 ---
 
@@ -144,7 +144,7 @@ Fixture nuovo `1m` (oggi non c'è) e `1a`/`1b` aggiornati col payload `player:lo
 **Files:** `server.js`, `public/play.html`, `public/css/phone.css`, `public/js/player.js`,
 `public/js/dev/fixtures.mjs`
 
-- [ ] **Step 1: la barra alta ha bisogno della fase (server)**
+- [x] **Step 1: la barra alta ha bisogno della fase (server)**
 
 `playerView()` guadagna tre campi, tutti già in `state`:
 
@@ -158,7 +158,7 @@ Fixture nuovo `1m` (oggi non c'è) e `1a`/`1b` aggiornati col payload `player:lo
     wedge: state.g.lastSpinValue
 ```
 
-- [ ] **Step 2: `1c` e `1d`**
+- [x] **Step 2: `1c` e `1d`**
 
 `padding:18px 20px`, `gap:16px`: barra alta → due schede (`Punti turno` evidenziata / `Banca`;
 in `1d` la seconda diventa `Spicchio 500`) → banner → mini-ruota 196px → primario
@@ -171,7 +171,7 @@ Tastiera: 21 consonanti, 7 colonne, `gap:9px`, tasto `aspect-ratio:1`, `border-r
 Space Mono 600 20px; tre stati (disponibile / già chiamata / selezionata) e
 `:active { transform: scale(.9) }` come oggi. Vocali: 5 colonne, Space Mono 700 22px.
 
-- [ ] **Step 3: `1e` express**
+- [x] **Step 3: `1e` express**
 
 Fondo magenta (`radial-gradient(85% 65% at 50% -8%, rgba(70,20,45,.35), transparent 62%),
 linear-gradient(180deg,#0d090b,#000 64%)`), pillola `EXPRESS` in barra alta, righe di velocità
@@ -185,7 +185,7 @@ Si azzera quando l'express finisce.
 
 Via il messaggio con l'emoji `🚄 EXPRESS! Spara consonanti o compra vocali`.
 
-- [ ] **Step 4: verifica `?mock=1c`, `1d`, `1e`; test verdi; commit**
+- [x] **Step 4: verifica `?mock=1c`, `1d`, `1e`; test verdi; commit**
 
 ---
 
