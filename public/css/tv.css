@@ -455,6 +455,37 @@
 .tv-topbar.is-express .tb-ph.is-now { border-bottom-color: var(--express); }
 .tv-topbar.is-express .tb-ph.is-now em,
 .tv-topbar.is-express .tb-one { color: var(--express); }
+/* Tinte dell'etichetta unica: la 1e la vuole smorzata, la 1g in ciano. Stessa
+   specificita' della regola express qui sopra, ma scritte dopo: vincono loro. */
+.tv-topbar .tb-one.is-dim { color: rgba(245, 245, 247, 0.42); }
+.tv-topbar .tb-one.is-accent { color: var(--accent); }
+
+/* Pillola al posto delle chip: la 1f la usa per "EXPRESS · 500 A LETTERA" */
+.tb-pill {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  padding: calc(8 * var(--u)) calc(20 * var(--u));
+  border-radius: 999px;
+  background: rgba(244, 63, 127, 0.14);
+  border: 1px solid rgba(244, 63, 127, 0.55);
+}
+.tb-pill b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(16 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  color: var(--express-soft);
+}
+.tb-pill i { width: 1px; height: calc(14 * var(--u)); background: rgba(255, 255, 255, 0.2); }
+.tb-pill span {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(2.5 * var(--u));
+  text-transform: uppercase;
+  color: var(--ink);
+}
 
 .tb-lab {
   font-family: var(--font-mono);

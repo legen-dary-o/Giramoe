@@ -22,17 +22,20 @@ const pad2 = (n) => String(n).padStart(2, '0');
 // I punteggi si leggono da lontano: 1.400, non 1400. Il punto lo mettiamo noi
 // invece di toLocaleString('it-IT'): un runtime con ICU ridotto ignora la locale
 // e restituisce "1400" senza dirlo, e su una TV nessuno se ne accorgerebbe.
-const num = (v) =>
+export const num = (v) =>
   typeof v === 'number' ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : String(v);
 
 // opts:
-//   phase    1..6, quale chip è attiva
-//   left     etichetta libera al posto delle chip (la lobby: "Sala d'attesa")
-//   compact  true → una sola etichetta "Fase 0N · <nome>" al posto delle 6 chip
-//   accent   'accent' (default) | 'express' — tinta della chip attiva
-//   board    { number, total } → "Tabellone" + pip + contatore 01/03
-//   right    stringa libera al posto di board
-//   live     false per nascondere "● Live"
+//   phase     1..6, quale chip è attiva
+//   left      etichetta libera al posto delle chip (la lobby: "Sala d'attesa")
+//   leftTone  'ink' (default) | 'dim' | 'accent' — tinta di `left`
+//   pill      { name, note } → pillola al posto delle chip (la 1f: EXPRESS · 500 A LETTERA)
+//   compact   true → una sola etichetta "Fase 0N · <nome>" al posto delle 6 chip
+//   accent    'accent' (default) | 'express' — tinta della chip attiva
+//   board     { number, total, label, pips } → etichetta + pip + contatore 01/03
+//             label default 'Tabellone'; pips: false li toglie (la 1f scrive solo "Fase 03")
+//   right     stringa libera al posto di board
+//   live      false per nascondere "● Live"
 export function renderTopBar(host, opts = {}) {
   const { phase = 1, compact = false, accent = 'accent', board, right, live = true } = opts;
   host.innerHTML = '';
@@ -41,8 +44,16 @@ export function renderTopBar(host, opts = {}) {
   const left = el('div', 'tb-side');
   left.append(el('span', 'tb-wm', 'GIRAMOE'), el('span', 'tb-div'));
 
-  if (opts.left) {
-    left.append(el('span', 'tb-one', opts.left));
+  if (opts.pill) {
+    // Nome e nota sono dati (il valore express arriva dal server): createElement,
+    // non innerHTML.
+    const pill = el('span', 'tb-pill');
+    pill.append(el('b', null, opts.pill.name), el('i'), el('span', null, opts.pill.note));
+    left.append(pill);
+  } else if (opts.left) {
+    const one = el('span', 'tb-one', opts.left);
+    if (opts.leftTone === 'dim' || opts.leftTone === 'accent') one.classList.add('is-' + opts.leftTone);
+    left.append(one);
   } else if (compact) {
     const [n, name] = PHASES[phase - 1];
     left.append(el('span', 'tb-one', `Fase ${n} · ${name}`));
@@ -58,14 +69,17 @@ export function renderTopBar(host, opts = {}) {
 
   const rightSide = el('div', 'tb-side');
   if (board) {
-    rightSide.append(el('span', 'tb-lab', 'Tabellone'));
-    const pips = el('div', 'tb-pips');
-    for (let i = 1; i <= board.total; i++) {
-      pips.append(el('span', i <= board.number ? 'is-on' : null));
+    rightSide.append(el('span', 'tb-lab', board.label || 'Tabellone'));
+    if (board.pips !== false) {
+      const pips = el('div', 'tb-pips');
+      for (let i = 1; i <= board.total; i++) {
+        pips.append(el('span', i <= board.number ? 'is-on' : null));
+      }
+      rightSide.append(pips);
     }
     const count = el('span', 'tb-count', pad2(board.number));
     count.append(el('span', null, '/' + pad2(board.total)));
-    rightSide.append(pips, count);
+    rightSide.append(count);
   } else if (right) {
     rightSide.append(el('span', 'tb-lab', right));
   }
