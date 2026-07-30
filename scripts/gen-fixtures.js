@@ -1,0 +1,36 @@
+// Genera le griglie dei fixture usando board.js, così il markup dell'harness è
+// identico a quello che produce il server. Una griglia scritta a mano che non
+// combacia con board.js renderebbe bugiardo il confronto col render.
+// Uso: node scripts/gen-fixtures.js
+const fs = require('fs');
+const path = require('path');
+const board = require('../board');
+
+// [frase, categoria, lettere già rivelate]
+const CASES = [
+  ['NON TUTTE LE CIAMBELLE RIESCONO CON IL BUCO', 'PROVERBI', 'NTE'],
+  ['MEGLIO UN UOVO OGGI CHE UNA GALLINA DOMANI', 'SAGGEZZA POPOLARE', ''],
+  ['IL GIRO DEL MONDO IN OTTANTA GIORNI', 'VIAGGI', 'TONI'],
+  ['LE CINQUE TERRE DELLA LIGURIA', 'GEOGRAFIA', 'LRC'],
+  ['MI RITORNI IN MENTE BELLA COME SEI', 'CANZONI ITALIANE', 'NRTELMCI']
+];
+
+const out = {};
+for (const [phrase, category, revealed] of CASES) {
+  const res = board.createBoard(category, phrase);
+  if (!res.ok) throw new Error(`board.createBoard ha rifiutato "${phrase}": ${res.error}`);
+  for (const ch of revealed) board.revealLetter(res.board.grid, ch);
+  // stessa proiezione di boardView() in server.js
+  const grid = res.board.grid.map(row => row.map(cell =>
+    cell.type === 'letter'
+      ? { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? (cell.display || cell.letter) : null }
+      : { type: cell.type }));
+  out[phrase] = Object.assign(out[phrase] || {}, { [revealed || 'VUOTO']: grid });
+}
+
+const dest = path.join(__dirname, '..', 'public', 'js', 'dev', 'boards.generated.js');
+fs.writeFileSync(dest,
+  '// GENERATO da scripts/gen-fixtures.js — non modificare a mano.\n' +
+  '// Le griglie vengono da board.js, lo stesso modulo del server.\n' +
+  'export const GRIDS = ' + JSON.stringify(out, null, 1) + ';\n');
+console.log('scritto', dest, Object.keys(out).length, 'frasi');

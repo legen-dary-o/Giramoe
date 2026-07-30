@@ -26,7 +26,12 @@ try {
 }
 window.addEventListener('resize', () => { if (home) home.resize(); if (stage) stage.resize(); });
 
-const socket = io();
+// In sviluppo, `?mock=<id>` sostituisce la socket con una finta che rigioca i
+// payload d'esempio (public/js/dev/mock.js, servito solo fuori produzione).
+// Due await: uno per l'import dinamico, uno per installMock che è async.
+const socket = new URLSearchParams(location.search).has('mock')
+  ? await (await import('./dev/mock.js')).installMock('tv')
+  : io();
 let wheel = null;
 let started = false;
 let currentPhase = 'video'; // il server chiama ancora 'video' la fase pre-lobby
