@@ -495,6 +495,15 @@
   text-transform: uppercase;
   color: rgba(245, 245, 247, 0.42);
 }
+/* Il nome del finalista accanto alla sua etichetta, in barra alta (1h) */
+.tb-strong {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(16 * var(--u));
+  letter-spacing: calc(2 * var(--u));
+  text-transform: uppercase;
+  color: var(--ink);
+}
 .tb-pips { display: flex; align-items: center; gap: calc(7 * var(--u)); }
 .tb-pips span {
   width: calc(26 * var(--u));
@@ -1289,41 +1298,215 @@
 /* `.standings` / `.standing-row` erano qui: la classifica del finalista la
    disegna roundscenes.js sul canvas, in DOM non esiste nessun elemento. */
 
-/* === FINAL GAME === */
+/* === 1h · GIOCO FINALE ===
+   Gioca uno solo, quindi niente barra dei giocatori: il posto va al timer, che
+   e' la vera posta in gioco. Tre colonne fra la barra alta e il fondo. */
 
-.final-top {
+.fin-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(88 * var(--u));
+  bottom: 0;
+  display: flex;
+  gap: calc(56 * var(--u));
+  padding: calc(52 * var(--u)) calc(56 * var(--u)) calc(56 * var(--u));
+}
+
+.fin-left {
+  flex: none;
+  width: calc(400 * var(--u));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.fin-clock { display: flex; flex-direction: column; gap: calc(10 * var(--u)); }
+.fin-container .lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(4 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.fin-clock .lab { letter-spacing: calc(5 * var(--u)); }
+.fin-time { display: flex; align-items: baseline; gap: calc(14 * var(--u)); }
+.fin-time b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(230 * var(--u));
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+  /* Senza le cifre tabulari il numero cambia larghezza a ogni secondo e a
+     quel corpo il salto si vede da tutta la stanza. */
+  font-variant-numeric: tabular-nums;
+}
+.fin-time span {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(26 * var(--u));
+  color: var(--ink-faint);
+}
+.fin-bar {
+  margin-top: calc(10 * var(--u));
+  height: calc(6 * var(--u));
+  border-radius: calc(3 * var(--u));
+  background: rgba(255, 255, 255, 0.10);
+  overflow: hidden;
+}
+.fin-bar i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  box-shadow: 0 0 calc(16 * var(--u)) rgba(48, 184, 255, 0.7);
+  transition: width 0.25s linear;
+}
+.fin-note {
+  margin-top: calc(12 * var(--u));
+  font-family: var(--font-mono);
+  font-size: calc(14 * var(--u));
+  color: var(--ink-faint);
+}
+/* Sotto i 10 secondi: stesso trattamento di prima (.final-timer.low) */
+.fin-clock.is-low .fin-time b { color: var(--accent); animation: waitPulse 0.7s ease-in-out infinite; }
+
+.fin-letters { display: flex; flex-direction: column; gap: calc(16 * var(--u)); }
+.fin-letters .cap {
+  font-family: var(--font-mono);
+  font-size: calc(13 * var(--u));
+  color: rgba(245, 245, 247, 0.38);
+}
+.tile-row { display: flex; flex-wrap: wrap; gap: calc(10 * var(--u)); }
+.tile {
+  width: calc(62 * var(--u));
+  height: calc(62 * var(--u));
+  border-radius: calc(12 * var(--u));
   display: flex;
   align-items: center;
-  gap: clamp(12px, 2vw, 28px);
   justify-content: center;
-}
-.final-timer {
   font-family: var(--font-mono);
-  min-width: clamp(64px, 8vh, 96px);
-  padding: clamp(6px, 1vh, 12px) clamp(14px, 2vw, 22px);
-  border-radius: var(--r-md);
-  font-size: clamp(26px, 5vh, 48px);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  color: var(--ink);
+  font-size: calc(28 * var(--u));
 }
-.final-timer.low { color: var(--accent); border-color: rgba(48, 184, 255, 0.5); animation: waitPulse 0.7s ease-in-out infinite; }
+.tile.is-given { background: rgba(255, 255, 255, 0.9); color: #000; }
+.tile.is-pick {
+  background: rgba(48, 184, 255, 0.14);
+  border: 1px solid rgba(48, 184, 255, 0.6);
+  color: var(--accent);
+}
+/* La vocale e' una sola e si compra a parte: bordo tratteggiato per dirlo
+   senza scrivercelo sopra. */
+.tile.is-vowel {
+  background: rgba(48, 184, 255, 0.06);
+  border: 1px dashed rgba(48, 184, 255, 0.5);
+  color: var(--accent);
+}
+/* Il posto ancora da riempire: stessa misura, cosi' la fila non salta quando
+   arriva la lettera. */
+.tile.is-empty { border: 1px dashed rgba(255, 255, 255, 0.14); }
 
-/* `.final-results` / `.final-result-box` erano qui: nessun HTML e nessun JS le
-   genera. L'esito dei tre tabelloni del gioco finale oggi non ha un riquadro. */
-
-/* Targa "Tabellone 1/3": la usa ancora solo il gioco finale (#final-board-tag).
-   Il Triplete non ce l'ha piu': il numero sta nei pip della barra alta. */
-.triplete-tag {
-  font-family: var(--font-mono);
-  padding: clamp(5px, 0.9vh, 9px) clamp(16px, 2.4vw, 28px);
-  font-weight: 600;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  font-size: clamp(11px, 1.6vh, 15px);
-  color: var(--ink-soft);
+.fin-board {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(40 * var(--u));
+}
+#final-screen .cat-spaced { gap: calc(26 * var(--u)); }
+#final-screen .cat-spaced .hair { width: calc(110 * var(--u)); }
+#final-screen .cat-spaced span:nth-child(2) {
+  font-size: calc(30 * var(--u));
+  letter-spacing: calc(9 * var(--u));
+}
+#final-screen .board-grid {
+  width: calc(1040 * var(--u));
+  gap: calc(8 * var(--u));
+  font-size: calc(42 * var(--u));
+}
+.fin-pill {
+  display: flex;
+  align-items: center;
+  gap: calc(22 * var(--u));
+  padding: calc(15 * var(--u)) calc(32 * var(--u));
   border-radius: 999px;
+  background: rgba(48, 184, 255, 0.10);
+  border: 1px solid rgba(48, 184, 255, 0.45);
+}
+.fin-pill .dot {
+  width: calc(9 * var(--u));
+  height: calc(9 * var(--u));
+  border-radius: 50%;
+  background: var(--accent);
+  animation: liveBlink 1.4s ease-in-out infinite;
+}
+.fin-pill span:last-child {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(16 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+}
+
+.fin-boards {
+  flex: none;
+  width: calc(252 * var(--u));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: calc(20 * var(--u));
+}
+.fin-cards { display: flex; flex-direction: column; gap: calc(20 * var(--u)); }
+.fin-card {
+  display: flex;
+  align-items: center;
+  gap: calc(16 * var(--u));
+  padding: calc(20 * var(--u)) calc(22 * var(--u));
+  border-radius: calc(16 * var(--u));
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.fin-card b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(36 * var(--u));
+  line-height: 1;
+  color: rgba(245, 245, 247, 0.32);
+}
+.fin-card div { display: flex; flex-direction: column; gap: calc(4 * var(--u)); }
+.fin-card .stato {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(2 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.fin-card .dett {
+  font-family: var(--font-mono);
+  font-size: calc(11 * var(--u));
+  color: rgba(245, 245, 247, 0.34);
+}
+.fin-card.is-now {
+  background: rgba(48, 184, 255, 0.10);
+  border-color: rgba(48, 184, 255, 0.65);
+}
+.fin-card.is-now b, .fin-card.is-now .stato { color: var(--accent); }
+.fin-card.is-now .dett { color: rgba(245, 245, 247, 0.5); }
+/* Risolto e perso: il colore fa da esito, come per le buste. Il perso resta
+   bianco spento — il magenta qui direbbe "penalita'", che e' un'altra cosa. */
+.fin-card.is-won b { color: var(--accent); }
+.fin-card.is-lost b { color: rgba(245, 245, 247, 0.55); }
+
+.fin-foot {
+  margin-top: calc(14 * var(--u));
+  padding-top: calc(22 * var(--u));
+  border-top: 1px solid var(--hairline);
+  font: 400 calc(13 * var(--u)) / 1.6 -apple-system, sans-serif;
+  color: rgba(245, 245, 247, 0.45);
+  text-wrap: pretty;
 }
 
 /* === 1e · IL TRIPLETE ===

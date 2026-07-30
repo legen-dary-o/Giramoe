@@ -167,9 +167,16 @@ const TV = {
     ['main:state', { phase: 'final' }],
     ['main:finalBoard', {
       category: 'CANZONI ITALIANE', boardIndex: 0, totalBoards: 3,
+      finalist: 'Marco', state: 'RUNNING',
+      given: ['N', 'R', 'T', 'E'],
+      picks: [
+        { letter: 'L', present: true }, { letter: 'M', present: true },
+        { letter: 'C', present: true }, { letter: 'I', present: true }
+      ],
+      results: [null, null, null],
       grid: GRIDS[CANZONI].NRTELMCI
     }],
-    ['main:finalTimer', { ms: 42000 }]
+    ['main:finalTimer', { ms: 42000, total: 60000 }]
   ],
 
   // 1j · buste: la prima verde aperta, una rossa, una verde scambiabile

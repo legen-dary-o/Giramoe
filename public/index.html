@@ -197,13 +197,35 @@
 
   <!-- Final game -->
   <div id="final-screen" class="screen hidden">
-    <div class="game-container">
-      <div class="final-top">
-        <div class="category-banner glass-panel" id="final-category"></div>
-        <div class="final-timer glass-panel" id="final-timer">60</div>
+    <header class="tv-topbar" id="final-topbar"></header>
+    <div class="fin-container">
+      <aside class="fin-left">
+        <div class="fin-clock">
+          <span class="lab">Tempo rimasto</span>
+          <div class="fin-time"><b id="final-timer">60</b><span>s</span></div>
+          <div class="fin-bar"><i id="final-bar"></i></div>
+          <span class="fin-note">Un solo timer per i tre tabelloni</span>
+        </div>
+        <div class="fin-letters">
+          <span class="lab">Lettere in gioco</span>
+          <div class="tile-row" id="fin-given"></div>
+          <span class="cap" id="fin-given-cap">Regalate dal tabellone</span>
+          <div class="tile-row" id="fin-picks"></div>
+          <span class="cap" id="fin-picks-cap">Scelte dal finalista &mdash; 3 consonanti + 1 vocale</span>
+        </div>
+      </aside>
+      <div class="fin-board">
+        <div class="cat-spaced">
+          <span class="hair"></span><span id="final-category"></span><span class="hair"></span>
+        </div>
+        <div class="board-grid" id="final-board-grid"></div>
+        <div class="fin-pill"><span class="dot"></span><span id="fin-pill-text"></span></div>
       </div>
-      <div class="triplete-tag glass-panel" id="final-board-tag">Tabellone 1/3</div>
-      <div class="board-grid" id="final-board-grid"></div>
+      <aside class="fin-boards">
+        <span class="lab">Tabelloni</span>
+        <div class="fin-cards" id="fin-cards"></div>
+        <p class="fin-foot">Ogni tabellone risolto colora una busta. Il tempo si trasporta.</p>
+      </aside>
     </div>
   </div>
 

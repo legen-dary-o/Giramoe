@@ -35,6 +35,7 @@ export const num = (v) =>
 //   board     { number, total, label, pips } → etichetta + pip + contatore 01/03
 //             label default 'Tabellone'; pips: false li toglie (la 1f scrive solo "Fase 03")
 //   right     stringa libera al posto di board
+//   strong    valore in evidenza dopo `right` (la 1h: "Finalista" + MARCO)
 //   live      false per nascondere "● Live"
 export function renderTopBar(host, opts = {}) {
   const { phase = 1, compact = false, accent = 'accent', board, right, live = true } = opts;
@@ -83,6 +84,7 @@ export function renderTopBar(host, opts = {}) {
   } else if (right) {
     rightSide.append(el('span', 'tb-lab', right));
   }
+  if (opts.strong) rightSide.append(el('span', 'tb-strong', opts.strong));
   if (live) {
     if (rightSide.childNodes.length) rightSide.append(el('span', 'tb-div'));
     const l = el('span', 'tb-live');

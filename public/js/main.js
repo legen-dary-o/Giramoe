@@ -330,15 +330,85 @@ socket.on('main:finalBoard', (b) => {
   currentPhase = 'final';
   hideBuzz();
   document.getElementById('final-category').textContent = b.category;
-  document.getElementById('final-board-tag').textContent = `Tabellone ${b.boardIndex + 1}/${b.totalBoards}`;
+  renderTopBar(document.getElementById('final-topbar'), {
+    left: 'Fase 05 · Gioco finale', leftTone: 'dim',
+    right: 'Finalista', strong: b.finalist
+  });
+  applyFinalBoard(b);
   renderFinalBoard(b.grid);
   applyPhaseScreen();
 });
 
-socket.on('main:finalTimer', ({ ms }) => {
-  const el = document.getElementById('final-timer');
-  el.textContent = Math.ceil(ms / 1000);
-  el.classList.toggle('low', ms <= 10000);
+// Le cinque vocali, scritte qui e non importate da board.js: quel modulo tira
+// dentro tutto il generatore di tabelloni per rispondere a una domanda da una
+// riga, e sulla TV non serve nient'altro di suo.
+const VOCALI = 'AEIOU';
+
+// Le tessere delle lettere: `kind` decide solo il vestito, il contenuto è la
+// lettera. `empty` è un posto ancora libero, non una lettera vuota.
+function renderTiles(host, items) {
+  host.innerHTML = '';
+  items.forEach((it) => {
+    const el = document.createElement('span');
+    el.className = 'tile is-' + it.kind;
+    if (it.letter) el.textContent = it.letter;
+    host.appendChild(el);
+  });
+}
+
+const FINAL_DETAILS = ['N R T E + 4', 'prima e ultima', 'vuoto · −3s'];
+
+function renderFinalCards(boardIndex, results) {
+  const host = document.getElementById('fin-cards');
+  host.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const done = i < boardIndex;
+    const stato = done ? (results[i] ? 'Risolto' : 'Perso')
+      : i === boardIndex ? 'In corso' : 'Da giocare';
+    const card = document.createElement('div');
+    card.className = 'fin-card'
+      + (i === boardIndex ? ' is-now' : done ? (results[i] ? ' is-won' : ' is-lost') : '');
+    const n = document.createElement('b');
+    n.textContent = '0' + (i + 1);
+    const info = document.createElement('div');
+    const s = document.createElement('span');
+    s.className = 'stato';
+    s.textContent = stato;
+    const d = document.createElement('span');
+    d.className = 'dett';
+    d.textContent = FINAL_DETAILS[i];
+    info.append(s, d);
+    card.append(n, info);
+    host.appendChild(card);
+  }
+}
+
+const FINAL_PILL = {
+  PICKING: 'Scegli 3 consonanti e 1 vocale',
+  RUNNING: 'Prenotati per rispondere',
+  BUZZED: 'Risposta in corso'
+};
+
+function applyFinalBoard(b) {
+  renderTiles(document.getElementById('fin-given'),
+    (b.given || []).map(l => ({ letter: l, kind: 'given' })));
+  // Quattro posti fissi sul tabellone 1: i buchi si vedono, così si capisce
+  // quante scelte restano senza doverle contare.
+  const picks = (b.picks || []).map(p => ({
+    letter: p.letter,
+    kind: p.present ? (VOCALI.includes(p.letter) ? 'vowel' : 'pick') : 'wrong'
+  }));
+  while (picks.length < 4) picks.push({ kind: 'empty' });
+  renderTiles(document.getElementById('fin-picks'), picks);
+  renderFinalCards(b.boardIndex, b.results || []);
+  document.getElementById('fin-pill-text').textContent = FINAL_PILL[b.state] || '';
+}
+
+socket.on('main:finalTimer', ({ ms, total }) => {
+  document.getElementById('final-timer').textContent = Math.ceil(ms / 1000);
+  const quota = total ? Math.max(0, Math.min(1, ms / total)) : 1;
+  document.getElementById('final-bar').style.width = (quota * 100).toFixed(1) + '%';
+  document.querySelector('#final-screen .fin-clock').classList.toggle('is-low', ms <= 10000);
 });
 
 socket.on('main:finalReveal', ({ positions }) => {
