@@ -542,18 +542,24 @@ function playerGiramoeView(i) {
   const isMyTurn = gi.currentTurnIndex === i;
   const finished = giramoe.consonantsFinished(gi);
   const canCall = isMyTurn && gi.state === 'PLAYING' && !gi.calledThisTurn && !finished;
+  // Una sola mossa per turno: o consonante o vocale comprata a 500.
+  const canBuyVowel = giramoe.canBuyVowel(gi, i);
   // Once every consonant is out, the current player can buzz straight away.
   const canBuzz = isMyTurn && gi.state === 'PLAYING' && (gi.calledThisTurn || finished);
   let message;
   if (gi.state === 'AWAIT_SPIN') message = 'L\'admin sta per girare la ruota…';
   else if (gi.state === 'BUZZED') message = gi.buzzedBy === i ? 'Di\' la soluzione!' : `${gi.players[gi.buzzedBy].name} risponde…`;
   else if (!isMyTurn) message = `Turno di ${gi.players[gi.currentTurnIndex].name}`;
-  else if (finished) message = 'Consonanti finite: prenotati e risolvi!';
-  else if (canCall) message = 'Tocca a te: chiama una consonante';
+  else if (finished) message = canBuyVowel
+    ? 'Consonanti finite: compra una vocale o prenotati'
+    : 'Consonanti finite: prenotati e risolvi!';
+  else if (canCall) message = canBuyVowel
+    ? 'Tocca a te: chiama una consonante o compra una vocale'
+    : 'Tocca a te: chiama una consonante';
   else if (canBuzz) message = 'Prenotati e risolvi, o passa';
   else message = '';
   return {
-    isMyTurn, state: gi.state, canCall, canBuzz,
+    isMyTurn, state: gi.state, canCall, canBuyVowel, canBuzz,
     buzzedByMe: gi.buzzedBy === i,
     points: gi.players[i].points,
     multiplier: gi.multiplier,
@@ -936,6 +942,24 @@ io.on('connection', (socket) => {
       startGiramoeBuzzWindow();
     } else {
       // Absent consonant: no buzz window — the turn already passed to the next player.
+      clearGiramoeTimer();
+      io.to('main').emit('main:wrong');
+    }
+    broadcastGiramoe();
+  });
+
+  // Il giocatore di turno compra una vocale (500) invece di chiamare una consonante.
+  socket.on('player:giramoeVowel', ({ letter }) => {
+    if (state.phase !== 'giramoe' || !state.gi) return;
+    if (socket.playerIndex !== state.gi.currentTurnIndex) return;
+    const res = giramoe.buyVowel(state.gi, letter);
+    if (!res.ok) return;
+    io.to('main').emit('main:letterCalled', { letter: String(letter).toUpperCase() });
+    if (res.present) {
+      io.to('main').emit('main:revealLetter', { positions: res.positions });
+      startGiramoeBuzzWindow();
+    } else {
+      // Vocale assente: niente finestra, il turno è già passato al giocatore dopo.
       clearGiramoeTimer();
       io.to('main').emit('main:wrong');
     }

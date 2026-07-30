@@ -111,13 +111,18 @@ const SAMIRO_FAQ = [
   // --- Fase 4: Giramoe ---
   {
     q: 'Come funziona la fase Giramoe?',
-    a: 'L’admin (Moe) gira una ruota che ha solo punteggi: il valore ottenuto diventa il moltiplicatore. Poi i giocatori a turno chiamano una consonante ciascuno; ogni consonante presente vale quel moltiplicatore × le sue occorrenze. Non si comprano vocali.',
+    a: 'L’admin (Moe) gira una ruota che ha solo punteggi: il valore ottenuto diventa il moltiplicatore. Poi i giocatori a turno fanno una sola mossa ciascuno: chiamano una consonante — ogni consonante presente vale quel moltiplicatore × le sue occorrenze — oppure comprano una vocale a 500 punti. Comprare la vocale esclude la consonante per quel turno, e viceversa.',
     k: ['giramoe', 'quarta fase', 'moltiplicatore', 'moe', 'come funziona giramoe', 'fase quattro']
   },
   {
     q: 'In Giramoe come ci si prenota per rispondere?',
-    a: 'Dopo aver chiamato una consonante presente hai pochi secondi (5) per prenotarti e dire la frase. Se la consonante è assente, niente prenotazione e passi il turno.',
+    a: 'Dopo aver chiamato una consonante presente o comprato una vocale presente hai pochi secondi (5) per prenotarti e dire la frase. Se la lettera è assente niente prenotazione e passi il turno. Quando tutte le consonanti sono state rivelate ti puoi prenotare subito, senza chiamare né comprare nulla.',
     k: ['giramoe prenotarsi', 'giramoe 5 secondi', 'giramoe rispondere', 'prenotarsi giramoe', 'secondi giramoe']
+  },
+  {
+    q: 'In Giramoe si possono comprare le vocali?',
+    a: 'Sì, costano 500 punti come sempre, scalati dai punti che hai già accumulato nel Giramoe nei turni precedenti. Comprare la vocale è tutta la tua mossa del turno: nello stesso turno non puoi anche chiamare una consonante, e ne compri una sola. La vocale viene solo rivelata e non dà punti, ma apre la prenotazione. Se non è nel tabellone i 500 sono persi e passi il turno — e quella vocale resta comprabile da chiunque, come le consonanti assenti.',
+    k: ['giramoe vocali', 'comprare vocale giramoe', 'vocale giramoe', 'giramoe 500', 'più vocali giramoe', 'due vocali giramoe']
   },
   {
     q: 'In Giramoe chi incassa i punti?',

@@ -182,6 +182,26 @@ function buildGiramoeKeyboard() {
     b.addEventListener('click', () => socket.emit('player:giramoeLetter', { letter }));
     kb.appendChild(b);
   });
+
+  const vp = document.getElementById('gi-vowel-picker');
+  vp.innerHTML = '';
+  VOWELS.forEach(letter => {
+    const b = document.createElement('button');
+    b.className = 'key vowel';
+    b.textContent = letter;
+    b.dataset.letter = letter;
+    b.addEventListener('click', () => {
+      socket.emit('player:giramoeVowel', { letter });
+      vp.classList.add('hidden');
+    });
+    vp.appendChild(b);
+  });
+
+  document.getElementById('btn-gi-vowel').addEventListener('click', () => {
+    vp.classList.toggle('hidden');
+    // Sui telefoni bassi il picker sta sotto la piega: portalo in vista.
+    if (!vp.classList.contains('hidden')) vp.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
 }
 
 function applyGiramoeState(st) {
@@ -194,6 +214,13 @@ function applyGiramoeState(st) {
   kb.classList.toggle('disabled', !st.canCall);
   document.querySelectorAll('#gi-keyboard .key').forEach(b => {
     b.disabled = !st.canCall || st.usedLetters.includes(b.dataset.letter);
+  });
+  const vowelBtn = document.getElementById('btn-gi-vowel');
+  const vp = document.getElementById('gi-vowel-picker');
+  vowelBtn.disabled = !st.canBuyVowel;
+  if (!st.canBuyVowel) vp.classList.add('hidden');
+  document.querySelectorAll('#gi-vowel-picker .key').forEach(b => {
+    b.disabled = st.usedLetters.includes(b.dataset.letter);
   });
   const buzz = document.getElementById('btn-gi-buzz');
   buzz.disabled = !st.canBuzz;

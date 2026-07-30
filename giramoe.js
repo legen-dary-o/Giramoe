@@ -1,7 +1,10 @@
 const board = require('./board');
 
+const VOWEL_COST = 500; // price of a vowel, same as in the other rounds
+
 // GIRAMOE — the final wheel board. The admin spins the wheel once for a multiplier
-// V; players then take turns calling ONE consonant each (no vowels). A present
+// V; players then take turns making ONE move each: call a consonant, or buy a
+// vowel for 500 of their giramoe points (reveal only, no points). A present
 // consonant scores V x occurrences for that player and opens a short window to buzz
 // and solve aloud; an absent consonant scores nothing and passes the turn (no buzz).
 // Only the player who solves banks their own points; everyone else banks nothing.
@@ -66,9 +69,50 @@ function callConsonant(gi, letter) {
   return { ok: true, present: false, count: 0, positions: [], passed: true };
 }
 
+// The current player buys a vowel with 500 of their giramoe points, in place of
+// calling a consonant. Present -> revealed (no points) and the buzz window opens,
+// exactly as after a present consonant. Absent -> the 500 are lost, no buzz, and
+// the turn passes.
+function buyVowel(gi, letter) {
+  letter = String(letter).toUpperCase();
+  if (!canBuyVowel(gi, gi.currentTurnIndex)) return { ok: false };
+  if (!board.isVowel(letter) || gi.usedLetters.includes(letter)) return { ok: false };
+
+  const p = currentPlayer(gi);
+  p.points -= VOWEL_COST;
+
+  const count = board.countOccurrences(gi.board.grid, letter);
+  if (count > 0) {
+    const positions = board.letterPositions(gi.board.grid, letter);
+    board.revealLetter(gi.board.grid, letter);
+    gi.usedLetters.push(letter);
+    gi.calledThisTurn = true; // turn's move spent: opens the buzz window
+    return { ok: true, present: true, count, positions };
+  }
+  // Absent vowel: NOT recorded, so it stays purchasable on later turns — same rule
+  // as an absent consonant called this round.
+  passTurn(gi);
+  return { ok: true, present: false, count: 0, positions: [], passed: true };
+}
+
 // Every consonant that appears in the phrase has been revealed -> nothing left to call.
 function consonantsFinished(gi) {
   return board.boardStatus(gi.board.grid).consonantsFinished;
+}
+
+// Every vowel that appears in the phrase has been revealed -> nothing left to buy.
+function vowelsFinished(gi) {
+  return board.boardStatus(gi.board.grid).vowelsFinished;
+}
+
+// The current player may buy a vowel in place of calling a consonant: only one move
+// per turn, so buying closes as soon as a letter has been called (and conversely,
+// callConsonant already rejects once calledThisTurn is true).
+function canBuyVowel(gi, playerIndex) {
+  if (gi.state !== 'PLAYING' || gi.calledThisTurn) return false;
+  if (playerIndex !== gi.currentTurnIndex) return false;
+  if (vowelsFinished(gi)) return false;
+  return gi.players[playerIndex].points >= VOWEL_COST;
 }
 
 // Only the current player may buzz, and normally only after they've called a present
@@ -117,6 +161,8 @@ function bankResult(gi, gamePlayers) {
 }
 
 module.exports = {
+  VOWEL_COST,
   createGiramoe, currentPlayer, setMultiplier, passTurn,
-  callConsonant, consonantsFinished, buzz, judgeCorrect, judgeWrong, timeout, bankResult
+  callConsonant, buyVowel, consonantsFinished, vowelsFinished, canBuyVowel,
+  buzz, judgeCorrect, judgeWrong, timeout, bankResult
 };
