@@ -223,7 +223,16 @@ html, body {
   opacity: 1;
   transition: opacity 0.45s ease;
 }
+/* `.hidden` deve nascondere qualunque elemento: senza questa regola generica
+   esisteva solo `.screen.hidden`, quindi ogni classList.add('hidden') su una
+   .admin-section non faceva niente e la console admin mostrava setup, pannello
+   live e azioni tutti insieme per tutto il Triplete e tutto il Giramoe. */
+.hidden { display: none; }
+
+/* Le .screen fanno eccezione: si dissolvono con l'opacità per il crossfade,
+   quindi restano nel flusso. Più specifico, quindi vince sulla regola sopra. */
 .screen.hidden {
+  display: flex;
   opacity: 0;
   pointer-events: none;
 }
