@@ -537,7 +537,9 @@ function envelopesView() {
     })),
     current: env.current,
     changesLeft: env.changesLeft,
-    state: env.state
+    state: env.state,
+    // Il nome in barra alta, come nel gioco finale: alle buste ci arriva uno solo.
+    finalist: state.finalistId != null ? state.g.players[state.finalistId].name : ''
   };
 }
 

@@ -833,6 +833,8 @@
 .buzz-window { display: none; }
 #game-screen.is-express .wheel-modules,
 #game-screen.is-giramoe .wheel-modules { display: none; }
+/* Nello spareggio resta solo lo spicchio: le lettere non si chiamano */
+#game-screen.is-tiebreak .wm-mod:not(.wm-mod--wedge) { display: none; }
 #game-screen.is-express .express-mod { display: block; }
 #game-screen.is-express .express-boxes { display: flex; }
 
@@ -1559,6 +1561,94 @@
   font: 400 calc(13 * var(--u)) / 1.6 -apple-system, sans-serif;
   color: rgba(245, 245, 247, 0.45);
   text-wrap: pretty;
+}
+
+/* === 1j · LE BUSTE ===
+   Le buste sono WebGL (public/js/fx/envelopes3d.js) e .webgl-stage nasconde
+   quelle del DOM: qui c'è solo la cornice — titolo, sottotitolo e barra bassa.
+   Rifare la busta in CSS scriverebbe regole che nessuno vede. */
+
+.env-head {
+  position: absolute;
+  top: calc(150 * var(--u));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(10 * var(--u));
+}
+.env-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(40 * var(--u));
+  letter-spacing: calc(14 * var(--u));
+  color: var(--ink-soft);
+}
+.env-sub {
+  font-family: var(--font-mono);
+  font-size: calc(15 * var(--u));
+  letter-spacing: calc(1 * var(--u));
+  color: var(--ink-faint);
+}
+#envelopes-screen .envelopes-row {
+  position: absolute;
+  top: calc(300 * var(--u));
+  left: 0;
+  right: 0;
+  height: calc(520 * var(--u));
+  align-items: flex-end;
+  gap: calc(58 * var(--u));
+}
+
+.env-foot {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(150 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 calc(56 * var(--u));
+  border-top: 1px solid var(--hairline);
+}
+.env-left { display: flex; align-items: center; gap: calc(34 * var(--u)); }
+.env-block { display: flex; flex-direction: column; gap: calc(9 * var(--u)); }
+.env-block .lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(10.5 * var(--u));
+  letter-spacing: calc(3.5 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.env-block b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(34 * var(--u));
+  line-height: 1;
+  color: var(--accent);
+}
+.env-div { width: 1px; height: calc(66 * var(--u)); background: var(--hairline); }
+/* Un tabellone risolto per pastiglia, nell'ordine in cui si sono giocati:
+   l'esito lo dice il colore, come sulle buste. */
+.env-pips { display: flex; gap: calc(10 * var(--u)); }
+.env-pips span {
+  width: calc(36 * var(--u));
+  height: calc(8 * var(--u));
+  border-radius: calc(4 * var(--u));
+  background: rgba(245, 245, 247, 0.35);
+}
+.env-pips span.is-won {
+  background: var(--accent);
+  box-shadow: 0 0 calc(14 * var(--u)) rgba(48, 184, 255, 0.7);
+}
+.env-note {
+  font-family: var(--font-mono);
+  font-size: calc(13 * var(--u));
+  letter-spacing: calc(1 * var(--u));
+  color: rgba(245, 245, 247, 0.38);
 }
 
 /* === 1e · IL TRIPLETE ===

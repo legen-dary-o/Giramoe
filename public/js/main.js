@@ -138,6 +138,7 @@ socket.on('main:gameState', (g) => {
   };
   express.value(gameMeta.expressValue);
   setGiramoeSkin(false); // si gioca di nuovo a tabelloni: via i moduli del Giramoe
+  setTiebreakSkin(false);
   applyExpressState(g.expressActive, g.scores, g.currentTurn);
   renderBoard(g.board.grid);
   renderScores(g.scores, g.currentTurn);
@@ -306,8 +307,12 @@ socket.on('main:tiebreakStart', ({ segments, contenders }) => {
   setCategory('SPAREGGIO');
   setTurnPill(null);
   setExpressSkin(false);
-  setGiramoeSkin(false); // lo spareggio torna ai tre moduli della ruota
-  renderTopBar(document.getElementById('game-topbar'), { phase: 4, right: 'Spareggio' });
+  setGiramoeSkin(false);
+  setTiebreakSkin(true);
+  renderTopBar(document.getElementById('game-topbar'), {
+    left: 'Fase 04 · Spareggio', leftTone: 'accent',
+    right: 'Gira chi è in parità'
+  });
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear();
   updateBoardStatus(null);
@@ -321,6 +326,9 @@ socket.on('main:finalist', ({ name, standings }) => {
   const entering = currentPhase !== 'finalist'; // su riconnessione non si rigioca l'animazione
   currentPhase = 'finalist';
   document.getElementById('finalist-name').textContent = name;
+  renderTopBar(document.getElementById('finalist-topbar'), {
+    left: 'Fase 05 · Gioco finale', leftTone: 'dim', right: 'Finalista', strong: name
+  });
   showScreen('finalist-screen');
   if (entering) scenes.play('finalista', { name, standings });
 });
@@ -479,10 +487,29 @@ socket.on('main:envelopes', (view) => {
   const entering = currentPhase !== 'envelopes'; // solo la prima volta: poi sono aggiornamenti
   currentPhase = 'envelopes';
   hideBuzz();
+  renderTopBar(document.getElementById('envelopes-topbar'), {
+    left: 'Fase 06 · Le buste', leftTone: 'dim',
+    right: 'Finalista', strong: view.finalist
+  });
   renderEnvelopes(document.getElementById('envelopes-row'), view);
+  renderEnvelopeFoot(view);
   applyPhaseScreen();
   if (entering) scenes.play('buste');
 });
+
+// La barra bassa delle buste: gli esiti dei tre tabelloni e i cambi rimasti.
+// Gli esiti non hanno un campo loro, ma il colore delle buste è già quello —
+// una busta verde per ogni tabellone risolto.
+function renderEnvelopeFoot(view) {
+  const pips = document.getElementById('env-pips');
+  pips.innerHTML = '';
+  view.envelopes.forEach((e) => {
+    const pip = document.createElement('span');
+    if (e.color === 'green') pip.className = 'is-won';
+    pips.appendChild(pip);
+  });
+  document.getElementById('env-changes').textContent = String(view.changesLeft);
+}
 
 // Render display-only delle 3 buste (la TV principale).
 function renderEnvelopes(row, view) {
@@ -748,6 +775,7 @@ socket.on('main:giramoeStart', ({ segments }) => {
   if (stage) stage.board.clear();
   updateBoardStatus(null);
   setExpressSkin(false); // dal round express si esce: via la pelle magenta
+  setTiebreakSkin(false);
   setGiramoeSkin(true);
   if (!entering) return applyPhaseScreen();
   showTitleCard('GIRAMOE');
@@ -793,6 +821,12 @@ socket.on('main:giramoeWindow', ({ ms, total, name }) => openBuzzWindow(ms, tota
 function setGiramoeSkin(on) {
   document.getElementById('game-screen').classList.toggle('is-giramoe', on);
   if (!on) closeBuzzWindow();
+}
+
+// Nello spareggio si gira e basta: nessuno chiama lettere, e i due moduli
+// Lettera/Occorrenze resterebbero vuoti per tutta la durata della schermata.
+function setTiebreakSkin(on) {
+  document.getElementById('game-screen').classList.toggle('is-tiebreak', on);
 }
 
 let windowTimer = null;

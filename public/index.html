@@ -186,8 +186,10 @@
     </div>
   </div>
 
-  <!-- Finalist Screen -->
+  <!-- Finalist Screen. Sopra ci gira l'animazione di round (roundscenes.js):
+       questa è la carta d'attesa che resta quando finisce. -->
   <div id="finalist-screen" class="screen hidden">
+    <header class="tv-topbar" id="finalist-topbar"></header>
     <div class="game-container">
       <h1 class="matchend-title">Finalista</h1>
       <div class="finalist-name" id="finalist-name"></div>
@@ -233,12 +235,29 @@
     </div>
   </div>
 
-  <!-- Envelopes -->
+  <!-- Envelopes. Le buste le disegna public/js/fx/envelopes3d.js: qui sotto
+       .envelopes-row è il ripiego senza WebGL, il resto è la cornice. -->
   <div id="envelopes-screen" class="screen hidden">
-    <div class="game-container">
-      <h1 class="matchend-title">Le buste</h1>
-      <div class="envelopes-row" id="envelopes-row"></div>
+    <header class="tv-topbar" id="envelopes-topbar"></header>
+    <div class="env-head">
+      <h1 class="env-title">LE BUSTE</h1>
+      <p class="env-sub">Il colore dice tutto</p>
     </div>
+    <div class="envelopes-row" id="envelopes-row"></div>
+    <footer class="env-foot">
+      <div class="env-left">
+        <div class="env-block">
+          <span class="lab">Esiti del gioco finale</span>
+          <div class="env-pips" id="env-pips"></div>
+        </div>
+        <span class="env-div"></span>
+        <div class="env-block">
+          <span class="lab">Cambi rimasti</span>
+          <b id="env-changes">0</b>
+        </div>
+      </div>
+      <p class="env-note">Il finalista pu&ograve; cambiarla alla cieca dal telefono</p>
+    </footer>
   </div>
 
   <!-- Animazioni di round (Triplete / Express / Giramoe / Finalista / Buste) -->

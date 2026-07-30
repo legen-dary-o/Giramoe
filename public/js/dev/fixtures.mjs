@@ -55,7 +55,8 @@ const ENVELOPES = {
   ],
   current: 0,
   changesLeft: 1,
-  state: 'CHOOSING'
+  state: 'OPENED',
+  finalist: 'Marco'
 };
 
 // ============================================================ TV (index.html)

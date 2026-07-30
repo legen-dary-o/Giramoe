@@ -3,9 +3,15 @@
 // avanza verso la camera, l'apertura alza il lembo e mostra il contenuto.
 // Mappa colori mono: green (vinta) → ciano, red → bianco spento.
 import * as THREE from '../../vendor/three.module.js';
-import { createHalftoneMaterial, addBarycentric, ACCENT_CSS } from './halftone.js';
+import { createHalftoneMaterial, addBarycentric, ACCENT_CSS, ACCENT } from './halftone.js';
 
 const W = 1.7, H = 1.15, D = 0.07;
+// Il colore dell'esito sui punti del corpo, non solo sul filo del bordo: il
+// bordo è un LineSegments da 1px, e `linewidth` in WebGL non fa niente su quasi
+// nessuna piattaforma. Da tre metri quel filo non esiste, e l'esito qui viene
+// comunicato solo dal colore.
+const TINT_WON = ACCENT.clone();
+const TINT_LOST = new THREE.Color(1, 1, 1);
 const X_SLOTS = [-2.4, 0, 2.4];
 // scritta: parte dentro la busta, sale a fermarsi sopra il bordo alto (niente sovrapposizione)
 const CONTENT_Y_IN = -H * 0.1;
@@ -37,6 +43,17 @@ export class Envelopes3D {
     );
     root.add(edges);
 
+    // Cornice colorata: un piano appena piu' grande del corpo, messo dietro, di
+    // cui si vede solo il margine. Il LineSegments qui sopra e' da 1px e
+    // `linewidth` in WebGL non fa niente su quasi nessuna piattaforma: da tre
+    // metri quel filo non c'e'. E qui l'esito lo dice solo il colore.
+    // L'alone del render non c'e': un piano additivo ha i bordi netti e si
+    // legge come un pannello dietro alla busta, non come una luce.
+    const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+    const frame = new THREE.Mesh(new THREE.PlaneGeometry(W + 0.05, H + 0.05), frameMat);
+    frame.position.z = -D / 2 - 0.004;
+    root.add(frame);
+
     // lembo triangolare incernierato sul bordo alto
     const flapShape = new THREE.Shape();
     flapShape.moveTo(-W / 2, 0); flapShape.lineTo(W / 2, 0); flapShape.lineTo(0, -H * 0.52); flapShape.closePath();
@@ -58,7 +75,7 @@ export class Envelopes3D {
     root.add(content);
 
     this.group.add(root);
-    return { root, bodyMat, flapMat, edges, hinge, content, num, flapOpen: 0, targetZ: 0, targetScale: 1, contentRise: 0, contentRiseTarget: 0 };
+    return { root, bodyMat, flapMat, edges, frameMat, hinge, content, num, flapOpen: 0, targetZ: 0, targetScale: 1, contentRise: 0, contentRiseTarget: 0 };
   }
 
   _textPlane(text, w, h, font, color) {
@@ -120,10 +137,18 @@ export class Envelopes3D {
         it.content.visible = true;
         this._drawText(it.content, e.content || (e.color === 'red' ? '✕' : ''));
       }
-      // bordo: rivelata green → ciano, red → bianco spento, corrente → bianco pieno
-      const edgeColor = e.revealed ? (e.color === 'green' ? ACCENT_CSS : '#9a9aa0') : '#ffffff';
-      it.edges.material.color.set(edgeColor);
-      it.edges.material.opacity = i === view.current || e.revealed ? 0.95 : 0.35;
+      // Bordo: green → ciano, red → bianco spento. Il colore si vede da subito,
+      // non solo dopo l'apertura: il finalista sceglie quale busta verde aprire,
+      // quindi quali lo sono è un'informazione pubblica, non una sorpresa. È
+      // anche l'unico modo in cui l'esito viene comunicato — niente scritte.
+      it.edges.material.color.set(e.color === 'green' ? ACCENT_CSS : '#9a9aa0');
+      it.edges.material.opacity = i === view.current || e.revealed ? 0.95 : 0.55;
+      // I punti restano bianchi come nel render: a portare il colore sono la
+      // cornice e l'alone. Il rosso e' bianco spento, non rosso: nel tema
+      // --red e' bianco, e il magenta significa penalita'.
+      const won = e.color === 'green';
+      it.frameMat.color.copy(won ? TINT_WON : TINT_LOST);
+      it.frameMat.opacity = (won ? 0.9 : 0.35) * (e.abandoned ? 0.3 : 1);
     });
   }
 
