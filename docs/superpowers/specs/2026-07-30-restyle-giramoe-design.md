@@ -185,6 +185,30 @@ sotto le ~600 righe.
 `public/js/admin.js` (368 righe) resta uno script classico, riorganizzato per sezioni: convertirlo
 a modulo ES è rischio senza guadagno.
 
+### Correzione dopo la slice 2: due pezzi del handoff non sono CSS
+
+Il handoff descrive il campo halftone e le celle del tabellone in CSS, e la spec li aveva presi
+alla lettera. In produzione sono due superfici WebGL, e scriverne la versione CSS avrebbe prodotto
+regole che non si vedono.
+
+- **Campo halftone.** Il tappeto di punti che copre il testo è `public/js/fx/dotfield.js`, un quad
+  a schermo intero con shader proprio, e porta anche le onde radiali su spin / risposta giusta /
+  risposta sbagliata. Il buco ellittico va **nello shader**, una maschera per schermata
+  (`DotField.setScreen(id)`, chiamata da `showScreen`). Un `.hf-field` in DOM sopra raddoppierebbe
+  i punti; spegnere lo shader porterebbe via le onde, che il committente ha chiesto di lasciare.
+- **Celle del tabellone.** Le disegna `public/js/fx/board3d.js`; sotto `.webgl-stage` le celle DOM
+  sono `visibility: hidden`. La distinzione fra cella chiusa (`#d8d8d9`, cioè
+  `rgba(245,245,247,.88)` su nero) e cella rivelata (bianco pieno) sta nei **materiali**. Il CSS
+  delle celle resta, ma vale solo come fallback quando WebGL non parte. Larghezza, gap e corpo
+  restano CSS: `board3d.js` posa le tessere sul rettangolo della griglia DOM.
+
+### Misure: palco logico 1920×1080
+
+Il handoff esprime tutto su 1920×1080, come `roundscenes.js`. `tv.css` definisce
+`--u: min(calc(100vw / 1920), calc(100vh / 1080))` — un pixel di quel palco — e le misure del
+handoff si scrivono `calc(N * var(--u))`. Niente `transform: scale()` su un contenitore: la ruota
+WebGL verrebbe scalata dopo il render e su una TV 4K uscirebbe sfocata.
+
 ### Server — solo campi di lettura
 
 Lo stato vive sul server e non cambia. I mockup mostrano dati che il server **ha già** ma non

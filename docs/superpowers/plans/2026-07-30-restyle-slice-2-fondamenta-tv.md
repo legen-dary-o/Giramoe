@@ -603,7 +603,7 @@ git commit -m "refactor(css): via i blocchi orfani (.standing-row, .final-result
 
 Non screenshot: il numero di righe confrontate e `identico` per le tre superfici.
 
-- [ ] **Step 2: Aspettare l'ok prima della Parte C**
+- [x] **Step 2: Aspettare l'ok prima della Parte C**
 
 ---
 
@@ -619,7 +619,7 @@ Qui cambia l'aspetto. Riferimento: `design_handoff_tv_screens/README.md` § Corn
 - Modify: `public/index.html` (markup della barra alta e bassa in `#game-screen`)
 - Modify: `public/css/tv.css`
 
-- [ ] **Step 1: Definire l'API, una sola funzione**
+- [x] **Step 1: Definire l'API, una sola funzione**
 
 ```js
 // public/js/tv/shell.js
@@ -651,7 +651,7 @@ export function renderPlayersBar(host, players, cols = ['Turno', 'Banca']) { /* 
 L'implementazione costruisce il DOM con `document.createElement` e le classi definite nello
 Step 2; i valori numerici vanno formattati `it-IT` (`(1400).toLocaleString('it-IT')` → `1.400`).
 
-- [ ] **Step 2: Il CSS della cornice**
+- [x] **Step 2: Il CSS della cornice**
 
 In `tv.css`, sostituendo la sezione `PLAYERS BAR` attuale. Valori dal handoff § Cornice comune:
 barra alta `height:88px`, `padding:0 56px`, `border-bottom:1px solid rgba(255,255,255,.10)`,
@@ -676,23 +676,23 @@ Varianti: `.active` (`linear-gradient(180deg, rgba(48,184,255,.13), #16161a)`, b
 `rgba(255,255,255,.45)`, `box-shadow:0 0 44px rgba(255,255,255,.10)`);
 `.express` (come `.active` con `#f43f7f` / `rgba(244,63,127,.14)`).
 
-- [ ] **Step 3: Cablarla in `main.js` per la 1c**
+- [x] **Step 3: Cablarla in `main.js` per la 1c**
 
 Dove oggi `renderScores` riempie `#players-bar`, chiamare `renderPlayersBar`. Dove oggi non c'è
 niente, chiamare `renderTopBar` con `phase: 1` e `board: { number, total }` da `main:gameState`.
 
-- [ ] **Step 4: Verificare**
+- [x] **Step 4: Verificare**
 
 `http://localhost:3000/?mock=1c` a 1920×1080, confronto con
 `design_handoff_tv_screens/screenshots/1c-primo-gioco.png`: barra alta con `01 TABELLONI` attiva,
 i pip a `01/03`, `● Live`; barra bassa con Marco attivo `1.400` / `3.200`, Giulia `5.800`,
 Elia `2.100`.
 
-- [ ] **Step 5: Verificare che `#round-scene` resti sopra**
+- [x] **Step 5: Verificare che `#round-scene` resti sopra**
 
 `__scenes.play('triplete')` dalla console: la scena deve coprire barra alta e bassa.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add public/js/tv/shell.js public/index.html public/css/tv.css public/js/main.js
@@ -708,7 +708,7 @@ git commit -m "feat(tv): cornice comune, barra alta con le chip di fase e barra 
 - Modify: `public/index.html`
 - Modify: `public/js/main.js`
 
-- [ ] **Step 1: Il campo halftone**
+- [x] **Step 1: Il campo halftone**
 
 È il problema dichiarato dal committente: oggi il tappeto di punti passa dietro al testo. Nuova
 regola, da `tv.css`:
@@ -741,7 +741,7 @@ regola, da `tv.css`:
 E un `<div class="hf-field" aria-hidden="true"></div>` come primo figlio di `#lobby-screen`,
 `#game-screen`, `#triplete-screen`, `#final-screen`, `#envelopes-screen`.
 
-- [ ] **Step 2: Le celle del tabellone**
+- [x] **Step 2: Le celle del tabellone**
 
 Struttura logica invariata (4×16, capienze `[14,16,16,14]`, `edge`/`blocked`/`letter` da
 `board.js`): cambia solo la resa. In `tv.css`, sostituendo la sezione `BOARD`:
@@ -768,7 +768,7 @@ Le larghezze e i font per schermata (`1e` 1280/8/50, `1h` 1040/8/42) si applican
 `#triplete-screen .board-grid { width:1280px; gap:8px }` ecc., ognuna nella slice che costruisce
 quella schermata; qui basta la variante `1c`.
 
-- [ ] **Step 3: La categoria**
+- [x] **Step 3: La categoria**
 
 Sostituisce `.category-banner` a pillola. Due varianti; qui serve la (a):
 
@@ -780,12 +780,12 @@ Sostituisce `.category-banner` a pillola. Due varianti; qui serve la (a):
 .category .name { font: 800 46px/1 'Syne', sans-serif; letter-spacing: -.02em; }
 ```
 
-- [ ] **Step 4: Verificare**
+- [x] **Step 4: Verificare**
 
 `?mock=1c`: nessun punto halftone dietro categoria, tabellone o barre; celle bianche col rilievo,
 `blocked` in petrolio, `edge` invisibili; categoria `PROVERBI` in Syne 800 46px a sinistra.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add public/css/tv.css public/index.html public/js/main.js
@@ -802,7 +802,7 @@ git commit -m "feat(tv): campo halftone col buco al centro, celle e categoria nu
 - Modify: `public/css/tv.css`
 - Modify: `public/js/main.js`
 
-- [ ] **Step 1: Il markup**
+- [x] **Step 1: Il markup**
 
 Sotto la ruota, in `#game-screen`:
 
@@ -814,7 +814,7 @@ Sotto la ruota, in `#game-screen`:
       </div>
 ```
 
-- [ ] **Step 2: Il CSS**
+- [x] **Step 2: Il CSS**
 
 ```css
 .wheel-modules { display: flex; gap: 12px; }
@@ -831,7 +831,7 @@ Sotto la ruota, in `#game-screen`:
 .wm-mod.is-empty b { color: rgba(245,245,247,.22); }
 ```
 
-- [ ] **Step 3: La logica dei 3,5s**
+- [x] **Step 3: La logica dei 3,5s**
 
 ```js
 // public/js/tv/callout.js
@@ -890,7 +890,7 @@ export function reset() {
 }
 ```
 
-- [ ] **Step 4: Cablarlo in `main.js`**
+- [x] **Step 4: Cablarlo in `main.js`**
 
 Negli handler esistenti:
 
@@ -901,14 +901,14 @@ Negli handler esistenti:
 - `main:wrong` → `showOccurrences(0)`;
 - `main:gameState` quando cambia `currentTurn` → `reset()`.
 
-- [ ] **Step 5: Verificare i tre stati**
+- [x] **Step 5: Verificare i tre stati**
 
 1. `?mock=1c&freeze=letter` → `Spicchio 500`, `Lettera T`, `Occorrenze ×3`, confronto col render.
 2. `?mock=1c` → dopo 3,5s `Lettera` e `Occorrenze` tornano a `—`, `Spicchio` resta `500`.
 3. Dalla console con `?mock=1c`: `__mockSocket.deliver('main:wrong', {})` → `Occorrenze ×0`,
    e dopo 3,5s si svuota.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add public/js/tv/callout.js public/index.html public/css/tv.css public/js/main.js
@@ -919,7 +919,7 @@ git commit -m "feat(tv): moduli spicchio/lettera/occorrenze, i due transitori a 
 
 ## Task C4: Consegna della slice 2
 
-- [ ] **Step 1: Test di logica**
+- [x] **Step 1: Test di logica**
 
 ```bash
 node --test --test-concurrency=1 tests/board.test.js tests/boardlayout.test.js tests/game.test.js tests/triplete.test.js tests/giramoe.test.js tests/finalist.test.js tests/finalgame.test.js tests/envelopes.test.js tests/lobby.test.js tests/wheelgeom.test.js
@@ -927,11 +927,11 @@ node --test --test-concurrency=1 tests/board.test.js tests/boardlayout.test.js t
 
 Atteso: 121 PASS. Questa slice non tocca la logica.
 
-- [ ] **Step 2: Screenshot di confronto**
+- [x] **Step 2: Screenshot di confronto**
 
 `?mock=1c&freeze=letter` a 1920×1080 accanto a `screenshots/1c-primo-gioco.png`.
 
-- [ ] **Step 3: Controllo reduced motion**
+- [x] **Step 3: Controllo reduced motion**
 
 Con reduced motion attivo: nessun glint, nessuna rotazione, nessun pulse; le barre e i moduli
 restano leggibili.
