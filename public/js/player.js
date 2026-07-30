@@ -203,31 +203,81 @@ socket.on('player:turnState', (st) => {
 });
 
 // --- Triplete ---
-socket.on('player:tripleteIntro', () => {
-  showScreen('player-triplete-screen');
-  document.getElementById('tr-nick').textContent = myName;
-});
+socket.on('player:tripleteIntro', () => showScreen('player-triplete-screen'));
 
 socket.on('player:tripleteState', (st) => applyTripleteState(st));
 
 document.getElementById('btn-buzz').addEventListener('click', () => socket.emit('player:tripleteBuzz'));
 
 function applyTripleteState(st) {
-  document.getElementById('tr-points').textContent = st.points;
-  document.getElementById('tr-board').textContent = `Tabellone ${st.boardNumber}/${st.totalBoards}`;
-  const msg = document.getElementById('tr-message');
-  msg.textContent = st.message;
-  msg.className = 'turn-message ' + (st.buzzedByMe ? 'your-turn' : (st.locked ? 'waiting' : ''));
+  PhoneShell.renderTopBar(document.getElementById('tr-topbar'), {
+    name: myName,
+    phase: `Il Triplete · ${pad2(st.boardNumber)}/${pad2(st.totalBoards)}`
+  });
+
+  // Da bloccato le schede e i pip non servono: il turno è finito comunque, e
+  // al loro posto va la lista di chi è ancora in gioco.
+  const stats = document.getElementById('tr-stats');
+  stats.hidden = st.locked;
+  if (!st.locked) {
+    PhoneShell.renderStats(stats, [
+      { lab: 'Triplete', value: st.points, tone: st.buzzedByMe ? 'accent' : null },
+      { lab: 'Banca', value: st.bank }
+    ]);
+  }
+
+  PhoneShell.renderBanner(document.getElementById('tr-banner'), st.locked
+    ? { text: 'Frase sbagliata — sei bloccato', tone: 'negative' }
+    : st.buzzedByMe ? { text: st.message, tone: 'accent' } : {});
+
+  const say = document.getElementById('tr-say');
+  say.hidden = st.buzzedByMe;
+  say.textContent = st.locked
+    ? 'Torni in gioco quando anche gli altri hanno sbagliato'
+    : 'Appena sai la frase, prenotati e dilla a voce';
+
   const btn = document.getElementById('btn-buzz');
   btn.disabled = !st.canBuzz;
   btn.classList.toggle('buzzed', st.buzzedByMe);
+  document.getElementById('bz-sub').textContent = st.locked ? 'Non disponibile'
+    : st.buzzedByMe ? 'Dilla a voce' : 'Tieni premuto per sicurezza';
+
+  const pips = document.getElementById('tr-pips');
+  pips.hidden = st.locked;
+  pips.innerHTML = '';
+  for (let i = 1; i <= st.totalBoards; i++) {
+    const pip = document.createElement('i');
+    if (i <= st.boardNumber) pip.className = 'is-done';
+    pips.append(pip);
+  }
+  document.getElementById('tr-note').hidden = st.locked;
+
+  const list = document.getElementById('tr-list');
+  list.hidden = !st.locked;
+  list.innerHTML = '';
+  (st.players || []).forEach(p => {
+    list.append(playerRow(p.name, p.locked ? 'Bloccato' : 'In gioco', p.locked));
+  });
+}
+
+// Riga nome + badge: la usano il Triplete bloccato e lo spareggio.
+function playerRow(name, badge, out) {
+  const row = document.createElement('div');
+  row.className = 'prow' + (out ? ' is-out' : '');
+  const n = document.createElement('span');
+  n.className = 'nome';
+  n.textContent = name;
+  const b = document.createElement('span');
+  b.className = 'badge';
+  b.textContent = badge;
+  row.append(n, b);
+  return row;
 }
 
 // --- Giramoe (final wheel board) ---
 let giKbBuilt = false;
 socket.on('player:giramoeIntro', () => {
   showScreen('player-giramoe-screen');
-  document.getElementById('gi-nick').textContent = myName;
   buildGiramoeKeyboard();
 });
 
@@ -264,44 +314,112 @@ function buildGiramoeKeyboard() {
   });
 
   document.getElementById('btn-gi-vowel').addEventListener('click', () => {
-    vp.classList.toggle('hidden');
+    const card = document.getElementById('gi-vowel-card');
+    card.classList.toggle('hidden');
     // Sui telefoni bassi il picker sta sotto la piega: portalo in vista.
-    if (!vp.classList.contains('hidden')) vp.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (!card.classList.contains('hidden')) card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
 }
 
 function applyGiramoeState(st) {
-  document.getElementById('gi-points').textContent = st.points;
-  document.getElementById('gi-mult').textContent = st.multiplier ? '×' + st.multiplier : '×—';
-  const msg = document.getElementById('gi-message');
-  msg.textContent = st.message;
-  msg.className = 'turn-message ' + (st.isMyTurn ? 'your-turn' : 'waiting');
+  PhoneShell.renderTopBar(document.getElementById('gi-topbar'), {
+    name: myName, phase: 'Giramoe', tone: 'accent'
+  });
+  PhoneShell.renderStats(document.getElementById('gi-stats'), [
+    { lab: 'Moltiplicatore', value: st.multiplier ? '×' + PhoneShell.num(st.multiplier) : '×—', tone: 'accent' },
+    { lab: 'Tuoi punti', value: st.points }
+  ]);
+  PhoneShell.renderBanner(document.getElementById('gi-banner'), {
+    text: st.canCall ? 'Una sola consonante' : st.message,
+    tone: st.isMyTurn ? 'accent' : null
+  });
+
   const kb = document.getElementById('gi-keyboard');
   kb.classList.toggle('disabled', !st.canCall);
   document.querySelectorAll('#gi-keyboard .key').forEach(b => {
     b.disabled = !st.canCall || st.usedLetters.includes(b.dataset.letter);
   });
+  // Nel Giramoe la vocale è una mossa alternativa alla consonante, non un extra
+  // sempre disponibile: quando non si può comprare il bottone sparisce invece di
+  // restare lì spento a occupare il posto del conto alla rovescia.
   const vowelBtn = document.getElementById('btn-gi-vowel');
-  const vp = document.getElementById('gi-vowel-picker');
+  vowelBtn.hidden = !st.canBuyVowel;
   vowelBtn.disabled = !st.canBuyVowel;
-  if (!st.canBuyVowel) vp.classList.add('hidden');
+  vowelBtn.classList.toggle('is-ghost', !st.canBuyVowel);
+  vowelBtn.classList.toggle('is-secondary', st.canBuyVowel);
+  if (!st.canBuyVowel) document.getElementById('gi-vowel-card').classList.add('hidden');
   document.querySelectorAll('#gi-vowel-picker .key').forEach(b => {
     b.disabled = st.usedLetters.includes(b.dataset.letter);
   });
+
   const buzz = document.getElementById('btn-gi-buzz');
   buzz.disabled = !st.canBuzz;
-  buzz.classList.toggle('armed', st.canBuzz);
+  buzz.classList.toggle('is-ghost', !st.canBuzz);
+  startGiramoeClock(st.canBuzz ? st.windowMs : 0, st.windowTotal);
+}
+
+// L'anello dei 5 secondi. Il server manda quanto resta (anche a chi si
+// riaggancia a finestra aperta), il telefono scala da solo: un evento al
+// decimo di secondo per tre telefoni sarebbe traffico per niente.
+let giClockTimer = null;
+function startGiramoeClock(ms, total) {
+  clearInterval(giClockTimer);
+  const box = document.getElementById('gi-clock');
+  if (!ms || !total) { box.hidden = true; return; }
+  box.hidden = false;
+  const until = Date.now() + ms;
+  const ring = document.getElementById('gi-ring');
+  const n = document.getElementById('gi-ring-n');
+  const tick = () => {
+    const left = Math.max(0, until - Date.now());
+    ring.style.setProperty('--deg', (left / total) * 360 + 'deg');
+    n.textContent = Math.ceil(left / 1000);
+    if (left <= 0) { clearInterval(giClockTimer); box.hidden = true; }
+  };
+  tick();
+  giClockTimer = setInterval(tick, 100);
 }
 
 // --- Tie-break + finalist ---
-document.getElementById('btn-tb-spin').addEventListener('click', () => socket.emit('player:tiebreakSpin'));
+document.getElementById('btn-tb-spin').addEventListener('click', (e) => {
+  socket.emit('player:tiebreakSpin');
+  // Il server ignora un secondo giro, ma il bottone deve dirlo subito: lo
+  // stato nuovo arriva solo a fine animazione, sei secondi dopo.
+  e.currentTarget.disabled = true;
+  e.currentTarget.classList.add('is-ghost');
+});
 
+let tbWheel = null;
 socket.on('player:tiebreakState', (st) => {
   showScreen('player-tiebreak-screen');
-  document.getElementById('tb-message').textContent = st.message;
+  if (!tbWheel) {
+    tbWheel = new Wheel(document.getElementById('tb-wheel-canvas'),
+      { segments: (st.segments || []).length || 16, labels: st.segments || [], showLabels: true });
+    window.addEventListener('resize', () => tbWheel.resize());
+  }
+
+  const list = document.getElementById('tb-list');
+  list.innerHTML = '';
+  (st.contenders || []).forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'prow';
+    const n = document.createElement('span');
+    n.className = 'nome';
+    n.textContent = c.name;
+    const v = document.createElement('span');
+    v.className = 'valore' + (c.value == null ? ' is-empty' : '');
+    v.textContent = c.value == null ? '—' : PhoneShell.num(c.value);
+    row.append(n, v);
+    list.append(row);
+  });
+
   const btn = document.getElementById('btn-tb-spin');
   btn.disabled = !st.canSpin;
-  btn.classList.toggle('armed', st.canSpin);
+  btn.classList.toggle('is-ghost', !st.canSpin);
+});
+
+socket.on('player:tiebreakSpinResult', ({ winningSegment, spins }) => {
+  if (tbWheel) tbWheel.spinTo(winningSegment, spins, 6000);
 });
 
 socket.on('player:finalist', ({ name, isMe }) => {

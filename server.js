@@ -244,8 +244,12 @@ function playerTripleteView(i) {
     state: t.state,
     message,
     points: t.players[i].points,
+    bank: state.g.players[i] ? state.g.players[i].bank : 0,
     boardNumber: t.boardIndex + 1,
-    totalBoards: triplete.TOTAL_BOARDS
+    totalBoards: triplete.TOTAL_BOARDS,
+    // Chi è bloccato e chi è ancora in gioco: da fermo è l'unica cosa che il
+    // giocatore vuole sapere, e finora il telefono conosceva solo se stesso.
+    players: t.players.map((p) => ({ name: p.name, locked: t.lockedOut.includes(p.id) }))
   };
 }
 
@@ -416,7 +420,8 @@ function startTiebreak(contenderIds) {
 }
 
 function broadcastTiebreak() {
-  io.to('main').emit('main:tiebreakState', tiebreakView());
+  const view = tiebreakView();
+  io.to('main').emit('main:tiebreakState', view);
   io.to('admin').emit('admin:state', adminView());
   const tb = state.tiebreak;
   state.lobby.forEach((p, i) => {
@@ -425,6 +430,10 @@ function broadcastTiebreak() {
       isContender,
       canSpin: isContender && tb.contenders[tb.current] === i && tb.spins[i] == null,
       myValue: tb.spins[i] != null ? tb.spins[i] : null,
+      // La ruota e i valori usciti: sul telefono c'era solo il bottone, e chi
+      // aspettava il proprio giro non sapeva che numero doveva battere.
+      segments: game.GIRAMOE_SEGMENTS,
+      contenders: view.contenders,
       message: !isContender ? 'Spareggio in corso…'
         : tb.contenders[tb.current] === i && tb.spins[i] == null ? 'Spareggio! Gira la ruota'
         : 'Aspetta il tuo turno…'
@@ -616,7 +625,11 @@ function playerGiramoeView(i) {
     multiplier: gi.multiplier,
     usedLetters: gi.usedLetters,
     currentTurnName: gi.players[gi.currentTurnIndex].name,
-    message
+    message,
+    // L'anello del conto alla rovescia: senza, sul telefono i 5 secondi della
+    // finestra di prenotazione sono una frase e basta.
+    windowMs: Math.max(0, giramoeWindowUntil - Date.now()),
+    windowTotal: GIRAMOE_BUZZ_MS
   };
 }
 
@@ -1105,6 +1118,9 @@ io.on('connection', (socket) => {
     const value = game.GIRAMOE_SEGMENTS[seg];
     tb.spins[currentId] = value;
     io.to('main').emit('main:spin', { winningSegment: seg, spins, value, result: { type: 'number', value } });
+    // Anche i telefoni hanno la ruota, ora: senza questo girerebbe solo la TV e
+    // sul telefono il valore comparirebbe dal nulla.
+    state.lobby.forEach((p) => io.to(p.socketId).emit('player:tiebreakSpinResult', { winningSegment: seg, spins }));
     setTimeout(() => {
       if (state.phase !== 'tiebreak' || state.tiebreak !== tb) return;
       tb.current += 1;

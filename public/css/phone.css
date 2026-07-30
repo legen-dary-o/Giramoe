@@ -193,6 +193,9 @@
   color: rgba(245, 245, 247, 0.30);
   box-shadow: none;
 }
+/* Primario "grosso": quando è l'unica azione della schermata (prenotarsi nel
+   Giramoe, girare nello spareggio) il mockup lo fa più alto e in Space Mono. */
+.pbtn.is-big { height: 62px; font: 700 20px var(--font-mono); letter-spacing: 3px; }
 
 /* Campo halftone col buco al centro: solo nelle schermate a contenuto centrato.
    Sulle schermate dense (schede + tastiera) sarebbe solo rumore. */
@@ -418,21 +421,35 @@
 }
 .vowel-picker.hidden { display: none; }
 
-/* Buzzer telefono: cerchio scuro che si arma di ciano */
+/* Buzzer telefono: cerchio scuro grande quanto il pollice, che si arma di
+   ciano. Il sottotesto dentro al cerchio dice sempre cosa aspettarsi
+   (tenere premuto / non disponibile): da solo, un cerchio spento non lo dice. */
 .buzz-button {
-  width: min(78vw, 320px);
-  height: min(78vw, 320px);
+  width: 300px;
+  height: 300px;
   border-radius: 50%;
-  margin: 6vh auto 0;
-  font-size: clamp(24px, 7vw, 40px);
-  font-weight: 700;
-  letter-spacing: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   color: var(--ink);
   background: radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02) 60%), rgba(28, 28, 31, 0.9);
   border: 1px solid rgba(245, 245, 247, 0.65);
-  box-shadow: 0 0 34px rgba(48, 184, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--shadow-md);
+  box-shadow: 0 0 44px rgba(48, 184, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--shadow-md);
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+/* Space Mono e non Syne: in Syne 800 "PRENOTATI" è largo il doppio e a parità
+   di altezza esce dal cerchio da 300. */
+.bz-word { font: 700 34px var(--font-mono); letter-spacing: 4px; }
+.bz-sub {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
 }
 .buzz-button:not(:disabled):active { transform: scale(0.94); }
 .buzz-button.buzzed {
@@ -441,7 +458,13 @@
   box-shadow: 0 0 50px rgba(48, 184, 255, 0.55), var(--shadow-md);
   animation: buzzPulse 0.8s ease-in-out infinite;
 }
-.buzz-button:disabled { opacity: 0.35; }
+.buzz-button.buzzed .bz-sub { color: rgba(0, 0, 0, 0.55); }
+.buzz-button:disabled {
+  opacity: 0.4;
+  background: rgba(20, 20, 23, 0.9);
+  box-shadow: none;
+  border-color: rgba(245, 245, 247, 0.18);
+}
 @keyframes buzzPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.04); }
@@ -594,6 +617,145 @@
   mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
 }
 #player-game-screen.is-express .pg-speed { display: block; }
+
+/* === 1f · 1g TRIPLETE ===
+   Da armato la schermata è tutta buzzer; da bloccato il buzzer resta ma spento,
+   e il posto delle schede lo prende la lista di chi è ancora in gioco: fermo,
+   è l'unica cosa che il giocatore vuole sapere. */
+
+#player-triplete-screen .mobile-container {
+  justify-content: flex-start;
+  overflow-y: auto;
+  gap: 26px;
+  padding: 24px 20px;
+}
+#player-triplete-screen .ph-topbar,
+#player-giramoe-screen .ph-topbar {
+  width: calc(100% + 40px);
+  margin: 0 -20px;
+  padding: 2px 22px 14px;
+}
+/* Il gap della colonna è 26px: la riga sotto la barra e sopra il buzzer
+   respirerebbe troppo, e questi due elementi si stringono al vicino. */
+#player-triplete-screen .pstats { margin-bottom: -8px; }
+.tr-say {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+  color: var(--ink-soft);
+}
+.tr-say[hidden] { display: none; }
+
+/* Tre pip: quanti tabelloni sono andati */
+.tr-pips { display: flex; gap: 8px; width: 100%; }
+.tr-pips[hidden] { display: none; }
+.tr-pips i {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.16);
+}
+.tr-pips i.is-done { background: var(--accent); }
+
+#tr-note {
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Lista di giocatori con un badge a destra: Triplete e spareggio la usano
+   uguale, cambia solo cosa scrive il badge. */
+.prow-list { width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.10); }
+.prow-list[hidden] { display: none; }
+.prow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+.prow .nome { font: 600 16px -apple-system, sans-serif; }
+.prow .badge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.prow.is-out .nome { color: var(--ink-soft); }
+.prow.is-out .badge { color: var(--ink-faint); }
+/* Il valore uscito nello spareggio: è un numero, non un'etichetta */
+.prow .valore {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+}
+.prow .valore.is-empty { color: var(--ink-faint); }
+
+/* === 1h · GIRAMOE === */
+
+#player-giramoe-screen .mobile-container {
+  justify-content: flex-start;
+  overflow-y: auto;
+  gap: 16px;
+  padding: 18px 20px 20px;
+}
+
+/* Scheda del conto alla rovescia: l'anello è un conic-gradient sul contenitore
+   e il disco scuro sopra lascia vedere solo la corona. */
+.gi-clock {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.gi-clock[hidden] { display: none; }
+.gi-ring {
+  flex: none;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--accent) var(--deg, 360deg), rgba(255, 255, 255, 0.10) 0);
+}
+.gi-ring span {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--accent);
+}
+.gi-clock-t { font: 600 15px -apple-system, sans-serif; }
+.gi-clock-s { margin-top: 3px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+
+/* === 1i · SPAREGGIO === */
+
+.tb-col { gap: 32px; padding: 0 24px 70px; }
+.tb-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 44px;
+  letter-spacing: -0.02em;
+}
+#tb-wheel-container { width: 250px; }
+#player-tiebreak-screen .wheel-indicator { width: 18px; height: 23px; }
 
 /* === SAMIRO ===
    L'assistente sul regolamento non compare in nessun mockup, ma deve stare su

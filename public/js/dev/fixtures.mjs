@@ -298,30 +298,35 @@ const PHONE = {
     }]],
 
   // 1f · Triplete, buzzer armato
-  '1f': () => [JOINED, ['player:tripleteState', {
+  '1f': () => [JOINED, ['player:tripleteIntro', {}], ['player:tripleteState', {
     canBuzz: true, buzzedByMe: false, locked: false, state: 'REVEALING',
-    message: 'Prenotati appena sai la frase!', points: 1000,
-    boardNumber: 1, totalBoards: 3
+    message: 'Prenotati appena sai la frase!', points: 1000, bank: 3200,
+    boardNumber: 2, totalBoards: 3,
+    players: [{ name: 'Marco', locked: false }, { name: 'Giulia', locked: false }, { name: 'Elia', locked: false }]
   }]],
 
   // 1g · Triplete, bloccato dopo un errore
-  '1g': () => [JOINED, ['player:tripleteState', {
+  '1g': () => [JOINED, ['player:tripleteIntro', {}], ['player:tripleteState', {
     canBuzz: false, buzzedByMe: false, locked: true, state: 'REVEALING',
-    message: 'Hai sbagliato — aspetta il prossimo giro', points: 0,
-    boardNumber: 1, totalBoards: 3
+    message: 'Hai sbagliato — aspetta il prossimo giro', points: 0, bank: 3200,
+    boardNumber: 2, totalBoards: 3,
+    players: [{ name: 'Marco', locked: true }, { name: 'Giulia', locked: false }, { name: 'Elia', locked: false }]
   }]],
 
-  // 1h · Giramoe, tocca a lui: una sola consonante
-  '1h': () => [JOINED, ['player:giramoeState', {
-    isMyTurn: true, state: 'PLAYING', canCall: true, canBuyVowel: true, canBuzz: false,
+  // 1h · Giramoe, tocca a lui: una sola consonante, finestra da 5s aperta
+  '1h': () => [JOINED, ['player:giramoeIntro', {}], ['player:giramoeState', {
+    isMyTurn: true, state: 'PLAYING', canCall: true, canBuyVowel: false, canBuzz: true,
     buzzedByMe: false, points: 1000, multiplier: 500,
-    usedLetters: ['L', 'R', 'C'], currentTurnName: 'Marco',
-    message: 'Tocca a te: chiama una consonante o compra una vocale'
+    usedLetters: ['M', 'N', 'S', 'T'], currentTurnName: 'Marco',
+    message: 'Tocca a te: chiama una consonante',
+    windowMs: 3000, windowTotal: 5000
   }]],
 
-  // 1i · spareggio, tocca a lui girare
+  // 1i · spareggio, tocca a lui girare: Giulia ha già fatto 700
   '1i': () => [JOINED, ['player:tiebreakState', {
     isContender: true, canSpin: true, myValue: null,
+    segments: GIRAMOE_SEGMENTS,
+    contenders: [{ id: 0, name: 'Marco', value: null }, { id: 1, name: 'Giulia', value: 700 }],
     message: 'Spareggio! Gira la ruota'
   }]],
 
