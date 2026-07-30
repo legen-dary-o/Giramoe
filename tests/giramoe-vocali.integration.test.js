@@ -42,6 +42,9 @@ test('giramoe: la vocale costa 500, apre la prenotazione e accende il banner',
       p.emit('player:join', { roomCode, name: 'P' + (i + 1) });
       await wait(100);
     }
+    const giState = [];
+    players.forEach((p, i) => p.on('player:giramoeState', st => { giState[i] = st; }));
+
     admin.emit('admin:startGame');
     await wait(150);
 
@@ -83,6 +86,8 @@ test('giramoe: la vocale costa 500, apre la prenotazione e accende il banner',
     players[0].emit('player:giramoeLetter', { letter: 'C' });
     await wait(200);
     assert.strictEqual(adminState.giramoe.players[0].points, 750);
+    assert.strictEqual(giState[0].canBuyVowel, false, 'telefono P1: mossa del turno già spesa con la consonante');
+    assert.strictEqual(giState[1].canBuyVowel, false, 'telefono P2: non è il suo turno');
 
     // Ha già agito in questo turno: la vocale viene rifiutata, nessun addebito.
     players[0].emit('player:giramoeVowel', { letter: 'E' });
@@ -101,6 +106,7 @@ test('giramoe: la vocale costa 500, apre la prenotazione e accende il banner',
     await wait(150);
     assert.strictEqual(adminState.giramoe.players[1].points, 0, 'senza punti non si compra');
     assert.strictEqual(adminState.giramoe.currentTurn, 1, 'e il turno non passa');
+    assert.strictEqual(giState[1].canBuyVowel, false, 'telefono P2: 0 punti, il pulsante vocale resta spento');
     players[1].emit('player:giramoeLetter', { letter: 'Z' });
     await wait(150);
     assert.strictEqual(adminState.giramoe.currentTurn, 2, 'consonante assente: passa a P3');
@@ -109,6 +115,7 @@ test('giramoe: la vocale costa 500, apre la prenotazione e accende il banner',
     players[2].emit('player:giramoeLetter', { letter: 'Z' });
     await wait(150);
     assert.strictEqual(adminState.giramoe.currentTurn, 0, 'torna a P1');
+    assert.strictEqual(giState[0].canBuyVowel, true, 'telefono P1: 750 punti, consonanti non finite, pulsante vocale acceso');
 
     // Senza aver agito, P1 non si può prenotare: le consonanti non sono finite.
     players[0].emit('player:giramoeBuzz');
@@ -153,6 +160,8 @@ test('giramoe: la vocale costa 500, apre la prenotazione e accende il banner',
     assert.strictEqual(m.reveals.length, revealsBefore + 1, 'lettera rivelata sul tabellone');
     assert.strictEqual(m.reveals[m.reveals.length - 1].positions.length, 7, 'tutte e 7 le E');
     assert.ok(m.status && m.status.vowelsFinished, 'banner vocali finite acceso');
+    assert.strictEqual(giState[0].canBuyVowel, false, 'telefono P1: azione spesa e vocali finite, pulsante spento');
+    assert.ok(giState[0].usedLetters.includes('E'), 'telefono P1: la E risulta tra le lettere usate');
 
     // Azione del turno già spesa con la vocale: la consonante viene rifiutata.
     const revealsAfterVowel = m.reveals.length;
