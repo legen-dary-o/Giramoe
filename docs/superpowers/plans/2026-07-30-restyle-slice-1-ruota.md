@@ -22,7 +22,7 @@ durante una festa vera non deve essere raggiungibile.
 - Create: `public/dev/wheel.html`
 - Modify: `server.js:17`
 
-- [ ] **Step 1: Scrivere il gate in `server.js`**
+- [x] **Step 1: Scrivere il gate in `server.js`**
 
 Oggi la riga 17 è:
 
@@ -44,7 +44,7 @@ app.use((req, res, next) => {
 app.use(express.static(require('path').join(__dirname, 'public')));
 ```
 
-- [ ] **Step 2: Creare `public/dev/wheel.html`**
+- [x] **Step 2: Creare `public/dev/wheel.html`**
 
 ```html
 <!DOCTYPE html>
@@ -105,7 +105,7 @@ app.use(express.static(require('path').join(__dirname, 'public')));
 </html>
 ```
 
-- [ ] **Step 3: Avviare il server e aprire la pagina**
+- [x] **Step 3: Avviare il server e aprire la pagina**
 
 Avvia con la configurazione `giramoe` di `.claude/launch.json` (mai con Bash), poi apri
 `http://localhost:3000/dev/wheel.html`.
@@ -113,7 +113,7 @@ Avvia con la configurazione `giramoe` di `.claude/launch.json` (mai con Bash), p
 Atteso: tre ruote visibili, ognuna coi suoi 16 spicchi colorati e le etichette. Il mozzo è ancora
 la **semisfera bianca** di oggi — è il "prima" del confronto. Fai uno screenshot e tienilo.
 
-- [ ] **Step 4: Verificare il gate**
+- [x] **Step 4: Verificare il gate**
 
 ```bash
 NODE_ENV=production node -e "const {server}=require('./server');server.on('listening',async()=>{const p=server.address().port;const r=await fetch('http://127.0.0.1:'+p+'/dev/wheel.html');console.log('dev:',r.status);const q=await fetch('http://127.0.0.1:'+p+'/css/style.css');console.log('css:',q.status);process.exit(r.status===404&&q.status===200?0:1)})"
@@ -121,7 +121,7 @@ NODE_ENV=production node -e "const {server}=require('./server');server.on('liste
 
 Atteso: `dev: 404`, `css: 200`, exit 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add server.js public/dev/wheel.html
@@ -142,7 +142,7 @@ geometria in un modulo puro e si testa l'invariante.
 - Create: `tests/wheelgeom.test.js`
 - Modify: `public/js/fx/wheel3d.js`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Crea `tests/wheelgeom.test.js`:
 
@@ -195,7 +195,7 @@ test('i confini sono 16, equispaziati di 22.5 gradi', async () => {
 });
 ```
 
-- [ ] **Step 2: Lanciare il test e verificare che fallisca**
+- [x] **Step 2: Lanciare il test e verificare che fallisca**
 
 ```bash
 node --test --test-concurrency=1 tests/wheelgeom.test.js
@@ -203,7 +203,7 @@ node --test --test-concurrency=1 tests/wheelgeom.test.js
 
 Atteso: FAIL, `Cannot find module '../public/js/fx/wheelgeom.mjs'`.
 
-- [ ] **Step 3: Creare il modulo**
+- [x] **Step 3: Creare il modulo**
 
 `public/js/fx/wheelgeom.mjs` — segue la convenzione di `boardlayout.mjs` (modulo puro,
 condiviso fra client e test):
@@ -227,7 +227,7 @@ export function midAngle(i, segments = SEGMENTS) {
 }
 ```
 
-- [ ] **Step 4: Lanciare il test e verificare che passi**
+- [x] **Step 4: Lanciare il test e verificare che passi**
 
 ```bash
 node --test --test-concurrency=1 tests/wheelgeom.test.js
@@ -235,7 +235,7 @@ node --test --test-concurrency=1 tests/wheelgeom.test.js
 
 Atteso: PASS, 4 test.
 
-- [ ] **Step 5: Usare il modulo in `wheel3d.js`**
+- [x] **Step 5: Usare il modulo in `wheel3d.js`**
 
 In testa al file, dopo l'import di `halftone.js` (riga 6), aggiungi:
 
@@ -250,12 +250,12 @@ Poi sostituisci i quattro punti dove l'angolo è calcolato a mano, **senza cambi
 - `_buildLabelRing`, etichette, riga 181: `const mid = -Math.PI / 2 + i * seg + seg / 2;` → `const mid = midAngle(i, this.segments);`
 - `_buildLabelRing`, perni, riga 206: `const a = -Math.PI / 2 + i * seg;` → `const a = boundaryAngle(i, this.segments);`
 
-- [ ] **Step 6: Verificare che la ruota non sia cambiata di un pixel**
+- [x] **Step 6: Verificare che la ruota non sia cambiata di un pixel**
 
 Ricarica `http://localhost:3000/dev/wheel.html` e fai uno screenshot. Confrontalo con quello dello
 Step 3 del Task 1: devono essere **identici** (il refactor non deve spostare nulla).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add public/js/fx/wheelgeom.mjs tests/wheelgeom.test.js public/js/fx/wheel3d.js
@@ -270,7 +270,7 @@ git commit -m "refactor(ruota): geometria angolare in un modulo puro, con test d
 - Modify: `public/js/fx/wheel3d.js:120-127` (rimozione della semisfera)
 - Modify: `public/js/fx/wheel3d.js:_buildLabelRing` (nuovo mozzo piatto)
 
-- [ ] **Step 1: Rimuovere la semisfera halftone**
+- [x] **Step 1: Rimuovere la semisfera halftone**
 
 In `_buildWheel`, elimina queste righe (120-127):
 
@@ -285,13 +285,13 @@ In `_buildWheel`, elimina queste righe (120-127):
     this.group.add(hub);
 ```
 
-- [ ] **Step 2: Ricaricare e verificare che il centro sia vuoto**
+- [x] **Step 2: Ricaricare e verificare che il centro sia vuoto**
 
 Ricarica `http://localhost:3000/dev/wheel.html`.
 Atteso: al centro delle ruote non c'è più la cupola bianca; si vedono convergere i 16 separatori.
 È lo stato intermedio: non committare qui.
 
-- [ ] **Step 3: Aggiungere il metodo `_drawHub`**
+- [x] **Step 3: Aggiungere il metodo `_drawHub`**
 
 Nel corpo della classe `Wheel3D`, subito **dopo** `_buildLabelRing`, aggiungi:
 
@@ -360,7 +360,7 @@ Nel corpo della classe `Wheel3D`, subito **dopo** `_buildLabelRing`, aggiungi:
   }
 ```
 
-- [ ] **Step 4: Chiamarlo in fondo a `_buildLabelRing`**
+- [x] **Step 4: Chiamarlo in fondo a `_buildLabelRing`**
 
 In `_buildLabelRing`, subito **dopo** il ciclo dei perni e **prima** di
 `const tex = new THREE.CanvasTexture(cnv);`, aggiungi:
@@ -372,7 +372,7 @@ In `_buildLabelRing`, subito **dopo** il ciclo dei perni e **prima** di
 
 Va per ultimo così il mozzo copre il punto dove convergono i 16 separatori.
 
-- [ ] **Step 5: Ricaricare e confrontare col riferimento**
+- [x] **Step 5: Ricaricare e confrontare col riferimento**
 
 Ricarica `http://localhost:3000/dev/wheel.html`, fai uno screenshot e confrontalo con
 `design_handoff_tv_screens/GiramoeWheel.dc.html` aperto a fianco (`?size=556`) e con il centro
@@ -384,7 +384,7 @@ percepibili che si spengono verso il bordo, nucleo ciano piccolo con alone. Ness
 Se le proporzioni non tornano, i tre numeri da tarare sono `hubR` (0.10), `coreR` (0.011) e
 l'`opacity` dei punti (0.45). Non toccare altro.
 
-- [ ] **Step 6: Verificare che lo spin sia intatto**
+- [x] **Step 6: Verificare che lo spin sia intatto**
 
 La pagina di dev non espone le istanze, quindi per provare lo spin aggiungi **in coda** allo
 script del modulo in `public/dev/wheel.html`:
@@ -420,13 +420,13 @@ Poi dalla console: `__spin(6)`.
 Atteso: le ruote girano, decelerano con l'ease-out e si fermano con lo spicchio 6 sotto la freccia;
 la camera fa il dolly (avvicinamento) a metà giro. Il mozzo resta centrato e fermo.
 
-- [ ] **Step 7: Verificare l'attrito della freccia e le animazioni di round nel gioco vero**
+- [x] **Step 7: Verificare l'attrito della freccia e le animazioni di round nel gioco vero**
 
 La pagina di dev non ha la freccia DOM né le scene. Sul main display vero
 (`http://localhost:3000`, tocca per iniziare): la freccia in alto scatta sui perni mentre la ruota
 gira, e dalla console `__scenes.play('triplete')` parte e `__scenes.skip()` la chiude.
 
-- [ ] **Step 8: Lanciare tutti i test di logica**
+- [x] **Step 8: Lanciare tutti i test di logica**
 
 ```bash
 node --test --test-concurrency=1 tests/board.test.js tests/boardlayout.test.js tests/game.test.js tests/triplete.test.js tests/giramoe.test.js tests/finalist.test.js tests/finalgame.test.js tests/envelopes.test.js tests/lobby.test.js tests/wheelgeom.test.js
@@ -435,7 +435,7 @@ node --test --test-concurrency=1 tests/board.test.js tests/boardlayout.test.js t
 Atteso: tutti PASS. La ruota non tocca la logica, quindi qualunque fallimento qui è un regresso da
 indagare prima di committare.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add public/js/fx/wheel3d.js
