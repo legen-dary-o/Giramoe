@@ -52,8 +52,16 @@ dell'anello etichette (`_buildLabelRing`) — nessuna mesh nuova, nessun rischio
 - punti halftone al **45%**, sfumati verso il bordo
 - nucleo pari al **2,2% del diametro**, `radial-gradient(circle at 50% 34%, #d8f3ff, #30b8ff 70%)`, alone `0 0 20px 5px rgba(48,184,255,.55)`
 
-Lo stesso mozzo va sulla **mini-ruota del telefono** (`public/js/wheel.js`, Canvas 2D): compare
-nelle schermate `1c` e `1i`.
+La **mini-ruota del telefono** (`public/js/wheel.js`, Canvas 2D — usata anche come fallback della
+TV) è un problema diverso: non è la ruota halftone col mozzo bianco, è la **vecchia ruota "glass"**
+— bezel bianco, rivetti, cupola di vetro, express col treno 🚄. Non va ritoccata col mozzo nuovo,
+va **riscritta halftone** per somigliare alle `1c` e `1i` del handoff telefono: colori vividi
+mascherati a punti, fascia scura radiale, separatori neri col filo ciano sui confini, perni,
+cornice ciano con tacche, mozzo nuovo, etichette attive (oggi `showLabels:false`).
+Per costo/beneficio la faccia va **bakeata in un canvas offscreen** a ogni `setLabels` e poi solo
+ruotata: ridisegnare 16 spicchi più la maschera a punti a 60fps per 6 secondi di giro è troppo per
+un telefono. Sta nella **slice 6**, dove si costruiscono le schermate telefono e la si può
+giudicare a 196px nel suo contesto.
 
 **Il bug del mockup non va copiato.** In `GiramoeWheel.dc.html` i colori partono da
 `conic-gradient(from 0deg)` mentre i separatori da `repeating-conic-gradient(from -11.25deg)`:
@@ -214,12 +222,12 @@ accanto al render di riferimento, e correzioni prima di passare alla successiva.
 
 | # | Slice | Contenuto |
 |---|---|---|
-| 1 | Ruota | mozzo nuovo in `wheel3d.js` e `wheel.js` |
+| 1 | Ruota TV | mozzo nuovo in `wheel3d.js`, geometria angolare in un modulo puro con test, pagina di sviluppo `public/dev/wheel.html` col gate in produzione |
 | 2 | Fondamenta TV + fase 01 | split CSS, `tv/shell.js`, harness `?mock=` + gate, campo halftone mascherato, celle tabellone, varianti categoria, `1c` con i tre moduli e il timer 3,5s |
 | 3 | Start + lobby | `1a` (wordmark 184px, striscia 6 fasi, bottone bianco pieno, tagline `Il gioco della ruota`) e `1b` (QR 375px a correzione **H** con pastiglia `G`, colonna `Come si gioca`, riquadri statistica, striscia fasi bassa) |
 | 4 | Triplete + Express + Giramoe | `1e`, `1f`, `1g` — più i campi server `expressPoints`/`expressLetters` e la deadline dei 5s |
 | 5 | Gioco finale + buste + finalista + spareggio | `1h` nelle tre varianti (shake incluso), `1j`, `#finalist-screen`, spareggio TV — più `picks`/`wrongLetters` |
-| 6 | Telefono giocatore | `1a`–`1m` — più `slotsTaken`/`slotsTotal` e `lockedOut` |
+| 6 | Telefono giocatore | `1a`–`1m`, più la riscrittura halftone di `wheel.js`, più `slotsTaken`/`slotsTotal` e `lockedOut` |
 | 7 | Telefono admin | `1n`–`1x` — più l'esito positivo della validazione frase |
 
 ## Verifica
