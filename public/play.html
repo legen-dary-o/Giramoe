@@ -54,23 +54,34 @@
     </div>
   </div>
 
-  <!-- Game Screen -->
+  <!-- 1c turno · 1d consonante · 1e express -->
   <div id="player-game-screen" class="screen hidden">
+    <div class="pg-speed" aria-hidden="true"></div>
     <div class="mobile-container">
-      <div class="score-row">
-        <span class="score-pill">Turno: <b id="round-points">0</b></span>
-        <span class="score-pill">Banca: <b id="bank-points">0</b></span>
+      <div class="ph-topbar" id="pg-topbar"></div>
+      <div class="pstats" id="pg-stats"></div>
+      <div class="pbanner" id="pg-banner" hidden></div>
+      <!-- 1e: al posto del banner, perché l'express cambia la regola del gioco -->
+      <div class="pg-warn" id="pg-warn" hidden>
+        <div class="pg-warn-t">Spara consonanti a raffica</div>
+        <p class="pg-warn-s">Lettera assente o frase sbagliata: turno e banca a zero.</p>
       </div>
-      <div class="turn-message" id="turn-message">Attendi il tuo turno</div>
       <div class="wheel-container" id="player-wheel-container">
         <div class="wheel-indicator"></div>
         <canvas id="player-wheel-canvas"></canvas>
       </div>
-      <button class="glass-button" id="btn-spin">Gira la ruota</button>
+      <button class="pbtn" id="btn-spin">Gira la ruota</button>
       <div class="keyboard" id="keyboard"></div>
-      <button class="glass-button" id="btn-vowel" disabled>Compra vocale (500)</button>
-      <div class="vowel-picker hidden" id="vowel-picker"></div>
-      <div class="player-nick" id="player-nick-display"></div>
+      <button class="pbtn is-ghost" id="btn-vowel" disabled>Compra vocale &mdash; 500</button>
+      <div class="pg-vowels hidden" id="vowel-card">
+        <span class="lab">Quale vocale?</span>
+        <div class="vowel-picker" id="vowel-picker"></div>
+      </div>
+      <p class="pg-note" id="pg-note" hidden>Le lettere spente sono gi&agrave; state chiamate</p>
+      <div class="pg-raffica" id="pg-raffica" hidden>
+        <span class="lab">Raffica</span>
+        <span class="letters" id="pg-raffica-letters"></span>
+      </div>
     </div>
   </div>
 

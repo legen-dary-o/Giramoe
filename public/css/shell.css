@@ -51,15 +51,18 @@
 .glass-input:focus { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.07); }
 .glass-input::placeholder { color: var(--ink-faint); }
 
-/* Telefoni: i pulsanti d'azione primaria (join/avvio/giro) sono pieni ciano */
-#btn-join, #btn-inizia, #btn-avvia, #btn-spin, #btn-vowel,
+/* Telefoni: i pulsanti d'azione primaria (avvio/giro) sono pieni ciano.
+   Fuori da questa lista i bottoni del giocatore, che ora sono `.pbtn` e hanno
+   tre stati: un selettore con l'id vinceva sempre e li teneva ciano anche da
+   spenti. */
+#btn-inizia, #btn-avvia,
 #btn-set-board, #btn-go-triplete, #btn-triplete-start, #btn-giramoe-setboard,
 #btn-giramoe-spin, #btn-start-final, #btn-tb-spin {
   background: var(--accent);
   color: #000;
   border-color: var(--accent);
 }
-#btn-join:hover, #btn-inizia:hover, #btn-avvia:hover, #btn-spin:hover, #btn-vowel:hover,
+#btn-inizia:hover, #btn-avvia:hover,
 #btn-set-board:hover, #btn-go-triplete:hover, #btn-triplete-start:hover, #btn-giramoe-setboard:hover,
 #btn-giramoe-spin:hover, #btn-start-final:hover, #btn-tb-spin:hover {
   background: var(--accent); color: #000; border-color: var(--accent);

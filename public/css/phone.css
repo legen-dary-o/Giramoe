@@ -14,11 +14,10 @@
 #player-game-screen .mobile-container {
   justify-content: flex-start;
   overflow-y: auto;
-  gap: 12px;
-  padding-top: 16px;
-  padding-bottom: 20px;
+  gap: 16px;
+  padding: 18px 20px 20px;
 }
-#player-game-screen #player-wheel-container { width: min(58vw, 240px); margin: 2px 0; }
+#player-game-screen #player-wheel-container { width: 196px; margin: 0; }
 
 /* Same story on the giramoe board: consonant keyboard + "Compra vocale" button
    + vowel picker + the buzz pill overflow a short phone, and there is no other
@@ -375,37 +374,47 @@
   bottom: 22px;
 }
 
-/* Tastiera */
+/* Tastiera: 21 consonanti su 7 colonne, tasto quadrato. Tre stati soli —
+   disponibile, già chiamata (spenta), selezionata. */
 .keyboard {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 9px;
   width: 100%;
-  max-width: 360px;
 }
 .keyboard.disabled { opacity: 0.35; pointer-events: none; }
 
 .key {
   aspect-ratio: 1 / 1;
-  border-radius: var(--r-sm);
-  font-size: 18px;
-  font-weight: 600;
+  border-radius: 12px;
+  font: 600 20px var(--font-mono);
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   cursor: pointer;
   transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 .key:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.18); }
-.key.vowel { border-color: rgba(255, 255, 255, 0.35); font-weight: 700; background: rgba(255, 255, 255, 0.10); }
-.key:disabled { opacity: 0.22; cursor: not-allowed; transform: none; }
+.key.vowel { font-size: 22px; font-weight: 700; }
+.key:disabled { color: rgba(245, 245, 247, 0.22); background: none; border-color: rgba(255, 255, 255, 0.06); cursor: not-allowed; transform: none; }
+/* La lettera appena chiamata resta accesa finché il server non risponde: senza,
+   il tocco non lascia traccia e si finisce per premere due volte. */
+.key.is-picked {
+  color: var(--accent);
+  border-color: rgba(48, 184, 255, 0.55);
+  background: rgba(48, 184, 255, 0.10);
+}
+.is-express .key.is-picked {
+  color: var(--express-soft);
+  border-color: rgba(244, 63, 127, 0.65);
+  background: rgba(244, 63, 127, 0.14);
+}
 
 .vowel-picker {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
+  gap: 9px;
   width: 100%;
-  max-width: 280px;
 }
 .vowel-picker.hidden { display: none; }
 
@@ -461,6 +470,130 @@
   color: #000;
   animation: buzzPulse 0.8s ease-in-out infinite;
 }
+
+/* === 1c TURNO · 1d CONSONANTE · 1e EXPRESS ===
+   Una sola schermata per tre stati: cambia quali blocchi sono accesi, non il
+   markup. In raffica ruota e bottone GIRA spariscono (non c'è niente da girare)
+   e al posto del banner compare il blocco d'avviso. */
+
+/* La barra alta va da bordo a bordo: la riga sotto è il confine della schermata,
+   non del contenuto, e rientrata di 20px sembrerebbe un separatore qualsiasi. */
+#player-game-screen .ph-topbar {
+  width: calc(100% + 40px);
+  margin: 0 -20px;
+  padding: 2px 22px 14px;
+}
+
+#player-game-screen #btn-spin { height: 58px; }
+/* Il puntatore è tarato sulla ruota grande: su 196px copriva mezzo spicchio. */
+#player-game-screen .wheel-indicator { width: 18px; height: 23px; }
+/* Ruota e bottone GIRA spariscono quando non c'è niente da girare: durante la
+   scelta della consonante (il giro è già stato fatto) e in raffica. Restano
+   invece quando aspetto il mio turno, perché la ruota gira sotto i miei occhi. */
+#player-game-screen.is-express #player-wheel-container,
+#player-game-screen.is-express #btn-spin,
+#player-game-screen.is-picking #player-wheel-container,
+#player-game-screen.is-picking #btn-spin { display: none; }
+
+/* Scheda del picker vocali: senza il contenitore le cinque vocali sembravano
+   una seconda tastiera invece di una domanda ("quale?"). */
+.pg-vowels {
+  width: 100%;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.pg-vowels.hidden { display: none; }
+.pg-vowels .lab {
+  display: block;
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.pg-vowels .vowel-picker { max-width: none; }
+
+.pg-note {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-align: center;
+  color: rgba(245, 245, 247, 0.30);
+}
+.pg-note[hidden] { display: none; }
+
+/* Blocco d'avviso dell'express: dice la regola nuova e cosa si rischia. */
+.pg-warn {
+  width: 100%;
+  padding: 17px 20px;
+  border-radius: 14px;
+  background: rgba(244, 63, 127, 0.08);
+  border: 1px solid rgba(244, 63, 127, 0.45);
+}
+.pg-warn[hidden] { display: none; }
+.pg-warn-t { font: 700 16px -apple-system, sans-serif; color: var(--express-soft); }
+.pg-warn-s {
+  margin-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: rgba(245, 245, 247, 0.58);
+}
+
+/* Le lettere sparate finora in questa raffica: le tiene il telefono, il server
+   manda un turno normale con un moltiplicatore diverso. */
+.pg-raffica {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(244, 63, 127, 0.25);
+}
+.pg-raffica[hidden] { display: none; }
+.pg-raffica .lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.pg-raffica .letters {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 7px;
+  color: var(--ink);
+}
+
+/* Pelle express: fondo che vira al magenta e righe di velocità dietro la
+   tastiera. Sono decorazione pura, quindi fuori dal contenitore e senza eventi. */
+#player-game-screen.is-express {
+  background:
+    radial-gradient(85% 65% at 50% -8%, rgba(70, 20, 45, 0.35), transparent 62%),
+    linear-gradient(180deg, #0d090b, #000 64%);
+}
+.pg-speed {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 300px;
+  height: 300px;
+  display: none;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg,
+    rgba(244, 63, 127, 0.22) 0 1px, transparent 1px 34px);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+}
+#player-game-screen.is-express .pg-speed { display: block; }
 
 /* === SAMIRO ===
    L'assistente sul regolamento non compare in nessun mockup, ma deve stare su

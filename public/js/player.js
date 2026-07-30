@@ -15,9 +15,22 @@ let myName = '';
 let reconnecting = false;
 let expressMode = false; // when true the keyboard fires express letters, no spinning
 
+// La cornice comune del telefono: caricata come modulo da play.html e appesa a
+// window, perché questo file è uno script classico (vedi js/phone/shell.js).
+const PhoneShell = window.PhoneShell;
+
+// Le lettere sparate nella raffica in corso. Le tiene il telefono: per il
+// server l'express è un turno normale con un moltiplicatore diverso, e nessun
+// payload le porta indietro.
+const raffica = [];
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
+  // La pelle express vive sul body (ci sta anche Samiro) e la spegne solo un
+  // player:turnState: uscendo dal gioco quello non arriva più, e il magenta
+  // resterebbe addosso al Triplete.
+  if (id !== 'player-game-screen') document.body.classList.remove('is-express');
 }
 
 // --- Device session (localStorage: survives reloads, tab close, app switch) ---
@@ -141,7 +154,6 @@ socket.on('player:kicked', () => {
 
 socket.on('player:gameStarted', () => {
   showScreen('player-game-screen');
-  document.getElementById('player-nick-display').textContent = myName;
   initWheel();
   buildKeyboard();
 });
@@ -149,7 +161,6 @@ socket.on('player:gameStarted', () => {
 // Express round: back to the wheel game screen (board/keyboard already built).
 socket.on('player:expressRound', () => {
   showScreen('player-game-screen');
-  document.getElementById('player-nick-display').textContent = myName;
 });
 
 socket.on('player:reconnected', ({ playerIndex, name, phase }) => {
@@ -164,7 +175,6 @@ socket.on('player:reconnected', ({ playerIndex, name, phase }) => {
   if (wasSilent) return;
   if (phase === 'playing' || phase === 'express') {
     showScreen('player-game-screen');
-    document.getElementById('player-nick-display').textContent = myName;
     initWheel();
     buildKeyboard();
   } else {
@@ -188,8 +198,6 @@ function setWheelSegments(segments) {
 }
 
 socket.on('player:turnState', (st) => {
-  document.getElementById('round-points').textContent = st.roundPoints;
-  document.getElementById('bank-points').textContent = st.bank;
   setWheelSegments(st.segments);
   applyTurnState(st);
 });
@@ -474,8 +482,10 @@ function buildKeyboard() {
     b.textContent = letter;
     b.dataset.letter = letter;
     b.addEventListener('click', () => {
-      if (expressMode) socket.emit('player:expressLetter', { letter });
+      pickLetter(b);
+      if (expressMode) { raffica.push(letter); socket.emit('player:expressLetter', { letter }); }
       else socket.emit('player:pickConsonant', { letter });
+      renderRaffica();
     });
     kb.appendChild(b);
   });
@@ -488,76 +498,133 @@ function buildKeyboard() {
     b.textContent = letter;
     b.dataset.letter = letter;
     b.addEventListener('click', () => {
-      if (expressMode) socket.emit('player:expressLetter', { letter });
+      pickLetter(b);
+      if (expressMode) { raffica.push(letter); socket.emit('player:expressLetter', { letter }); }
       else socket.emit('player:buyVowel', { letter });
-      vp.classList.add('hidden');
+      renderRaffica();
+      closeVowelCard();
     });
     vp.appendChild(b);
   });
 
   document.getElementById('btn-vowel').addEventListener('click', () => {
-    const vp = document.getElementById('vowel-picker');
-    vp.classList.toggle('hidden');
+    const card = document.getElementById('vowel-card');
+    card.classList.toggle('hidden');
+    document.getElementById('pg-note').hidden = card.classList.contains('hidden');
     // On short phones the picker sits below the fold; pull it into view when opened.
-    if (!vp.classList.contains('hidden')) vp.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (!card.classList.contains('hidden')) card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
+}
+
+function closeVowelCard() {
+  document.getElementById('vowel-card').classList.add('hidden');
+  document.getElementById('pg-note').hidden = true;
+}
+
+// Il tasto appena premuto resta acceso finché non arriva il turno nuovo: senza,
+// il tocco non lascia traccia e in raffica si finisce per premere due volte.
+function pickLetter(btn) {
+  document.querySelectorAll('#keyboard .is-picked, #vowel-picker .is-picked')
+    .forEach(b => b.classList.remove('is-picked'));
+  btn.classList.add('is-picked');
+}
+
+function renderRaffica() {
+  document.getElementById('pg-raffica-letters').textContent = raffica.join(' ');
 }
 
 function markUsedLetters(used) {
   document.querySelectorAll('#keyboard .key, #vowel-picker .key').forEach(b => {
     b.disabled = used.includes(b.dataset.letter);
+    if (b.disabled) b.classList.remove('is-picked');
   });
 }
 
 // --- Turn state gating ---
+const pad2 = (n) => String(n).padStart(2, '0');
+
+const TURN_BANNER = {
+  MUST_SPIN: 'Tocca a te — gira la ruota',
+  PICK_CONSONANT: 'Scegli una consonante',
+  PICK_CONSONANT_DOUBLE: 'Raddoppia! Scegli una consonante',
+  CONTINUE: 'Rigira, compra vocale o risolvi a voce'
+};
+
 function applyTurnState(st) {
-  const msg = document.getElementById('turn-message');
+  const screen = document.getElementById('player-game-screen');
   const spinBtn = document.getElementById('btn-spin');
   const vowelBtn = document.getElementById('btn-vowel');
   const kb = document.getElementById('keyboard');
-  const vp = document.getElementById('vowel-picker');
   const container = document.getElementById('player-wheel-container');
-
-  markUsedLetters(st.usedLetters);
-  expressMode = st.isMyTurn && st.turnState === 'EXPRESS';
-
-  if (!st.isMyTurn) {
-    msg.textContent = `Turno di ${st.currentTurnName}`;
-    msg.className = 'turn-message waiting';
-    spinBtn.disabled = true;
-    vowelBtn.disabled = true;
-    kb.classList.add('disabled');
-    vp.classList.add('hidden');
-    container.classList.add('disabled');
-    return;
-  }
-
-  container.classList.remove('disabled');
-  msg.className = 'turn-message your-turn';
-
   const state = st.turnState;
-
-  if (state === 'EXPRESS') {
-    // Rapid-fire: no wheel, keyboard always live, vowels buyable at >= 500.
-    spinBtn.disabled = true;
-    container.classList.add('disabled');
-    kb.classList.remove('disabled');
-    vowelBtn.disabled = st.roundPoints < 500;
-    vp.classList.add('hidden');
-    msg.textContent = '🚄 EXPRESS! Spara consonanti o compra vocali';
-    return;
-  }
-
-  const canSpin = state === 'MUST_SPIN' || state === 'CONTINUE';
+  const express = state === 'EXPRESS';
   const mustConsonant = state === 'PICK_CONSONANT' || state === 'PICK_CONSONANT_DOUBLE';
 
-  spinBtn.disabled = !canSpin;
-  vowelBtn.disabled = !st.canBuyVowel;
-  kb.classList.toggle('disabled', !mustConsonant);
-  if (state !== 'CONTINUE') vp.classList.add('hidden');
+  markUsedLetters(st.usedLetters);
+  expressMode = st.isMyTurn && express;
 
-  if (state === 'MUST_SPIN') msg.textContent = 'Tocca a te! Gira la ruota';
-  else if (mustConsonant) msg.textContent = state === 'PICK_CONSONANT_DOUBLE'
-    ? 'RADDOPPIA! Scegli una consonante' : 'Scegli una consonante';
-  else if (state === 'CONTINUE') msg.textContent = 'Rigira, compra vocale o risolvi a voce';
+  // La pelle magenta va su tutto il telefono, Samiro compreso.
+  screen.classList.toggle('is-express', express);
+  screen.classList.toggle('is-picking', st.isMyTurn && mustConsonant);
+  document.body.classList.toggle('is-express', express);
+  if (!express) raffica.length = 0;
+  renderRaffica();
+
+  PhoneShell.renderTopBar(document.getElementById('pg-topbar'), {
+    name: myName,
+    phase: express ? 'Express' : `Fase 01 · ${pad2(st.boardNumber)}/${pad2(st.totalBoards)}`,
+    tone: express ? 'express' : null
+  });
+
+  // Seconda scheda: banca, oppure quanto vale la lettera che sto per chiamare.
+  const second = express ? { lab: 'A lettera', value: st.expressValue }
+    : (st.isMyTurn && mustConsonant && st.wedge) ? { lab: 'Spicchio', value: st.wedge }
+      : { lab: 'Banca', value: st.bank };
+  PhoneShell.renderStats(document.getElementById('pg-stats'), [
+    { lab: 'Punti turno', value: st.roundPoints, tone: express ? 'express' : (st.isMyTurn ? 'accent' : null) },
+    second
+  ]);
+
+  // In raffica il blocco d'avviso prende il posto del banner: la regola del
+  // gioco è cambiata, e dirlo con un banner uguale agli altri non basta.
+  const banner = document.getElementById('pg-banner');
+  document.getElementById('pg-warn').hidden = !expressMode;
+  document.getElementById('pg-raffica').hidden = !expressMode;
+  PhoneShell.renderBanner(banner, expressMode ? {} : {
+    text: st.isMyTurn ? (TURN_BANNER[state] || '') : `Turno di ${st.currentTurnName}`,
+    tone: st.isMyTurn ? (express ? 'express' : 'accent') : null
+  });
+
+  if (!st.isMyTurn) {
+    spinBtn.disabled = true;
+    kb.classList.add('disabled');
+    container.classList.add('disabled');
+    setVowelButton(true);
+    closeVowelCard();
+    return;
+  }
+
+  container.classList.toggle('disabled', express);
+
+  if (express) {
+    // Raffica: niente ruota, tastiera sempre viva, vocali da 500 in su.
+    spinBtn.disabled = true;
+    kb.classList.remove('disabled');
+    setVowelButton(st.roundPoints < 500);
+    closeVowelCard();
+    return;
+  }
+
+  spinBtn.disabled = !(state === 'MUST_SPIN' || state === 'CONTINUE');
+  kb.classList.toggle('disabled', !mustConsonant);
+  setVowelButton(!st.canBuyVowel);
+  if (state !== 'CONTINUE') closeVowelCard();
+}
+
+// Ghost da spento, secondario da acceso: la differenza fra "non ora" e "puoi".
+function setVowelButton(disabled) {
+  const b = document.getElementById('btn-vowel');
+  b.disabled = disabled;
+  b.classList.toggle('is-ghost', disabled);
+  b.classList.toggle('is-secondary', !disabled);
 }

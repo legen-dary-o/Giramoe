@@ -667,7 +667,9 @@ function playerView(playerIndex) {
     phase: state.phase,
     boardNumber: state.g.boardNumber,
     totalBoards: TOTAL_BOARDS,
-    wedge: state.g.lastSpinValue
+    wedge: state.g.lastSpinValue,
+    // In raffica la seconda scheda dice quanto vale ogni lettera
+    expressValue: game.EXPRESS_VALUE
   };
 }
 

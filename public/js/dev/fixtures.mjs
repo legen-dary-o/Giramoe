@@ -273,24 +273,28 @@ const PHONE = {
 
   // 1c · il tuo turno, deve girare la ruota
   '1c': () => [JOINED, ['player:gameStarted', {}], ['player:turnState', {
-    isMyTurn: true, turnState: 'SPIN', roundPoints: 1400, bank: 3200,
+    isMyTurn: true, turnState: 'MUST_SPIN', roundPoints: 1400, bank: 3200,
     usedLetters: ['N', 'T', 'E'], canBuyVowel: false, currentTurnName: 'Marco',
-    segments: SEGMENTS, phase: 'playing', boardNumber: 1, totalBoards: 3, wedge: null
+    segments: SEGMENTS, phase: 'playing', boardNumber: 1, totalBoards: 3,
+    wedge: null, expressValue: 500
   }]],
 
   // 1d · scegli la consonante, spicchio 500
   '1d': () => [JOINED, ['player:gameStarted', {}], ['player:turnState', {
     isMyTurn: true, turnState: 'PICK_CONSONANT', roundPoints: 1400, bank: 3200,
-    usedLetters: ['N', 'T', 'E'], canBuyVowel: true, currentTurnName: 'Marco',
-    segments: SEGMENTS, phase: 'playing', boardNumber: 1, totalBoards: 3, wedge: 500
+    usedLetters: ['N', 'S', 'T'], canBuyVowel: true, currentTurnName: 'Marco',
+    segments: SEGMENTS, phase: 'playing', boardNumber: 1, totalBoards: 3,
+    wedge: 500, expressValue: 500
   }]],
 
-  // 1e · express: raffica di consonanti
+  // 1e · express: raffica di consonanti. La riga "Raffica" parte vuota: quelle
+  // lettere le tiene il telefono, non un payload, e si riempie premendo i tasti.
   '1e': () => [JOINED, ['player:gameStarted', {}], ['player:expressRound', {}],
     ['player:turnState', {
-      isMyTurn: true, turnState: 'EXPRESS', roundPoints: 2000, bank: 3200,
-      usedLetters: ['T', 'O', 'N', 'I'], canBuyVowel: true, currentTurnName: 'Marco',
-      segments: EXPRESS_SEGMENTS, phase: 'express', boardNumber: 2, totalBoards: 3, wedge: 'express'
+      isMyTurn: true, turnState: 'EXPRESS', roundPoints: 3500, bank: 3200,
+      usedLetters: ['M', 'N', 'T'], canBuyVowel: true, currentTurnName: 'Marco',
+      segments: EXPRESS_SEGMENTS, phase: 'express', boardNumber: 2, totalBoards: 3,
+      wedge: null, expressValue: 500
     }]],
 
   // 1f · Triplete, buzzer armato
