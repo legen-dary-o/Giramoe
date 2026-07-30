@@ -9,29 +9,48 @@
   <link rel="stylesheet" href="/css/phone.css">
 </head>
 <body>
-  <!-- Join Form -->
+  <!-- 1a · Ingresso -->
   <div id="join-screen" class="screen">
-    <div class="mobile-container">
-      <div class="wm phone-wm">GIRAMOE</div>
+    <div class="ph-dots" aria-hidden="true"></div>
+    <div class="mobile-container ph-center">
+      <div class="join-head">
+        <span class="eyebrow">Giramoe Studio</span>
+        <div class="wm phone-wm">GIRAMOE</div>
+      </div>
       <div class="join-form">
-        <input type="text" id="nick-input" class="glass-input" placeholder="Il tuo nome" maxlength="16" autocomplete="off">
-        <button class="glass-button" id="btn-join">Entra</button>
+        <label class="lab" for="nick-input">Come ti chiami</label>
+        <input type="text" id="nick-input" placeholder="Il tuo nome" maxlength="16" autocomplete="off">
+        <button class="pbtn" id="btn-join">Entra</button>
+        <p class="join-seats" id="join-seats"></p>
       </div>
     </div>
   </div>
 
-  <!-- Reconnecting -->
+  <!-- 1m · Riconnessione -->
   <div id="reconnect-screen" class="screen hidden">
-    <div class="mobile-container">
-      <div class="wm phone-wm">GIRAMOE</div>
-      <h2>Riconnessione…</h2>
+    <div class="mobile-container ph-center">
+      <div class="ph-beacon is-white" aria-hidden="true"><span></span></div>
+      <div class="ph-head">
+        <h2 class="ph-title">Riconnessione&hellip;</h2>
+        <p class="ph-sub">La partita &egrave; in pausa e ti sta aspettando. Non chiudere la pagina.</p>
+      </div>
+      <div class="ph-card ph-me">
+        <span class="pt-avatar" id="rc-avatar">?</span>
+        <span>Il tuo posto e i tuoi punti sono salvi</span>
+      </div>
     </div>
   </div>
 
-  <!-- Waiting Lobby -->
+  <!-- 1b · Attesa -->
   <div id="wait-screen" class="screen hidden">
-    <div class="mobile-container">
-      <h2>In attesa dell'inizio...</h2>
+    <div class="ph-dots" aria-hidden="true"></div>
+    <div class="mobile-container ph-center">
+      <div class="ph-beacon" aria-hidden="true"><span></span></div>
+      <div class="ph-head">
+        <h2 class="ph-title">Ci siamo quasi</h2>
+        <p class="ph-sub">L&rsquo;host avvia la partita dallo schermo grande</p>
+      </div>
+      <div class="wait-list" id="wait-list"></div>
     </div>
   </div>
 
@@ -134,6 +153,9 @@
        (player.js partirebbe prima e prenderebbe la socket vera). Un solo
        percorso per entrambi i casi, così non c'è un ordine che vale solo in dev. -->
   <script type="module">
+    // La cornice del telefono è un modulo, player.js uno script classico: si
+    // carica qui e si appende a window, un solo percorso in dev e in produzione.
+    window.PhoneShell = await import('/js/phone/shell.js');
     let mock = null;
     if (new URLSearchParams(location.search).has('mock')) {
       const { installMock } = await import('/js/dev/mock.js');

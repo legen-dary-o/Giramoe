@@ -686,6 +686,16 @@ function lobbyPlayers() {
   return state.lobby.map(p => ({ name: p.name, connected: p.connected }));
 }
 
+const MAX_PLAYERS = 3;
+
+// La composizione della lobby serve anche a chi NON è ancora entrato: la
+// schermata d'ingresso scrive quanti posti restano. Chi non ha ancora fatto
+// `player:join` non è in nessuna room, quindi qui si manda a tutti — la TV e
+// l'admin lo ignorano.
+function broadcastLobbyToPhones() {
+  io.emit('player:lobby', { players: lobbyPlayers(), max: MAX_PLAYERS });
+}
+
 function lobbyUrl() {
   const base = process.env.GIRAMOE_PUBLIC_URL || `http://${getLocalIP()}:${PORT}`;
   return `${base}/play.html?room=${state.roomCode}`;
@@ -744,6 +754,10 @@ io.on('connection', (socket) => {
   // Vale per ogni evento in entrata, admin o giocatore: l'handler gira per primo,
   // la sincronizzazione parte subito dopo (setImmediate) con lo stato risultante.
   socket.onAny(() => queueAdminSync());
+
+  // Un telefono che apre la pagina d'ingresso deve sapere subito quanti posti
+  // restano, prima ancora di digitare un nome.
+  socket.emit('player:lobby', { players: lobbyPlayers(), max: MAX_PLAYERS });
 
   socket.on('admin:init', () => {
     socket.join('admin');
@@ -812,6 +826,7 @@ io.on('connection', (socket) => {
     socket.playerIndex = playerIndex;
     socket.emit('player:joined', { playerIndex, name });
     io.to('main').emit('main:playerJoined', { players: state.lobby.map(p => ({ name: p.name, connected: p.connected })) });
+    broadcastLobbyToPhones();
     io.to('admin').emit('admin:state', adminView());
   });
 
@@ -1212,6 +1227,7 @@ io.on('connection', (socket) => {
     const [removed] = state.lobby.splice(idx, 1);
     if (removed.connected) io.to(removed.socketId).emit('player:kicked');
     io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
+    broadcastLobbyToPhones();
     io.to('admin').emit('admin:state', adminView());
   });
 
@@ -1229,6 +1245,7 @@ io.on('connection', (socket) => {
     } else {
       // lobby: keep the QR visible, just refresh the slots
       io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
+    broadcastLobbyToPhones();
     }
     io.to('admin').emit('admin:state', adminView());
   });
@@ -1272,6 +1289,7 @@ io.on('connection', (socket) => {
       io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
     } else {
       io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
+    broadcastLobbyToPhones();
     }
     io.to('admin').emit('admin:state', adminView());
   });

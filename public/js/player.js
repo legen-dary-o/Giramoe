@@ -30,6 +30,7 @@ const _saved = loadSession();
 if (_saved) {
   myName = _saved.name;
   reconnecting = true;
+  document.getElementById('rc-avatar').textContent = myName.charAt(0).toUpperCase();
   showScreen('reconnect-screen');
 }
 
@@ -72,12 +73,54 @@ document.getElementById('nick-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('btn-join').click();
 });
 
+// --- Lobby: quanti posti restano e chi è già dentro ---
+// Arriva anche a chi non è ancora entrato: è l'unico modo perché la schermata
+// d'ingresso sappia quanti posti mancano.
+let lobbyView = { players: [], max: 3 };
+socket.on('player:lobby', (v) => { lobbyView = v; renderLobby(); });
+
+function renderLobby() {
+  const n = lobbyView.players.length;
+  const max = lobbyView.max || 3;
+  const seats = document.getElementById('join-seats');
+  if (seats) {
+    // Chi legge sta per entrare: il posto che prenderebbe è il prossimo.
+    seats.textContent = n >= max
+      ? `Lobby piena — ${max} di ${max}`
+      : `Posto ${n + 1} di ${max} · servono ${max} giocatori`;
+  }
+
+  const list = document.getElementById('wait-list');
+  if (!list) return;
+  list.innerHTML = '';
+  for (let i = 0; i < max; i++) {
+    const p = lobbyView.players[i];
+    const row = document.createElement('div');
+    row.className = 'wrow ' + (p ? 'is-in' : 'is-free');
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    const nome = document.createElement('span');
+    nome.className = 'nome';
+    nome.textContent = p ? p.name : 'In attesa…';
+    row.append(dot, nome);
+    if (p && p.name === myName) {
+      const tu = document.createElement('span');
+      tu.className = 'tu';
+      tu.textContent = 'TU';
+      row.append(tu);
+    }
+    list.append(row);
+  }
+}
+renderLobby();
+
 // --- Connection events ---
 socket.on('player:joined', ({ playerIndex, name }) => {
   myIndex = playerIndex; myName = name;
   attached = true;
   reconnecting = false;
   saveSession(name);
+  renderLobby();
   showScreen('wait-screen');
 });
 

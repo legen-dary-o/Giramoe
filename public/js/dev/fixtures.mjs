@@ -254,13 +254,22 @@ const TV = {
 
 // Marco è il giocatore 0 in tutti i fixture del telefono
 const JOINED = ['player:joined', { playerIndex: 0, name: 'Marco' }];
+// La lobby arriva a tutti i telefoni, anche a chi non è ancora entrato.
+const LOBBY = (n) => ['player:lobby', {
+  players: [{ name: 'Marco' }, { name: 'Giulia' }, { name: 'Elia' }].slice(0, n),
+  max: 3
+}];
 
 const PHONE = {
-  // 1a · ingresso: nessun payload, è il form
-  '1a': () => [],
+  // 1a · ingresso: un giocatore già dentro, quindi il posto libero è il secondo
+  '1a': () => [LOBBY(1)],
 
-  // 1b · attesa dell'avvio
-  '1b': () => [JOINED],
+  // 1b · attesa dell'avvio: Marco e Giulia dentro, manca il terzo
+  '1b': () => [LOBBY(2), JOINED],
+
+  // 1m · riconnessione: nessun fixture. Quella schermata non la accende un
+  // payload ma il client, quando trova una sessione salvata in localStorage —
+  // un fixture che finge di arrivarci mostrerebbe la schermata sbagliata.
 
   // 1c · il tuo turno, deve girare la ruota
   '1c': () => [JOINED, ['player:gameStarted', {}], ['player:turnState', {
