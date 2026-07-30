@@ -28,7 +28,7 @@ for (const [phrase, category, revealed] of CASES) {
   out[phrase] = Object.assign(out[phrase] || {}, { [revealed || 'VUOTO']: grid });
 }
 
-const dest = path.join(__dirname, '..', 'public', 'js', 'dev', 'boards.generated.js');
+const dest = path.join(__dirname, '..', 'public', 'js', 'dev', 'boards.generated.mjs');
 fs.writeFileSync(dest,
   '// GENERATO da scripts/gen-fixtures.js — non modificare a mano.\n' +
   '// Le griglie vengono da board.js, lo stesso modulo del server.\n' +

@@ -46,7 +46,14 @@ async function replay(socket, steps, stepMs) {
   }
 }
 
-export async function installMock(surface) {
+// `autoStart: true` (default) fa partire il replay al tick successivo: va bene
+// per una superficie che è già un modulo e registra i suoi handler in modo
+// sincrono subito dopo aver creato la socket (main.js). Le superfici i cui script
+// vengono INIETTATI dopo (play.html, admin.html) devono passare `autoStart: false`
+// e chiamare `socket.start()` quando gli script sono caricati: un setTimeout(0)
+// scatterebbe prima che la rete abbia consegnato lo script, e il replay finirebbe
+// su una socket senza nessun handler registrato.
+export async function installMock(surface, { autoStart = true } = {}) {
   const params = new URLSearchParams(location.search);
   const screen = params.get('mock');
   if (!screen) return null;
@@ -57,18 +64,26 @@ export async function installMock(surface) {
   // impronta dei valori calcolati, per verificare i refactor di CSS
   await import('./stylesnap.js');
 
-  const { sequenceFor } = await import('./fixtures.js');
+  const { sequenceFor } = await import('./fixtures.mjs');
   const steps = sequenceFor(surface, screen, params.get('freeze'));
   if (!steps) {
     console.error(`[mock] nessun fixture per ${surface}/${screen}`);
+    socket.start = () => {};
     return socket;
   }
-  // gli handler si registrano quando il modulo della superficie viene eseguito:
-  // il replay parte al tick successivo, e `connect` per primo come fa socket.io
-  setTimeout(async () => {
+
+  let started = false;
+  socket.start = async () => {
+    if (started) return;
+    started = true;
     socket.deliver('connect');
     await replay(socket, steps, Number(params.get('step')) || 0);
+    // Le scene di round coprono lo schermo per 5-6s: in mock si saltano, così la
+    // schermata è subito confrontabile col render. `&scenes=1` le lascia partire.
+    if (!params.has('scenes') && window.__scenes) window.__scenes.skip();
     console.info(`[mock] ${surface}/${screen} pronto`, steps.length, 'passi');
-  }, 0);
+  };
+
+  if (autoStart) setTimeout(socket.start, 0);
   return socket;
 }

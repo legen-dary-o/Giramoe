@@ -126,9 +126,26 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/wheel.js"></script>
-  <script src="/js/player.js"></script>
-  <script src="/js/samiro-faq.js"></script>
-  <script src="/js/samiro.js"></script>
+  <!-- Gli script della pagina vengono caricati da qui, in ordine, invece che con
+       quattro tag: in sviluppo `?mock=` deve installare la socket finta PRIMA di
+       player.js, e un modulo con top-level await NON blocca gli script `defer`
+       (player.js partirebbe prima e prenderebbe la socket vera). Un solo
+       percorso per entrambi i casi, così non c'è un ordine che vale solo in dev. -->
+  <script type="module">
+    let mock = null;
+    if (new URLSearchParams(location.search).has('mock')) {
+      const { installMock } = await import('/js/dev/mock.js');
+      mock = await installMock('phone', { autoStart: false });
+    }
+    for (const src of ['/js/wheel.js', '/js/player.js', '/js/samiro-faq.js', '/js/samiro.js']) {
+      await new Promise((ok, ko) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = ok; s.onerror = () => ko(new Error('script non caricato: ' + src));
+        document.head.appendChild(s);
+      });
+    }
+    // solo ora gli handler sono registrati
+    if (mock) await mock.start();
+  </script>
 </body>
 </html>

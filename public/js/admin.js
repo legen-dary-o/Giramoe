@@ -1,4 +1,7 @@
-const socket = io();
+// In sviluppo `?mock=<id>` sostituisce la socket (vedi public/js/dev/mock.js).
+// Qui lo script è classico: la finta viene installata prima, dal modulo nel
+// <script type="module"> di admin.html.
+const socket = window.__mockSocket || io();
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
