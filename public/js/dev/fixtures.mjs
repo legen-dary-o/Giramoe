@@ -265,20 +265,23 @@ const PHONE = {
   // 1c · il tuo turno, deve girare la ruota
   '1c': () => [JOINED, ['player:gameStarted', {}], ['player:turnState', {
     isMyTurn: true, turnState: 'SPIN', roundPoints: 1400, bank: 3200,
-    usedLetters: ['N', 'T', 'E'], canBuyVowel: false, currentTurnName: 'Marco'
+    usedLetters: ['N', 'T', 'E'], canBuyVowel: false, currentTurnName: 'Marco',
+    segments: SEGMENTS, phase: 'playing', boardNumber: 1, totalBoards: 3, wedge: null
   }]],
 
   // 1d · scegli la consonante, spicchio 500
   '1d': () => [JOINED, ['player:gameStarted', {}], ['player:turnState', {
     isMyTurn: true, turnState: 'PICK_CONSONANT', roundPoints: 1400, bank: 3200,
-    usedLetters: ['N', 'T', 'E'], canBuyVowel: true, currentTurnName: 'Marco'
+    usedLetters: ['N', 'T', 'E'], canBuyVowel: true, currentTurnName: 'Marco',
+    segments: SEGMENTS, phase: 'playing', boardNumber: 1, totalBoards: 3, wedge: 500
   }]],
 
   // 1e · express: raffica di consonanti
   '1e': () => [JOINED, ['player:gameStarted', {}], ['player:expressRound', {}],
     ['player:turnState', {
-      isMyTurn: true, turnState: 'PICK_CONSONANT', roundPoints: 2000, bank: 3200,
-      usedLetters: ['T', 'O', 'N', 'I'], canBuyVowel: true, currentTurnName: 'Marco'
+      isMyTurn: true, turnState: 'EXPRESS', roundPoints: 2000, bank: 3200,
+      usedLetters: ['T', 'O', 'N', 'I'], canBuyVowel: true, currentTurnName: 'Marco',
+      segments: EXPRESS_SEGMENTS, phase: 'express', boardNumber: 2, totalBoards: 3, wedge: 'express'
     }]],
 
   // 1f · Triplete, buzzer armato

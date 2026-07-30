@@ -657,7 +657,17 @@ function playerView(playerIndex) {
     bank: p.bank,
     usedLetters: state.g.usedLetters,
     canBuyVowel: state.g.currentTurnIndex === playerIndex && game.canBuyVowel(state.g),
-    currentTurnName: state.g.players[state.g.currentTurnIndex].name
+    currentTurnName: state.g.players[state.g.currentTurnIndex].name,
+    // La mini-ruota del telefono mostra i valori come quella grande: senza gli
+    // spicchi era un disco colorato e basta, e nel round express nessuno vedeva
+    // che un PASSA era diventato EXPRESS.
+    segments: state.g.segments,
+    // La barra alta dice fase e tabellone, e la seconda scheda "Spicchio 500"
+    // quando tocca chiamare la consonante.
+    phase: state.phase,
+    boardNumber: state.g.boardNumber,
+    totalBoards: TOTAL_BOARDS,
+    wedge: state.g.lastSpinValue
   };
 }
 

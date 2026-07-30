@@ -133,9 +133,21 @@ socket.on('player:spinResult', ({ winningSegment, spins }) => {
   if (playerWheel) playerWheel.spinTo(winningSegment, spins, 6000);
 });
 
+// Gli spicchi della ruota: ridisegnare la faccia costa qualche migliaio di
+// punti, quindi si rifà solo quando cambiano davvero (una volta per round).
+let lastSegments = [];
+function setWheelSegments(segments) {
+  if (!segments) return;
+  const key = segments.join('|');
+  if (key === lastSegments.join('|')) return;
+  lastSegments = segments.slice();
+  if (playerWheel) playerWheel.setLabels(lastSegments);
+}
+
 socket.on('player:turnState', (st) => {
   document.getElementById('round-points').textContent = st.roundPoints;
   document.getElementById('bank-points').textContent = st.bank;
+  setWheelSegments(st.segments);
   applyTurnState(st);
 });
 
@@ -393,7 +405,7 @@ function applyFinalState(st) {
 // --- Wheel + spin ---
 function initWheel() {
   const canvas = document.getElementById('player-wheel-canvas');
-  playerWheel = new Wheel(canvas, { segments: 16, labels: [], showLabels: false });
+  playerWheel = new Wheel(canvas, { segments: 16, labels: lastSegments, showLabels: true });
   canvas.addEventListener('click', spin);
   window.addEventListener('resize', () => playerWheel.resize());
 }
