@@ -39,6 +39,14 @@ nasconde i `.envelope` del DOM. Rifare la busta in CSS scriverebbe regole invisi
 errore già preso nella slice 2 con il tabellone. Della `1j` si rifà quello che è davvero DOM:
 titolo, sottotitolo e barra bassa (esiti, cambi rimasti, nota).
 
+**Correzione in corsa:** il bordo colorato della busta era un `LineSegments` da 1px, e
+`linewidth` in WebGL non fa niente su quasi nessuna piattaforma — da tre metri quel filo non
+esisteva, e su questa schermata l'esito è comunicato *solo* dal colore. Sostituito con una
+cornice: un piano appena più grande del corpo, messo dietro, di cui si vede solo il margine.
+L'alone del render non c'è: un piano additivo ha i bordi netti e si legge come un pannello
+dietro alla busta, non come una luce. Le buste in scena restano più piccole che nel render:
+è la geometria 3D, e la scena non si tocca.
+
 **4. Finalista e spareggio non hanno un render.** Non ne inventiamo uno: prendono la cornice
 comune (barra alta con la fase giusta) e per il resto restano come sono — sopra ci gira
 l'animazione di round, che per appunto n. 4 non si tocca.
@@ -49,7 +57,7 @@ l'animazione di round, che per appunto n. 4 non si tocca.
 
 **Files:** `server.js`, `tests/final.integration.test.js`
 
-- [ ] **Step 1: `finalBoardView()` porta lettere, stato ed esiti**
+- [x] **Step 1: `finalBoardView()` porta lettere, stato ed esiti**
 
 Oggi manda categoria, indice, totale e griglia. La `1h` ha bisogno anche del nome del
 finalista, delle lettere in gioco divise fra regalate e scelte, e degli esiti dei tre
@@ -83,7 +91,7 @@ function finalBoardView() {
 }
 ```
 
-- [ ] **Step 2: il timer porta il totale, e la penalità si annuncia**
+- [x] **Step 2: il timer porta il totale, e la penalità si annuncia**
 
 La barra sotto il numero è una percentuale: senza il totale la TV dovrebbe saperlo a memoria.
 Ogni `main:finalTimer` diventa `{ ms, total: FINAL_TIME_MS }` — sono tre punti in `server.js`
@@ -98,7 +106,7 @@ In `player:finalPick`, nel ramo `res.wrong`, dopo aver tolto i 3 secondi:
       io.to('main').emit('main:finalPenalty', { ms: FINAL_PENALTY_MS });
 ```
 
-- [ ] **Step 3: test**
+- [x] **Step 3: test**
 
 In `tests/final.integration.test.js` aggiungere alla socket `main` l'ascolto di
 `main:finalPenalty` e, sul tabellone 3, verificare che una lettera assente lo faccia arrivare
@@ -106,7 +114,7 @@ con `ms === 3000` e che una presente **non** lo faccia arrivare. Verificare anch
 `main:finalBoard` porti `finalist`, `given` (4 lettere sul tabellone 1, vuoto sugli altri) e
 `picks` con il campo `present`.
 
-- [ ] **Step 4: `node --test --test-concurrency=1` verde, commit**
+- [x] **Step 4: `node --test --test-concurrency=1` verde, commit**
 
 ---
 
@@ -115,7 +123,7 @@ con `ms === 3000` e che una presente **non** lo faccia arrivare. Verificare anch
 **Files:** `public/index.html`, `public/css/tv.css`, `public/js/main.js`,
 `public/js/dev/fixtures.mjs`, `scripts/gen-fixtures.js`
 
-- [ ] **Step 1: markup di `#final-screen`**
+- [x] **Step 1: markup di `#final-screen`**
 
 ```html
 <div id="final-screen" class="screen hidden">
@@ -152,7 +160,7 @@ con `ms === 3000` e che una presente **non** lo faccia arrivare. Verificare anch
 
 Spariscono `.final-top`, `#final-board-tag` e `.category-banner` a pillola.
 
-- [ ] **Step 2: CSS della `1h`** (nuova sezione, misure in `--u`)
+- [x] **Step 2: CSS della `1h`** (nuova sezione, misure in `--u`)
 
 Contenitore `top:88; bottom:0; display:flex; gap:56; padding:52 56 56`.
 Colonna sinistra `width:400`, `justify-content:space-between`.
@@ -173,7 +181,7 @@ Colonna destra `width:252`, `justify-content:center`, `gap:20`; schede `padding:
 `border-radius:16`, numero Syne 800 36px; l'attiva `rgba(48,184,255,.10)` /
 `border rgba(48,184,255,.65)`, le altre `rgba(255,255,255,.03)` / bordo bianco 10%.
 
-- [ ] **Step 3: `main.js` — un solo punto che disegna la colonna sinistra e quella destra**
+- [x] **Step 3: `main.js` — un solo punto che disegna la colonna sinistra e quella destra**
 
 ```js
 // Le tre schede di destra: com'è andata finora, senza numeri da leggere.
@@ -206,7 +214,7 @@ sotto i 10s (invariata).
 Pillola centrale: il testo segue `b.state` — `Scegli 3 consonanti e 1 vocale` in `PICKING`,
 `Prenotati per rispondere` in `RUNNING`, `Risposta in corso` in `BUZZED`.
 
-- [ ] **Step 4: fixture `1h`**
+- [x] **Step 4: fixture `1h`**
 
 Il fixture c'è già ma con la vecchia forma: va allineato a `finalBoardView()` (nome del
 finalista, `given`, `picks`, `results`, `state`) e `main:finalTimer` deve portare `total`.
@@ -214,7 +222,7 @@ Contenuto del render: `MI RITORNI IN MENTE BELLA COME SEI`, rivelate `N R T E L 
 42 secondi su 60, `given: N R T E`, `picks: L M C` + vocale `I`.
 La griglia `GRIDS[CANZONI].NRTELMCI` esiste già.
 
-- [ ] **Step 5: verifica `?mock=1h`** contro `screenshots/1h-gioco-finale.png`; test verdi; commit
+- [x] **Step 5: verifica `?mock=1h`** contro `screenshots/1h-gioco-finale.png`; test verdi; commit
 
 ---
 
@@ -223,7 +231,7 @@ La griglia `GRIDS[CANZONI].NRTELMCI` esiste già.
 **Files:** `public/index.html`, `public/css/tv.css`, `public/js/main.js`,
 `public/js/dev/fixtures.mjs`, `scripts/gen-fixtures.js`
 
-- [ ] **Step 1: la colonna delle lettere cambia contenuto, non posto**
+- [x] **Step 1: la colonna delle lettere cambia contenuto, non posto**
 
 Nel blocco `.fin-letters` si aggiunge una scheda-regola, nascosta di default:
 
@@ -247,7 +255,7 @@ La fila del tabellone 3 va a capo (`flex-wrap: wrap`) e le tessere sbagliate son
 `--express-soft`: è lo stesso magenta della penalità, così una tessera sbagliata e lo scossone
 del timer si leggono come la stessa cosa.
 
-- [ ] **Step 2: la penalità**
+- [x] **Step 2: la penalità**
 
 ```css
 /* Il timer del gioco finale scatta e diventa magenta quando una lettera assente
@@ -284,7 +292,7 @@ socket.on('main:finalPenalty', () => {
 Sotto `prefers-reduced-motion` resta il magenta e sparisce lo scossone: l'informazione è il
 colore, il movimento è l'enfasi.
 
-- [ ] **Step 3: fixture `1h2` e `1h3`**
+- [x] **Step 3: fixture `1h2` e `1h3`**
 
 Due fixture nuovi accanto a `1h`: `boardIndex: 1` con la griglia prima-e-ultima e
 `boardIndex: 2` con una manciata di chiamate fra cui due sbagliate. La griglia del tabellone 2
@@ -293,7 +301,7 @@ non si scrive a mano: `scripts/gen-fixtures.js` guadagna una variante `PRIMULT` 
 `?mock=1h3&freeze=penalita` fa arrivare un `main:finalPenalty` per fotografare lo scossone
 (aggiungere `'penalita'` alla lista `FREEZE` di `tests/fixtures.test.js`).
 
-- [ ] **Step 4: verifica `?mock=1h2`, `?mock=1h3`, `?mock=1h3&freeze=penalita`; test verdi; commit**
+- [x] **Step 4: verifica `?mock=1h2`, `?mock=1h3`, `?mock=1h3&freeze=penalita`; test verdi; commit**
 
 ---
 
@@ -301,7 +309,7 @@ non si scrive a mano: `scripts/gen-fixtures.js` guadagna una variante `PRIMULT` 
 
 **Files:** `public/index.html`, `public/css/tv.css`, `public/js/main.js`
 
-- [ ] **Step 1: markup e CSS della `1j`**
+- [x] **Step 1: markup e CSS della `1j`**
 
 Le buste restano WebGL. Si rifà la cornice:
 
@@ -331,21 +339,21 @@ persi), divisore `1×66`, numero dei cambi Syne 800 34px `--accent`, nota a dest
 Gli esiti dei tabelloni non sono in `envelopesView()`, ma il colore delle buste sì
 (`green`/`red`, uno per tabellone): le pastiglie si disegnano da lì, senza campi nuovi.
 
-- [ ] **Step 2: finalista e spareggio**
+- [x] **Step 2: finalista e spareggio**
 
 `#finalist-screen` prende la barra alta (`Fase 05 · Gioco finale`, `right: 'Finalista'`) e
 tiene nome e sottotitolo come sono: sopra ci gira l'animazione di round, che non si tocca.
 Lo spareggio usa già `#game-screen` e la cornice comune: gli manca solo la fase giusta in
 barra alta (`Fase 04 · Spareggio`, `leftTone: 'accent'`) al posto delle sei chip.
 
-- [ ] **Step 3: verifica `?mock=1j`** contro `screenshots/1j-buste.png`; test verdi; commit
+- [x] **Step 3: verifica `?mock=1j`** contro `screenshots/1j-buste.png`; test verdi; commit
 
 ---
 
 ## Task 5: consegna
 
-- [ ] **Step 1:** `node --test --test-concurrency=1` — tutti verdi
-- [ ] **Step 2:** riletti a 1920×1080: `1h`, `1h2`, `1h3`, `1h3&freeze=penalita`, `1j`, e la
+- [x] **Step 1:** `node --test --test-concurrency=1` — tutti verdi
+- [x] **Step 2:** riletti a 1920×1080: `1h`, `1h2`, `1h3`, `1h3&freeze=penalita`, `1j`, e la
       `1c` per controllare che il tabellone del gioco normale non sia cambiato
 - [ ] **Step 3:** riferire al committente il disegno dei tabelloni 2 e 3 e aspettare l'ok
       prima della slice 6 (telefono giocatore)
