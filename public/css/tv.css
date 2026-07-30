@@ -920,6 +920,109 @@
 }
 .ex-box.is-express b { color: var(--express-soft); }
 
+/* === 1g · GIRAMOE ===
+   Un solo tabellone, un solo giro: sotto la ruota non servono lettera e
+   occorrenze ma il moltiplicatore, che vale per tutto il round. */
+
+#game-screen.is-giramoe .giramoe-mods { display: flex; }
+.giramoe-mods { width: 100%; gap: calc(12 * var(--u)); }
+.gm-mod {
+  min-width: 0;
+  padding: calc(18 * var(--u)) calc(24 * var(--u));
+  border-radius: calc(16 * var(--u));
+}
+.gm-mult {
+  flex: 1.4;
+  background: linear-gradient(180deg, rgba(48, 184, 255, 0.16), rgba(22, 22, 26, 0.92));
+  border: 1px solid rgba(48, 184, 255, 0.60);
+  box-shadow: 0 0 calc(40 * var(--u)) rgba(48, 184, 255, 0.14);
+}
+.gm-info {
+  flex: 1;
+  background: rgba(22, 22, 26, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.gm-mod .lab {
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(10.5 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.gm-mult .lab { color: rgba(245, 245, 247, 0.6); }
+.gm-mult .val {
+  margin-top: calc(6 * var(--u));
+  display: flex;
+  align-items: baseline;
+  gap: calc(10 * var(--u));
+}
+.gm-mult .val b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(60 * var(--u));
+  line-height: 1;
+  color: var(--accent);
+}
+.gm-mult .val span {
+  font-family: var(--font-mono);
+  font-size: calc(14 * var(--u));
+  color: rgba(245, 245, 247, 0.5);
+}
+.gm-info p {
+  font: 400 calc(14 * var(--u)) / 1.4 -apple-system, sans-serif;
+  color: var(--ink-soft);
+}
+
+/* Finestra di prenotazione: prende il posto della pillola di turno, che direbbe
+   la stessa cosa nello stesso angolo. */
+#game-screen.is-window .buzz-window { display: flex; }
+#game-screen.is-window .turn-pill { display: none; }
+.buzz-window { align-items: center; gap: calc(20 * var(--u)); }
+.bw-text { display: flex; flex-direction: column; align-items: flex-end; gap: calc(6 * var(--u)); }
+.bw-text .lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(10.5 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.bw-text .who {
+  font-family: var(--font-mono);
+  font-size: calc(13 * var(--u));
+  color: rgba(245, 245, 247, 0.5);
+}
+/* --deg lo scrive il JS a passi: conic-gradient non si anima in CSS senza
+   registrare la proprietà, e un anello che scatta ogni 50ms si legge uguale. */
+.bw-ring {
+  width: calc(86 * var(--u));
+  height: calc(86 * var(--u));
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) 0deg var(--deg, 360deg), rgba(255, 255, 255, 0.1) var(--deg, 360deg) 360deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.bw-disc {
+  width: calc(70 * var(--u));
+  height: calc(70 * var(--u));
+  border-radius: 50%;
+  background: #0c0c0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(32 * var(--u));
+  color: var(--accent);
+}
+
 /* === Ruota TV: ghiera tech + freccia a goccia con attrito ===
    wheel3d espone centro/raggio del disco 3D come --disc-cx/--disc-cy/--disc-r
    (px), così ghiera e freccia restano incollate al disco anche col dolly.

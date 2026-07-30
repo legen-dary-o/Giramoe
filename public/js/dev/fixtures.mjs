@@ -156,7 +156,10 @@ const TV = {
         { id: 2, name: 'Elia',   points: 1000, bank: 2100 }
       ],
       currentTurn: 2, multiplier: 500
-    }]
+    }],
+    // La finestra è aperta da 2s dei 5: è lo stato del render, non un'animazione
+    // di ingresso. `&freeze=finestra` la tiene ferma per lo scatto.
+    ['main:giramoeWindow', { ms: 3000, total: 5000, name: 'Elia' }]
   ],
 
   // 1h · gioco finale, tabellone 1, 42 secondi rimasti

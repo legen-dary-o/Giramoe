@@ -80,6 +80,10 @@ let state = {
 let tripleteTimer = null;  // single reveal/flash timer for the bonus round
 let giramoeTimer = null;   // 5s buzz window timer for the giramoe board
 const GIRAMOE_BUZZ_MS = 5000;
+// Quando scade la finestra aperta, in ms epoch (0 = nessuna). Serve solo alla TV
+// che si ricollega a metà finestra: senza, l'anello del conto alla rovescia
+// resterebbe spento fino al turno dopo.
+let giramoeWindowUntil = 0;
 
 // True while a wheel spin is animating on screen. The spin result is applied to
 // the game state immediately, but clients aren't told (scores/turn) until the
@@ -544,6 +548,7 @@ function startGiramoe() {
 
 function clearGiramoeTimer() {
   if (giramoeTimer) { clearTimeout(giramoeTimer); giramoeTimer = null; }
+  giramoeWindowUntil = 0;
 }
 
 function giramoeBoardView() {
@@ -605,10 +610,19 @@ function broadcastGiramoe() {
   state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:giramoeState', playerGiramoeView(i)));
 }
 
+// La finestra da 5s è l'unico momento in cui qualcuno può prenotarsi: finora la
+// TV non la vedeva affatto, era solo un setTimeout qui dentro.
 function startGiramoeBuzzWindow() {
   clearGiramoeTimer();
+  giramoeWindowUntil = Date.now() + GIRAMOE_BUZZ_MS;
+  io.to('main').emit('main:giramoeWindow', {
+    ms: GIRAMOE_BUZZ_MS,
+    total: GIRAMOE_BUZZ_MS,
+    name: state.gi.players[state.gi.currentTurnIndex].name
+  });
   giramoeTimer = setTimeout(() => {
     giramoeTimer = null;
+    giramoeWindowUntil = 0;
     if (state.phase !== 'giramoe' || !state.gi) return;
     if (giramoe.timeout(state.gi).ok) {
       io.to('main').emit('main:giramoeResume');
@@ -724,6 +738,15 @@ io.on('connection', (socket) => {
       socket.emit('main:giramoeStart', { segments: game.GIRAMOE_SEGMENTS });
       socket.emit('main:giramoeBoard', giramoeBoardView());
       socket.emit('main:giramoeScores', { scores: giramoeScores(), currentTurn: state.gi.currentTurnIndex, multiplier: state.gi.multiplier });
+      // Se la finestra è aperta si riparte dal tempo che resta, non da capo: un
+      // anello che ricomincia da 5 direbbe una bugia proprio mentre si gioca.
+      const left = giramoeWindowUntil - Date.now();
+      if (left > 0) {
+        socket.emit('main:giramoeWindow', {
+          ms: left, total: GIRAMOE_BUZZ_MS,
+          name: state.gi.players[state.gi.currentTurnIndex].name
+        });
+      }
       socket.emit('main:boardStatus', board.boardStatus(state.gi.board.grid));
     } else if (state.phase === 'tiebreak' && state.tiebreak) {
       socket.emit('main:tiebreakStart', { segments: game.GIRAMOE_SEGMENTS, contenders: tiebreakView().contenders });

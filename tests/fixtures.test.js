@@ -30,7 +30,7 @@ const fixtures = () => import('../public/js/dev/fixtures.mjs');
 
 // I valori di `&freeze=` usati dai fixture per tenere fermo uno stato transitorio.
 // Vanno controllati anche loro: un evento storto in una variante non si vedrebbe.
-const FREEZE = [null, 'letter', 'raffica'];
+const FREEZE = [null, 'letter', 'raffica', 'finestra'];
 
 test('ogni evento emesso dai fixture ha un handler nella sua superficie', async () => {
   const { BY_SURFACE } = await fixtures();

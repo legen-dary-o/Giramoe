@@ -137,6 +137,7 @@ socket.on('main:gameState', (g) => {
     expressValue: g.expressValue != null ? g.expressValue : gameMeta.expressValue
   };
   express.value(gameMeta.expressValue);
+  setGiramoeSkin(false); // si gioca di nuovo a tabelloni: via i moduli del Giramoe
   applyExpressState(g.expressActive, g.scores, g.currentTurn);
   renderBoard(g.board.grid);
   renderScores(g.scores, g.currentTurn);
@@ -304,6 +305,8 @@ socket.on('main:tiebreakStart', ({ segments, contenders }) => {
   document.getElementById('main-wheel-indicator').style.display = '';
   setCategory('SPAREGGIO');
   setTurnPill(null);
+  setExpressSkin(false);
+  setGiramoeSkin(false); // lo spareggio torna ai tre moduli della ruota
   renderTopBar(document.getElementById('game-topbar'), { phase: 4, right: 'Spareggio' });
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear();
@@ -626,6 +629,8 @@ socket.on('main:giramoeStart', ({ segments }) => {
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear();
   updateBoardStatus(null);
+  setExpressSkin(false); // dal round express si esce: via la pelle magenta
+  setGiramoeSkin(true);
   if (!entering) return applyPhaseScreen();
   showTitleCard('GIRAMOE');
   scenes.play('giramoe').then(() => { if (currentPhase === 'giramoe') showScreen('game-screen'); });
@@ -633,37 +638,84 @@ socket.on('main:giramoeStart', ({ segments }) => {
 
 socket.on('main:giramoeBoard', (b) => {
   currentPhase = 'giramoe';
+  setGiramoeSkin(true);
   setCategory(b.category);
   renderTopBar(document.getElementById('game-topbar'), {
-    phase: 4, right: 'Un solo tabellone · una consonante a testa'
+    left: 'Fase 04 · Tabellone finale', leftTone: 'accent',
+    right: 'Un solo tabellone · una consonante a testa'
   });
   renderBoard(b.grid);
   applyPhaseScreen();
 });
 
-socket.on('main:giramoeScores', ({ scores, currentTurn }) => renderGiramoeScores(scores, currentTurn));
+socket.on('main:giramoeScores', ({ scores, currentTurn, multiplier }) => {
+  document.getElementById('gi-mult').textContent = multiplier != null ? num(multiplier) : '—';
+  renderGiramoeScores(scores, currentTurn);
+});
 
 socket.on('main:giramoeBuzzed', ({ name }) => {
   Sfx.play('buzzer');
   showBuzz(`${name} risponde!`);
+  closeBuzzWindow();
 });
 
-socket.on('main:giramoeResume', () => hideBuzz());
+socket.on('main:giramoeResume', () => { hideBuzz(); closeBuzzWindow(); });
 
 socket.on('main:giramoeSolved', ({ name, points }) => {
   if (stage) stage.pulse('correct');
   hideBuzz();
+  closeBuzzWindow();
   fxVeil('correct');
   showResult(`${name} +${points}`);
 });
 
+// La finestra di prenotazione: 5 secondi in cui chiunque può risolvere.
+socket.on('main:giramoeWindow', ({ ms, total, name }) => openBuzzWindow(ms, total, name));
+
+function setGiramoeSkin(on) {
+  document.getElementById('game-screen').classList.toggle('is-giramoe', on);
+  if (!on) closeBuzzWindow();
+}
+
+let windowTimer = null;
+function openBuzzWindow(ms, total, name) {
+  clearInterval(windowTimer);
+  const screen = document.getElementById('game-screen');
+  const ring = document.getElementById('bw-ring');
+  const count = document.getElementById('bw-count');
+  document.getElementById('bw-who').textContent = name ? `${name} può risolvere` : '';
+  screen.classList.add('is-window');
+  const end = Date.now() + ms;
+  const paint = () => {
+    const left = end - Date.now();
+    if (left <= 0) return closeBuzzWindow();
+    // L'anello si svuota: la parte piena è il tempo che resta sul totale.
+    ring.style.setProperty('--deg', (360 * left / total).toFixed(1) + 'deg');
+    count.textContent = String(Math.ceil(left / 1000));
+  };
+  paint();
+  // `&freeze=finestra` tiene l'anello fermo dov'è: serve all'harness, che
+  // altrimenti avrebbe 5 secondi per fare lo scatto (vedi callout.js).
+  if (new URLSearchParams(location.search).get('freeze') === 'finestra') return;
+  windowTimer = setInterval(paint, 50);
+}
+
+function closeBuzzWindow() {
+  clearInterval(windowTimer);
+  windowTimer = null;
+  document.getElementById('game-screen').classList.remove('is-window');
+}
+
+// Colonne "Giramoe" e "Banca". `Usata`/`Prenotabile` si deducono dal turno:
+// giramoeScores() non porta un flag per giocatore, e chi è di turno è
+// esattamente chi non ha ancora speso la sua consonante.
 function renderGiramoeScores(scores, currentTurn) {
   renderPlayersBar(document.getElementById('players-bar'), scores.map((s, i) => ({
     name: s.name,
     values: [s.points, s.bank != null ? s.bank : 0],
-    state: i === currentTurn ? 'Al turno' : 'In attesa',
+    state: i === currentTurn ? 'Prenotabile' : 'Usata',
     tone: i === currentTurn ? 'active' : null
-  })), ['Punti', 'Banca']);
+  })), ['Giramoe', 'Banca']);
   const now = scores[currentTurn];
   setTurnPill(now ? now.name : null);
 }
