@@ -4,6 +4,13 @@
    giocatori, gioco finale, Triplete, cursore.
    ============================================================ */
 
+/* === PALCO LOGICO 1920×1080 ===
+   Il handoff esprime ogni misura su questo palco, lo stesso di roundscenes.js.
+   `--u` e' un suo pixel: vale 1px su 1920×1080 e altrove scala mantenendo le
+   proporzioni, senza transform (cosi' la ruota WebGL resta nitida anche in 4K).
+   Le misure prese dal handoff si scrivono calc(N * var(--u)). */
+:root { --u: min(calc(100vw / 1920), calc(100vh / 1080)); }
+
 /* === INTRO (start-tap-screen) === */
 
 #start-tap-screen { flex-direction: column; }
@@ -192,6 +199,209 @@
 .phases .ph.now { color: var(--ink); }
 .phases .ph.now em { color: var(--accent); }
 
+/* === CORNICE COMUNE TV: barra alta + barra bassa ===
+   Costruite da public/js/tv/shell.js. Le usano 1b, 1c, 1e, 1f, 1g, 1h, 1j. */
+
+.tv-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: calc(88 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 calc(56 * var(--u));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(180deg, rgba(10, 10, 12, 0.94), rgba(10, 10, 12, 0.2));
+}
+.tb-side { display: flex; align-items: center; gap: calc(26 * var(--u)); }
+.tb-wm {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(21 * var(--u));
+  letter-spacing: -0.02em;
+}
+.tb-div { width: 1px; height: calc(20 * var(--u)); background: var(--hairline); }
+.tb-phases { display: flex; gap: calc(26 * var(--u)); }
+.tb-ph, .tb-one {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  color: rgba(235, 235, 245, 0.3);
+}
+/* Dove le sei chip non ci stanno, una sola etichetta "Fase 0N · nome" */
+.tb-one { letter-spacing: calc(4 * var(--u)); color: var(--ink); }
+.tb-ph em { font-style: normal; margin-right: calc(9 * var(--u)); color: rgba(235, 235, 245, 0.22); }
+.tb-ph.is-now {
+  color: var(--ink);
+  padding-bottom: calc(3 * var(--u));
+  border-bottom: 2px solid var(--accent);
+}
+.tb-ph.is-now em { color: var(--accent); }
+.tv-topbar.is-express .tb-ph.is-now { border-bottom-color: var(--express); }
+.tv-topbar.is-express .tb-ph.is-now em,
+.tv-topbar.is-express .tb-one { color: var(--express); }
+
+.tb-lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(3.5 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.tb-pips { display: flex; align-items: center; gap: calc(7 * var(--u)); }
+.tb-pips span {
+  width: calc(26 * var(--u));
+  height: calc(4 * var(--u));
+  border-radius: calc(2 * var(--u));
+  background: rgba(255, 255, 255, 0.18);
+}
+.tb-pips span.is-on { background: var(--accent); }
+.tb-count {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(13 * var(--u));
+  letter-spacing: calc(2 * var(--u));
+}
+.tb-count span { color: var(--ink-faint); }
+.tb-live {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(3.5 * var(--u));
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.tb-live .live-dot {
+  width: calc(6 * var(--u));
+  height: calc(6 * var(--u));
+  margin-right: calc(9 * var(--u));
+}
+
+.tv-players {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: calc(184 * var(--u));
+  /* minmax(0,1fr) e non flex:1: con flex le schede tracimano quando un nome
+     e' lungo, perche' il contenuto minimo non scende sotto la sua larghezza. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(22 * var(--u));
+  align-items: center;
+  padding: 0 calc(56 * var(--u));
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(0deg, rgba(10, 10, 12, 0.94), rgba(10, 10, 12, 0.2));
+}
+
+.pcard {
+  display: flex;
+  align-items: center;
+  gap: calc(22 * var(--u));
+  min-width: 0;
+  padding: calc(24 * var(--u)) calc(28 * var(--u));
+  border-radius: calc(18 * var(--u));
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.pc-avatar {
+  position: relative;
+  flex: none;
+  width: calc(62 * var(--u));
+  height: calc(62 * var(--u));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 calc(24 * var(--u)) -apple-system, sans-serif;
+  background: linear-gradient(150deg, #3c3c40, #232327);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.pc-dot {
+  position: absolute;
+  right: calc(-2 * var(--u));
+  bottom: calc(-2 * var(--u));
+  width: calc(14 * var(--u));
+  height: calc(14 * var(--u));
+  border-radius: 50%;
+  background: var(--accent);
+  border: calc(3 * var(--u)) solid #10151a;
+}
+.pc-info { display: flex; flex-direction: column; gap: calc(5 * var(--u)); min-width: 0; }
+.pc-name {
+  font: 600 calc(25 * var(--u)) -apple-system, sans-serif;
+  color: rgba(245, 245, 247, 0.8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pc-state {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(10.5 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  /* "In attesa" su due righe alzerebbe la scheda e sfalserebbe la fila */
+  white-space: nowrap;
+}
+/* Il handoff dà i numeri fra 36 e 40px e il gap fra 26 e 34: qui si sta al
+   minimo di entrambi. Con due numeri a quattro cifre per scheda e un terzo di
+   schermo a testa, i valori alti mangiano tutto lo spazio del nome — e i nomi
+   li scrivono i giocatori, fino a 16 caratteri. */
+.pc-nums { margin-left: auto; display: flex; gap: calc(26 * var(--u)); text-align: right; }
+.pc-lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(10.5 * var(--u));
+  letter-spacing: calc(2.5 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.pc-val {
+  margin-top: calc(5 * var(--u));
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(36 * var(--u));
+  line-height: 1;
+}
+/* La prima colonna e' il numero che sta cambiando: acceso solo su chi gioca. */
+.pc-col.is-lead .pc-val { color: rgba(245, 245, 247, 0.4); }
+
+.pcard.is-active {
+  background: linear-gradient(180deg, rgba(48, 184, 255, 0.13), var(--panel));
+  border-color: rgba(48, 184, 255, 0.50);
+  box-shadow: 0 0 calc(40 * var(--u)) rgba(48, 184, 255, 0.14);
+}
+.pcard.is-active .pc-name { color: var(--ink); }
+.pcard.is-active .pc-state,
+.pcard.is-active .pc-col.is-lead .pc-val { color: var(--accent); }
+
+.pcard.is-express {
+  background: linear-gradient(180deg, rgba(244, 63, 127, 0.14), var(--panel));
+  border-color: rgba(244, 63, 127, 0.50);
+  box-shadow: 0 0 calc(44 * var(--u)) rgba(244, 63, 127, 0.14);
+}
+.pcard.is-express .pc-name { color: var(--ink); }
+.pcard.is-express .pc-state,
+.pcard.is-express .pc-col.is-lead .pc-val { color: var(--express); }
+.pcard.is-express .pc-dot { background: var(--express); }
+
+.pcard.is-locked { opacity: 0.30; }
+.pcard.is-buzzed {
+  background: rgba(40, 40, 44, 0.9);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 calc(44 * var(--u)) rgba(255, 255, 255, 0.10);
+}
+.pcard.is-buzzed .pc-name { color: var(--ink); }
+
 /* === GAME LAYOUT (main display) === */
 
 .game-container {
@@ -206,26 +416,142 @@
   padding: 3vh 4vw;
 }
 
+/* La 1c vive fra le due barre: ruota e moduli a sinistra, categoria e
+   tabellone a destra. */
 #game-screen .game-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(88 * var(--u));
+  bottom: calc(184 * var(--u));
+  width: auto;
+  height: auto;
   flex-direction: row;
-  gap: 4vw;
+  gap: calc(52 * var(--u));
+  padding: calc(36 * var(--u)) calc(56 * var(--u)) 0;
 }
-#game-screen .game-container > .wheel-container { flex: 0 0 34%; }
 
-.game-right {
-  flex: 1;
+.game-left {
+  flex: none;
+  width: calc(576 * var(--u));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2.6vh;
+  gap: calc(26 * var(--u));
 }
+/* Il handoff vuole il disco a 556. Ma wheel3d disegna in prospettiva e il disco
+   occupa ~80% della sua canvas: dimensionare la canvas a 556 darebbe un disco da
+   446. Qui si dimensiona la canvas (693 = 556 / 0.802) e a riempire 556 e' il
+   disco. La canvas eccede la colonna di 58px per lato, ma li' intorno c'e' solo
+   fondo: il padding di pagina a sinistra, il gap verso il tabellone a destra.
+   L'alternativa sarebbe avvicinare la camera, e la camera resta com'e'.
+   I margini negativi tolgono dal layout la fascia vuota sopra e sotto il disco
+   (75 e 63px: la camera guarda da poco sotto l'asse, quindi non e' simmetrica).
+   Senza, la colonna sarebbe alta 821 contro i 772 disponibili e i moduli
+   finirebbero sopra la barra dei giocatori. */
+#game-screen #main-wheel-container {
+  width: calc(693 * var(--u));
+  /* Altezza esplicita, non da aspect-ratio: l'altezza del contenitore verrebbe
+     dalla canvas e la dimensione della canvas dal contenitore. Ridimensionando
+     la finestra quell'anello si assestava sul max-height di .wheel-container e
+     i moduli finivano sopra la barra dei giocatori. */
+  height: calc(693 * var(--u));
+  max-height: none;
+  margin-top: calc(-75 * var(--u));
+  margin-bottom: calc(-63 * var(--u));
+}
+
+.game-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(38 * var(--u));
+}
+.game-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.turn-pill {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--u));
+  padding: calc(13 * var(--u)) calc(26 * var(--u));
+  border-radius: 999px;
+  background: rgba(48, 184, 255, 0.10);
+  border: 1px solid rgba(48, 184, 255, 0.45);
+}
+.turn-pill[hidden] { display: none; }
+.turn-pill.is-express {
+  background: rgba(244, 63, 127, 0.10);
+  border-color: rgba(244, 63, 127, 0.45);
+}
+.turn-pill.is-express .dot { background: var(--express); }
+.turn-pill .dot {
+  width: calc(8 * var(--u));
+  height: calc(8 * var(--u));
+  border-radius: 50%;
+  background: var(--accent);
+  animation: liveBlink 1.6s ease-in-out infinite;
+}
+.turn-pill span:last-child {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: calc(15 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+}
+
+/* I tre moduli sotto la ruota: valore dello spicchio, lettera chiamata e
+   quante volte compare. Logica e tempi in public/js/tv/callout.js. */
+.wheel-modules { width: 100%; display: flex; gap: calc(12 * var(--u)); }
+.wm-mod {
+  flex: 1;
+  min-width: 0;
+  padding: calc(16 * var(--u)) calc(22 * var(--u));
+  border-radius: calc(14 * var(--u));
+  background: rgba(22, 22, 26, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.wm-mod--wedge {
+  flex: 1.3;
+  background: linear-gradient(180deg, rgba(48, 184, 255, 0.12), rgba(22, 22, 26, 0.9));
+  border-color: rgba(48, 184, 255, 0.45);
+}
+.wm-mod .lab {
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(10.5 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.wm-mod--wedge .lab { color: var(--ink-soft); }
+.wm-mod b {
+  display: block;
+  margin-top: calc(6 * var(--u));
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(46 * var(--u));
+  line-height: 1;
+}
+.wm-mod.is-empty b { color: rgba(245, 245, 247, 0.22); }
 
 /* === Ruota TV: ghiera tech + freccia a goccia con attrito ===
    wheel3d espone centro/raggio del disco 3D come --disc-cx/--disc-cy/--disc-r
    (px), così ghiera e freccia restano incollate al disco anche col dolly.
    Il contenitore e il puntatore bianco sono condivisi col telefono: shell.css. */
+/* Nascosta finché wheel3d non pubblica --disc-cx/cy/r: la mostra initMainWheel.
+   Coi valori di ripiego sarebbe un anello vuoto grande quanto la canvas. */
 #main-wheel-container .wheel-bezel {
+  display: none;
   position: absolute;
   left: var(--disc-cx, 50%);
   top: var(--disc-cy, 50%);
@@ -262,11 +588,13 @@
   filter: drop-shadow(0 0 5px rgba(48, 184, 255, 0.85));
 }
 
-/* Spin: la ruota fa un flip e vola al centro dello schermo, il resto sfuma */
+/* Spin: la ruota fa un flip e vola al centro dello schermo, il resto sfuma.
+   La barra bassa sta fuori dal .game-container, quindi la classe di stato la
+   porta anche #game-screen: due elementi, un solo stato, lo imposta
+   setWheelZoom() in main.js. */
 #game-screen .game-container { perspective: 1400px; }
-#game-screen .category-banner,
-#game-screen .board-grid,
-#game-screen .players-bar {
+#game-screen .game-right,
+#game-screen .tv-players {
   transition: opacity 0.5s ease, transform 0.5s var(--ease-out);
 }
 #game-screen .game-container.wheel-zoom .wheel-container {
@@ -284,14 +612,33 @@
   0%   { transform: translateX(30vw) scale(1.22) rotateY(0deg); }
   100% { transform: translateX(0) scale(1) rotateY(-360deg); }
 }
-#game-screen .game-container.wheel-zoom .category-banner,
-#game-screen .game-container.wheel-zoom .board-grid,
-#game-screen .game-container.wheel-zoom .players-bar {
+#game-screen .game-container.wheel-zoom .game-right,
+#game-screen.wheel-zoom .tv-players {
   opacity: 0.08;
   transform: scale(0.97);
 }
 
 /* === CATEGORIA === */
+
+/* Etichetta + nome allineati a sinistra (1c, 1f, 1g). Sostituisce la pillola
+   .category-banner, che resta per le schermate non ancora rifatte. */
+.category { display: flex; flex-direction: column; gap: calc(10 * var(--u)); min-width: 0; }
+.category[hidden] { display: none; }
+.category .lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: calc(10.5 * var(--u));
+  letter-spacing: calc(4 * var(--u));
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.42);
+}
+.category .name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(46 * var(--u));
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
 
 .category-banner {
   font-family: var(--font-mono);
@@ -337,29 +684,39 @@
   width: min(92%, 110vh);
 }
 
+/* Larghezza, gap e corpo cambiano per schermata: qui la 1c. Anche col WebGL
+   attivo questi valori contano, perche' board3d.js posa le tessere sul
+   rettangolo della griglia DOM. */
+#game-screen .board-grid {
+  width: calc(1120 * var(--u));
+  gap: calc(7 * var(--u));
+  font-size: calc(44 * var(--u));
+}
+
 .cell {
   aspect-ratio: 0.78;
-  border-radius: 6px;
+  border-radius: calc(5 * var(--u));
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--font-mono);
   font-size: clamp(12px, 2.6vh, 30px);
-  font-weight: 600;
+  font-weight: 700;
 }
+/* Non rivelata: bianco sporco con un filo di rilievo in alto. Rivelata: bianco
+   pieno e stacco d'ombra, cosi' si distinguono anche da lontano. */
 .cell.letter {
-  background: var(--ink);
-  border-radius: 4px;
+  background: rgba(245, 245, 247, 0.88);
   color: transparent;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.9);
 }
 .cell.letter.revealed {
+  background: #ffffff;
   color: #000;
-  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
   animation: cellFlip 0.5s var(--ease-out) both;
 }
-.cell.blocked {
-  background: var(--petrol);
-  border-radius: 4px;
-}
+.cell.blocked { background: var(--petrol); }
 .cell.edge { visibility: hidden; background: transparent; }
 /* Triplete board 3: lampeggio */
 .cell.letter.flash {
@@ -622,6 +979,7 @@ body.has-custom-cursor, body.has-custom-cursor * { cursor: none !important; }
   .title-stage .eyebrow, .title-stage .wm, .title-stage .hairline { opacity: 1; }
   .player-name.active::after,
   .player-slot.reconnecting::before,
+  .turn-pill .dot,
   #triplete-players-bar .player-name.buzzed::after {
     animation: none;
     opacity: 1;

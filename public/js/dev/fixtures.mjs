@@ -58,15 +58,29 @@ const TV = {
   ],
 
   // 1c · primo gioco, turno di Marco: ha appena chiamato T, uscite 3 occorrenze
-  '1c': () => [
-    ['main:state', { phase: 'playing' }],
-    ['main:gameState', {
-      board: { category: 'PROVERBI', grid: GRIDS[PROVERBIO].NTE },
-      scores: PLAYERS, currentTurn: 0,
-      boardNumber: 1, totalBoards: 3, segments: SEGMENTS
-    }],
-    ['main:boardStatus', { consonantsFinished: false, vowelsFinished: false }]
-  ],
+  '1c': (freeze) => {
+    const steps = [
+      ['main:state', { phase: 'playing' }],
+      ['main:gameState', {
+        board: { category: 'PROVERBI', grid: GRIDS[PROVERBIO].NTE },
+        scores: PLAYERS, currentTurn: 0,
+        boardNumber: 1, totalBoards: 3, segments: SEGMENTS,
+        currentWedge: 500
+      }],
+      ['main:boardStatus', { consonantsFinished: false, vowelsFinished: false }]
+    ];
+    // `&freeze=letter` è l'unico modo di vedere Lettera e Occorrenze: sono
+    // transitori, nessun payload di stato li porta. Qui gli eventi che li
+    // riempiono sono voluti, ed è per questo che i fixture con freeze sono
+    // esclusi dal divieto di eventi con animazione (vedi tests/fixtures.test.js).
+    if (freeze === 'letter') {
+      steps.push(['main:letterCalled', { letter: 'T' }]);
+      steps.push(['main:revealLetter', {
+        positions: [{ row: 0, col: 6, letter: 'T' }, { row: 0, col: 8, letter: 'T' }, { row: 0, col: 9, letter: 'T' }]
+      }]);
+    }
+    return steps;
+  },
 
   // 1e · Triplete: Marco prenotato, Giulia bloccata
   '1e': () => [

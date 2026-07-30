@@ -3,6 +3,8 @@ import { Wheel3D } from './fx/wheel3d.js';
 import { HomeWheel } from './fx/homewheel.js';
 import { Stage3D } from './fx/stage3d.js';
 import { RoundScenes } from './fx/roundscenes.js';
+import { renderTopBar, renderPlayersBar } from './tv/shell.js';
+import * as callout from './tv/callout.js';
 
 initCursor();
 // Animazioni di round a schermo intero (sostituiscono la vecchia title animation
@@ -53,6 +55,7 @@ function showScreen(id) {
       'envelopes-screen': 'envelopes'
     };
     stage.setMode(modes[id] || 'hidden');
+    stage.setScreen(id);
   }
 }
 
@@ -117,12 +120,19 @@ socket.on('main:startGame', () => { currentPhase = 'playing'; applyPhaseScreen()
 
 socket.on('main:gameState', (g) => {
   if (currentPhase !== 'express') currentPhase = 'playing';
-  if (!wheel) initMainWheel(g.segments);
-  else updateWheelLabels(g.segments);
+  ensureWheel(g.segments);
   document.getElementById('main-wheel-indicator').style.display = '';
-  document.getElementById('category-banner').textContent = g.board.category;
+  setCategory(g.board.category);
+  renderTopBar(document.getElementById('game-topbar'), {
+    phase: currentPhase === 'express' ? 3 : 1,
+    accent: currentPhase === 'express' ? 'express' : 'accent',
+    board: { number: g.boardNumber, total: g.totalBoards }
+  });
   renderBoard(g.board.grid);
   renderScores(g.scores, g.currentTurn);
+  // Dopo un refresh lo spicchio a schermo tornerebbe vuoto: il server lo manda
+  // nello stato, cosi' la schermata si ricostruisce intera da un solo payload.
+  callout.showWedge(g.currentWedge == null ? null : g.currentWedge);
   applyPhaseScreen();
 });
 
@@ -130,6 +140,7 @@ socket.on('main:scores', ({ scores, currentTurn }) => renderScores(scores, curre
 
 socket.on('main:spin', ({ winningSegment, spins, value }) => {
   if (stage) stage.pulse('spin');
+  callout.showWedge(wedgeLabel(value));
   if (!wheel) return;
   setWheelZoom(true);
   Sfx.startSpin();
@@ -142,21 +153,50 @@ socket.on('main:spin', ({ winningSegment, spins, value }) => {
   setTimeout(() => { Sfx.stopSpin(); setWheelZoom(false); }, 6800); // fallback se rAF è stato throttlato
 });
 
+// Gli spicchi speciali non hanno un numero: nel modulo va il loro simbolo, lo
+// stesso che portano sulla ruota (public/js/fx/wheel3d.js).
+const WEDGE_SYMBOL = { bancarotta: '✕', next: '→', raddoppia: '×2', express: '»' };
+function wedgeLabel(value) {
+  return WEDGE_SYMBOL[value] != null ? WEDGE_SYMBOL[value] : value;
+}
+
+// La categoria e la sua etichetta stanno o cadono insieme: senza nome, il blocco
+// mostrerebbe un "Categoria" appeso al nulla.
+function setCategory(text) {
+  document.getElementById('category-banner').textContent = text || '';
+  document.querySelector('#game-screen .category').hidden = !text;
+}
+
+function setTurnPill(name, express = false) {
+  const pill = document.getElementById('turn-pill');
+  document.getElementById('turn-pill-text').textContent = name ? `Turno di ${name}` : '';
+  pill.classList.toggle('is-express', express);
+  pill.hidden = !name;
+}
+
+// La barra bassa sta fuori dal .game-container, quindi la classe di stato va
+// anche sulla schermata: due elementi, un solo punto che li imposta.
 function setWheelZoom(on) {
+  const screen = document.getElementById('game-screen');
   const c = document.querySelector('#game-screen .game-container');
-  if (on) {
-    c.classList.remove('wheel-unzoom');
-    c.classList.add('wheel-zoom');
-  } else if (c.classList.contains('wheel-zoom')) {
-    c.classList.remove('wheel-zoom');
-    c.classList.add('wheel-unzoom'); // flip di ritorno; nessuna animazione al primo load
+  for (const el of [c, screen]) {
+    if (on) {
+      el.classList.remove('wheel-unzoom');
+      el.classList.add('wheel-zoom');
+    } else if (el.classList.contains('wheel-zoom')) {
+      el.classList.remove('wheel-zoom');
+      el.classList.add('wheel-unzoom'); // flip di ritorno; nessuna animazione al primo load
+    }
   }
 }
 
 // Una lettera è stata chiamata (consonante o vocale): la mostro a schermo come per i
 // punti, così anche chi non gioca quel turno vede la lettera (poi se presente si rivela
 // sul tabellone). Attivo in ruota/express/giramoe, non nel triplete né nel finale.
-socket.on('main:letterCalled', ({ letter }) => showResult(String(letter).toUpperCase()));
+socket.on('main:letterCalled', ({ letter }) => {
+  showResult(String(letter).toUpperCase());
+  callout.showLetter(String(letter).toUpperCase());
+});
 
 // "CONSONANTI/VOCALI FINITE": tutte quelle presenti nel tabellone sono state chiamate.
 socket.on('main:boardStatus', updateBoardStatus);
@@ -170,11 +210,21 @@ function updateBoardStatus(st) {
   el.classList.toggle('hidden', tags.length === 0);
 }
 
-socket.on('main:revealLetter', ({ positions }) => revealSequence(positions));
+socket.on('main:revealLetter', ({ positions }) => {
+  revealSequence(positions);
+  callout.showOccurrences(positions.length);
+});
 
 socket.on('main:solved', () => { if (stage) stage.pulse('correct'); Sfx.play('correct'); fxVeil('correct'); });
 
-socket.on('main:wrong', () => { if (stage) stage.pulse('wrong'); Sfx.play('wrong'); fxVeil('wrong'); });
+socket.on('main:wrong', () => {
+  if (stage) stage.pulse('wrong');
+  Sfx.play('wrong');
+  fxVeil('wrong');
+  // La lettera non c'e': sul tabellone non compare niente, e senza questo `×0`
+  // il giocatore dopo la richiamerebbe.
+  callout.showOccurrences(0);
+});
 
 // --- Feedback bordo schermo: velo verde/rosso + shake sull'errore ---
 function fxVeil(kind) {
@@ -194,9 +244,11 @@ function fxVeil(kind) {
 // --- Tie-break + finalist ---
 socket.on('main:tiebreakStart', ({ segments, contenders }) => {
   currentPhase = 'tiebreak';
-  if (wheel) updateWheelLabels(segments);
+  ensureWheel(segments);
   document.getElementById('main-wheel-indicator').style.display = '';
-  document.getElementById('category-banner').textContent = 'SPAREGGIO';
+  setCategory('SPAREGGIO');
+  setTurnPill(null);
+  renderTopBar(document.getElementById('game-topbar'), { phase: 4, right: 'Spareggio' });
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear();
   updateBoardStatus(null);
@@ -292,18 +344,12 @@ function renderFinalBoard(grid) {
 }
 
 function renderTiebreak(contenders, current) {
-  const bar = document.getElementById('players-bar');
-  bar.innerHTML = '';
-  contenders.forEach((c, i) => {
-    const el = document.createElement('div');
-    el.className = 'player-name glass-panel' + (i === current ? ' active' : '');
-    el.innerHTML = `<div class="pn-avatar">${c.name.charAt(0).toUpperCase()}</div>
-      <div class="pn-info">
-        <div class="pn-name">${c.name}</div>
-        <div class="pn-score">${c.value != null ? c.value : '—'}</div>
-      </div>`;
-    bar.appendChild(el);
-  });
+  renderPlayersBar(document.getElementById('players-bar'), contenders.map((c, i) => ({
+    name: c.name,
+    values: [c.value != null ? c.value : '—'],
+    state: i === current ? 'Al turno' : 'In attesa',
+    tone: i === current ? 'active' : null
+  })), ['Ruota']);
 }
 
 socket.on('main:playerDisconnected', () =>
@@ -339,7 +385,19 @@ function initMainWheel(segments) {
   }
   window.__wheel = wheel; // hook di verifica manuale
   lastSegmentsKey = (segments || []).join('|');
+  // La ghiera si aggancia a --disc-cx/cy/r, che esistono solo da qui in poi:
+  // prima resterebbe disegnata alla misura di ripiego, un anello vuoto grande
+  // quanto tutta la canvas.
+  document.querySelector('#main-wheel-container .wheel-bezel').style.display = '';
   window.addEventListener('resize', () => wheel.resize());
+}
+
+// La ruota va creata anche entrando da Giramoe o spareggio: chi ricarica la TV
+// in quelle fasi riceve solo giramoeStart/tiebreakStart, e prima di questa
+// funzione restava senza ruota fino alla partita dopo.
+function ensureWheel(segments) {
+  if (!wheel) initMainWheel(segments);
+  else updateWheelLabels(segments);
 }
 
 // Il round express cambia le etichette della ruota (un PASSA diventa EXPRESS); ridisegna solo se cambiano.
@@ -392,20 +450,24 @@ function revealSequence(positions) {
   });
 }
 
+let lastTurn = null;
+
 function renderScores(scores, currentTurn) {
-  const bar = document.getElementById('players-bar');
-  bar.innerHTML = '';
-  scores.forEach((s, i) => {
-    const el = document.createElement('div');
-    el.className = 'player-name glass-panel' + (i === currentTurn ? ' active' : '');
-    el.innerHTML = `<div class="pn-avatar">${s.name.charAt(0).toUpperCase()}</div>
-      <div class="pn-info">
-        <div class="pn-name">${s.name}</div>
-        <div class="pn-score">Turno: ${s.roundPoints}</div>
-        <div class="pn-bank">Banca: ${s.bank}</div>
-      </div>`;
-    bar.appendChild(el);
-  });
+  // Cambio di turno: i tre moduli sotto la ruota ripartono da vuoti, spicchio
+  // compreso — il valore del giro precedente non vale piu' per chi entra ora.
+  if (lastTurn !== null && currentTurn !== lastTurn) callout.reset();
+  lastTurn = currentTurn;
+
+  const express = currentPhase === 'express';
+  renderPlayersBar(document.getElementById('players-bar'), scores.map((s, i) => ({
+    name: s.name,
+    values: [s.roundPoints, s.bank],
+    state: i === currentTurn ? 'Al turno' : 'In attesa',
+    tone: i === currentTurn ? (express ? 'express' : 'active') : null
+  })), ['Turno', 'Banca']);
+
+  const now = scores[currentTurn];
+  setTurnPill(now ? now.name : null, express);
 }
 
 function showResult(text) {
@@ -434,7 +496,7 @@ socket.on('main:expressRound', ({ segments }) => {
   currentPhase = 'express';
   updateWheelLabels(segments);
   document.getElementById('main-wheel-indicator').style.display = '';
-  document.getElementById('category-banner').textContent = '';
+  setCategory('');
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear(); // via le tessere del Triplete, non c'è più il suo tabellone
   updateBoardStatus(null);
@@ -459,9 +521,9 @@ socket.on('main:expressBankrupt', () => {
 socket.on('main:giramoeStart', ({ segments }) => {
   const entering = currentPhase !== 'giramoe'; // su riconnessione il server rimanda l'evento
   currentPhase = 'giramoe';
-  if (wheel) updateWheelLabels(segments);
+  ensureWheel(segments);
   document.getElementById('main-wheel-indicator').style.display = '';
-  document.getElementById('category-banner').textContent = '';
+  setCategory('');
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear();
   updateBoardStatus(null);
@@ -472,7 +534,10 @@ socket.on('main:giramoeStart', ({ segments }) => {
 
 socket.on('main:giramoeBoard', (b) => {
   currentPhase = 'giramoe';
-  document.getElementById('category-banner').textContent = b.category;
+  setCategory(b.category);
+  renderTopBar(document.getElementById('game-topbar'), {
+    phase: 4, right: 'Un solo tabellone · una consonante a testa'
+  });
   renderBoard(b.grid);
   applyPhaseScreen();
 });
@@ -494,19 +559,14 @@ socket.on('main:giramoeSolved', ({ name, points }) => {
 });
 
 function renderGiramoeScores(scores, currentTurn) {
-  const bar = document.getElementById('players-bar');
-  bar.innerHTML = '';
-  scores.forEach((s, i) => {
-    const el = document.createElement('div');
-    el.className = 'player-name glass-panel' + (i === currentTurn ? ' active' : '');
-    el.innerHTML = `<div class="pn-avatar">${s.name.charAt(0).toUpperCase()}</div>
-      <div class="pn-info">
-        <div class="pn-name">${s.name}</div>
-        <div class="pn-score">Punti: ${s.points}</div>
-        <div class="pn-bank">Banca: ${s.bank != null ? s.bank : 0}</div>
-      </div>`;
-    bar.appendChild(el);
-  });
+  renderPlayersBar(document.getElementById('players-bar'), scores.map((s, i) => ({
+    name: s.name,
+    values: [s.points, s.bank != null ? s.bank : 0],
+    state: i === currentTurn ? 'Al turno' : 'In attesa',
+    tone: i === currentTurn ? 'active' : null
+  })), ['Punti', 'Banca']);
+  const now = scores[currentTurn];
+  setTurnPill(now ? now.name : null);
 }
 
 socket.on('main:tripleteBoard', (b) => {

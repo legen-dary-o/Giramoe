@@ -50,6 +50,10 @@ export class Stage3D {
     };
   }
 
+  // Il buco nel campo di punti dipende dalla schermata, non dal modo: 'board'
+  // vale per la 1c, il Triplete e il gioco finale, che hanno contenuti diversi.
+  setScreen(id) { this.dots.setScreen(id); }
+
   setMode(mode) { // 'hidden' | 'ambient' | 'board' | 'envelopes'
     this.mode = mode;
     this.canvas.style.display = mode === 'hidden' ? 'none' : '';

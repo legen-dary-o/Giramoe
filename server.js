@@ -123,7 +123,10 @@ function mainGameView() {
     currentTurn: state.g.currentTurnIndex,
     boardNumber: state.g.boardNumber,
     totalBoards: TOTAL_BOARDS,
-    segments: state.g.segments
+    segments: state.g.segments,
+    // Il valore dello spicchio uscito resta a schermo per tutto il turno: senza
+    // questo campo un refresh della TV lo perderebbe fino al giro dopo.
+    currentWedge: state.g.lastSpinValue
   };
 }
 

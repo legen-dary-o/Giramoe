@@ -28,14 +28,20 @@ function handledEvents(files) {
 
 const fixtures = () => import('../public/js/dev/fixtures.mjs');
 
+// I valori di `&freeze=` usati dai fixture per tenere fermo uno stato transitorio.
+// Vanno controllati anche loro: un evento storto in una variante non si vedrebbe.
+const FREEZE = [null, 'letter'];
+
 test('ogni evento emesso dai fixture ha un handler nella sua superficie', async () => {
   const { BY_SURFACE } = await fixtures();
   const problems = [];
   for (const [surface, screens] of Object.entries(BY_SURFACE)) {
     const handled = handledEvents(SURFACE_FILES[surface]);
     for (const [id, build] of Object.entries(screens)) {
-      for (const [event] of build(null)) {
-        if (!handled.has(event)) problems.push(`${surface}/${id} → ${event}`);
+      for (const freeze of FREEZE) {
+        for (const [event] of build(freeze)) {
+          if (!handled.has(event)) problems.push(`${surface}/${id} (freeze=${freeze}) → ${event}`);
+        }
       }
     }
   }
@@ -46,6 +52,8 @@ test('ogni fixture emette payload di stato, non eventi che avviano animazioni', 
   const { BY_SURFACE } = await fixtures();
   // main:spin fa girare la ruota per 6s, main:letterCalled apre l'overlay del
   // risultato: in una schermata da confrontare col render non ci vanno.
+  // Le varianti `&freeze=` fanno eccezione — servono proprio a mostrare un
+  // transitorio — quindi qui si guarda solo la sequenza di default.
   const ANIMATI = new Set(['main:spin', 'main:letterCalled', 'main:revealLetter',
                            'main:solved', 'main:wrong', 'player:spinResult']);
   const problems = [];
