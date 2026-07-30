@@ -422,10 +422,17 @@ socket.on('player:tiebreakSpinResult', ({ winningSegment, spins }) => {
   if (tbWheel) tbWheel.spinTo(winningSegment, spins, 6000);
 });
 
-socket.on('player:finalist', ({ name, isMe }) => {
+socket.on('player:finalist', ({ name, isMe, bank, myBank }) => {
   showScreen('player-finalist-screen');
-  document.getElementById('player-finalist-title').textContent =
-    isMe ? 'Sei il finalista! 🏆' : `${name} va alla finale`;
+  document.getElementById('fin-win').hidden = !isMe;
+  document.getElementById('fin-lose').hidden = isMe;
+  if (isMe) {
+    document.getElementById('fin-bank').textContent = PhoneShell.num(bank || 0);
+  } else {
+    document.getElementById('fin-who').textContent = `Va ${name} al gioco finale`;
+    document.getElementById('fin-mine').textContent =
+      `Hai chiuso con ${PhoneShell.num(myBank || 0)} punti. Grazie per aver giocato!`;
+  }
 });
 
 // --- Final game (finalist only) ---
@@ -485,50 +492,80 @@ function applyEnvelopes(view) {
   const canChange = amFinalist && view.state === 'OPENED' && view.changesLeft > 0 && avail.length > 0;
   if (!canChange) envChangeArmed = false;
 
-  const msg = document.getElementById('env-message');
-  if (!amFinalist) msg.textContent = 'Apertura buste…';
-  else if (view.state === 'NONE') msg.textContent = 'Nessuna busta verde';
-  else if (view.state === 'CHOOSING') msg.textContent = 'Tocca una busta verde per aprirla';
-  else if (view.state === 'KEPT') msg.textContent = 'È la tua busta!';
-  else if (envChangeArmed) msg.textContent = 'Tocca la busta verde su cui spostarti';
-  else if (canChange) msg.textContent = 'Tieni questa o cambia';
-  else msg.textContent = 'È la tua busta!';
+  PhoneShell.renderTopBar(document.getElementById('env-topbar'), { name: myName, phase: 'Le buste' });
 
-  const row = document.getElementById('player-envelopes-row');
-  row.innerHTML = '';
+  const open = view.envelopes[view.current];
+  const isOpen = !!(open && open.revealed);
+  const title = document.getElementById('env-title');
+  const sub = document.getElementById('env-sub');
+  if (!amFinalist) {
+    title.textContent = 'Apertura buste';
+    sub.textContent = 'Il finalista sta scegliendo. Guarda lo schermo grande.';
+  } else if (view.state === 'NONE') {
+    title.textContent = 'Nessuna busta verde';
+    sub.textContent = 'Niente da aprire questa volta.';
+  } else if (view.state === 'CHOOSING') {
+    title.textContent = 'Scegli una busta';
+    sub.textContent = 'Tocca una busta verde per aprirla.';
+  } else if (envChangeArmed) {
+    title.textContent = 'Su quale ti sposti?';
+    sub.textContent = 'Tocca la busta verde che vuoi al posto di questa.';
+  } else if (view.state === 'KEPT') {
+    title.textContent = `È la tua busta`;
+    sub.textContent = 'Non si cambia più.';
+  } else {
+    title.textContent = `Hai aperto la busta ${view.current + 1}`;
+    sub.textContent = canChange
+      ? `Puoi tenerla o cambiarla alla cieca. Hai ${view.changesLeft} ${view.changesLeft === 1 ? 'cambio' : 'cambi'}.`
+      : 'Non ci sono altre buste su cui spostarsi.';
+  }
+
+  const card = document.getElementById('env-open');
+  card.hidden = !isOpen;
+  if (isOpen) {
+    document.getElementById('env-open-lab').textContent = `Busta ${view.current + 1}`;
+    document.getElementById('env-open-prize').textContent = open.content || '';
+  }
+
+  // Le buste ancora chiuse: riquadri col numero e lo stato, in fila.
+  const others = document.getElementById('env-others');
+  others.innerHTML = '';
   view.envelopes.forEach((e, i) => {
-    const el = document.createElement('div');
-    el.className = 'envelope ' + e.color
-      + (e.revealed ? ' open' : '')
-      + (i === view.current ? ' current' : '')
-      + (e.abandoned ? ' abandoned' : '')
-      + (view.state === 'KEPT' && i !== view.current ? ' gone' : '');
-    el.innerHTML = e.revealed
-      ? `<div class="env-num">${i + 1}</div><div class="env-content">${e.content || ''}</div>`
-      : `<div class="env-num">${i + 1}</div><div class="env-q">?</div>`;
-    if (amFinalist && view.state === 'CHOOSING' && e.color === 'green' && !e.revealed) {
-      el.classList.add('pickable');
-      el.addEventListener('click', () => socket.emit('player:envelopeOpen', { index: i }));
-    } else if (envChangeArmed && avail.includes(i)) {
-      el.classList.add('pickable');
-      el.addEventListener('click', () => {
-        envChangeArmed = false;
-        socket.emit('player:envelopeChange', { index: i });
-      });
-    }
-    row.appendChild(el);
+    if (isOpen && i === view.current) return;               // già nella scheda sopra
+    if (view.state === 'KEPT') return;                      // scelta fatta, spariscono
+    const canOpen = amFinalist && view.state === 'CHOOSING' && e.color === 'green' && !e.revealed;
+    const canSwap = envChangeArmed && avail.includes(i);
+    const swappable = canOpen || canSwap || (canChange && avail.includes(i));
+    const box = document.createElement('div');
+    box.className = 'env-box'
+      + (swappable ? ' is-swap' : '')
+      + (canOpen || canSwap ? ' is-pickable' : '')
+      + (e.abandoned ? ' is-gone' : '');
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = String(i + 1);
+    const st = document.createElement('span');
+    st.className = 'st';
+    st.textContent = e.abandoned ? 'Scartata' : canOpen ? 'Da aprire' : swappable ? 'Scambiabile' : 'Chiusa';
+    box.append(n, st);
+    if (canOpen) box.addEventListener('click', () => socket.emit('player:envelopeOpen', { index: i }));
+    else if (canSwap) box.addEventListener('click', () => {
+      envChangeArmed = false;
+      socket.emit('player:envelopeChange', { index: i });
+    });
+    others.append(box);
   });
 
-  // TIENI + CAMBIA are shown together once an envelope is opened; arming CAMBIA hides
-  // them while the finalist taps the green to move to.
+  // TIENI + CAMBIA compaiono insieme a busta aperta; armando CAMBIA spariscono
+  // mentre il finalista tocca la verde su cui spostarsi.
   const keepBtn = document.getElementById('btn-env-keep');
   const changeBtn = document.getElementById('btn-env-change');
   const showButtons = amFinalist && view.state === 'OPENED' && !envChangeArmed;
-  keepBtn.style.display = showButtons ? '' : 'none';
-  changeBtn.style.display = showButtons && canChange ? '' : 'none';
-  // The label names the envelope you'd switch to when there's a single option;
-  // with more than one green you tap which after pressing CAMBIA.
-  changeBtn.textContent = avail.length === 1 ? `CAMBIA CON LA ${avail[0] + 1}` : 'CAMBIA';
+  keepBtn.hidden = !showButtons;
+  changeBtn.hidden = !(showButtons && canChange);
+  document.getElementById('env-note').hidden = !(showButtons && canChange);
+  // Con una sola alternativa l'etichetta dice già quale: non c'è niente da scegliere.
+  changeBtn.textContent = avail.length === 1 ? `Cambia con la ${avail[0] + 1}` : 'Cambia';
 }
 
 function buildFinalKeyboard() {
@@ -557,18 +594,49 @@ function buildFinalKeyboard() {
 }
 
 function applyFinalState(st) {
-  const msg = document.getElementById('final-message');
-  msg.textContent = st.message;
-  msg.className = 'turn-message your-turn';
+  PhoneShell.renderTopBar(document.getElementById('fg-topbar'), {
+    name: myName, phase: `Gioco finale · ${pad2(st.boardIndex + 1)}/${pad2(st.totalBoards)}`
+  });
+
+  const total = st.total || 60000;
+  const left = st.timeLeft != null ? st.timeLeft : total;
+  document.getElementById('fg-num').textContent = Math.ceil(left / 1000);
+  document.getElementById('fg-bar-fill').style.width = (left / total) * 100 + '%';
+  document.getElementById('fg-lab').textContent = st.state === 'PICKING'
+    ? 'Il timer parte quando hai scelto' : 'Secondi rimasti';
+
+  document.getElementById('fg-task-t').textContent = st.message;
+  // I quadratini: tre consonanti più la vocale, staccata perché è un'altra scelta.
+  const boxes = document.getElementById('fg-boxes');
+  const picks = st.picks || { consonants: 0, maxConsonants: 3, vowel: false };
+  boxes.innerHTML = '';
+  boxes.hidden = st.state !== 'PICKING';
+  for (let i = 0; i < picks.maxConsonants; i++) {
+    const b = document.createElement('i');
+    if (i < picks.consonants) b.className = 'is-done';
+    boxes.append(b);
+  }
+  const v = document.createElement('i');
+  v.className = 'is-vowel' + (picks.vowel ? ' is-done' : '');
+  boxes.append(v);
+
+  const mine = picks.letters || [];
   document.querySelectorAll('#final-keyboard .key').forEach(b => {
     b.disabled = !st.canPickConsonant || st.usedLetters.includes(b.dataset.letter);
+    b.classList.toggle('is-picked', mine.includes(b.dataset.letter));
   });
   document.querySelectorAll('#final-vowels .key').forEach(b => {
     b.disabled = !st.canPickVowel || st.usedLetters.includes(b.dataset.letter);
+    b.classList.toggle('is-picked', mine.includes(b.dataset.letter));
   });
+
+  // Il primario spento dice sempre perché: qui aspetta che la scelta sia finita.
   const buzz = document.getElementById('btn-final-buzz');
   buzz.disabled = !st.canBuzz;
-  buzz.classList.toggle('armed', st.canBuzz);
+  buzz.classList.toggle('is-ghost', !st.canBuzz);
+  const why = document.getElementById('fg-why');
+  why.hidden = st.canBuzz;
+  why.textContent = 'Prima scegli le lettere';
 }
 
 // --- Wheel + spin ---

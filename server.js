@@ -398,7 +398,13 @@ function declareFinalist(id) {
   const f = state.g.players.find(p => p.id === id);
   io.to('main').emit('main:finalist', { id, name: f.name, standings: finalistStandings(id) });
   io.to('admin').emit('admin:state', adminView());
-  state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:finalist', { id, name: f.name, isMe: i === id }));
+  // I due esiti dicono un numero ciascuno — la banca del finalista se hai vinto,
+  // la tua se hai perso — e finora al telefono non arrivava nessuno dei due.
+  state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:finalist', {
+    id, name: f.name, isMe: i === id,
+    bank: f.bank,
+    myBank: state.g.players[i] ? state.g.players[i].bank : 0
+  }));
 }
 
 function tiebreakView() {
@@ -496,7 +502,19 @@ function playerFinalView() {
   return {
     boardIndex: fg.boardIndex, totalBoards: 3, state: fg.state,
     canPickConsonant, canPickVowel, canBuzz: fg.state === 'RUNNING',
-    usedLetters: fg.usedLetters, message
+    usedLetters: fg.usedLetters, message,
+    // Scheda del timer e quadratini del progresso: il finalista deve vedere
+    // quanti secondi restano e quante scelte gli mancano, non solo leggerlo.
+    timeLeft: state.finalTimeLeft,
+    total: FINAL_TIME_MS,
+    picks: {
+      consonants: fg.consonantPicks,
+      maxConsonants: finalgame.BOARD1_CONSONANTS,
+      vowel: fg.vowelPicked,
+      // Le lettere scelte da lui, distinte da quelle regalate dal tabellone:
+      // sulla tastiera le prime restano accese, le seconde solo spente.
+      letters: fg.usedLetters.filter(L => !(fg.boardIndex === 0 ? finalgame.BOARD1_REVEAL : []).includes(L))
+    }
   };
 }
 

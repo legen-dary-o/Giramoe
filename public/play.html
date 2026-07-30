@@ -143,32 +143,72 @@
     </div>
   </div>
 
-  <!-- Finalist -->
+  <!-- 1j · Esito finalista, due stati alternativi -->
   <div id="player-finalist-screen" class="screen hidden">
-    <div class="mobile-container">
-      <h2 class="matchend-title" id="player-finalist-title">—</h2>
+    <div class="ph-dots" aria-hidden="true"></div>
+    <div class="mobile-container fin-col">
+      <div class="fin-card is-win" id="fin-win" hidden>
+        <span class="fin-lab">Sei il finalista</span>
+        <span class="fin-big" id="fin-bank">0</span>
+        <span class="fin-unit">punti in banca</span>
+        <p class="fin-say">Tre tabelloni, 60 secondi in tutto. Guarda lo schermo grande.</p>
+      </div>
+      <div class="fin-card" id="fin-lose" hidden>
+        <span class="fin-lab">Fine partita</span>
+        <h2 class="fin-title" id="fin-who">&mdash;</h2>
+        <p class="fin-say" id="fin-mine">&mdash;</p>
+      </div>
     </div>
   </div>
 
-  <!-- Final game (finalist only) -->
+  <!-- 1k · Gioco finale (solo il finalista) -->
   <div id="player-final-screen" class="screen hidden">
     <div class="mobile-container">
-      <div class="turn-message" id="final-message">Gioco finale</div>
-      <div class="keyboard" id="final-keyboard"></div>
-      <div class="vowel-picker" id="final-vowels"></div>
-      <button class="buzz-pill" id="btn-final-buzz" disabled>PRENOTATI</button>
+      <div class="ph-topbar" id="fg-topbar"></div>
+      <div class="fg-clock">
+        <span class="fg-num" id="fg-num">60</span>
+        <div class="fg-meta">
+          <span class="lab" id="fg-lab">Il timer parte quando hai scelto</span>
+          <span class="fg-bar"><i id="fg-bar-fill"></i></span>
+        </div>
+      </div>
+      <div class="fg-task" id="fg-task">
+        <span class="fg-task-t" id="fg-task-t">Scegli 3 consonanti e 1 vocale</span>
+        <div class="fg-done">
+          <span class="lab">Fatte</span>
+          <span class="fg-boxes" id="fg-boxes"></span>
+        </div>
+      </div>
+      <div class="fg-group">
+        <span class="lab">Consonanti</span>
+        <div class="keyboard" id="final-keyboard"></div>
+      </div>
+      <div class="fg-group">
+        <span class="lab">Vocale</span>
+        <div class="vowel-picker" id="final-vowels"></div>
+      </div>
+      <button class="pbtn is-big is-ghost" id="btn-final-buzz" disabled>Prenotati</button>
+      <p class="pbtn-why" id="fg-why" hidden></p>
     </div>
   </div>
 
-  <!-- Envelopes -->
+  <!-- 1l · Buste -->
   <div id="player-envelopes-screen" class="screen hidden">
-    <div class="mobile-container">
-      <div class="turn-message" id="env-message">Le buste</div>
-      <div class="envelopes-row" id="player-envelopes-row"></div>
-      <div class="env-actions">
-        <button class="buzz-pill" id="btn-env-keep" style="display:none;">TIENI</button>
-        <button class="buzz-pill" id="btn-env-change" style="display:none;">CAMBIA</button>
+    <div class="mobile-container env-col">
+      <div class="ph-topbar" id="env-topbar"></div>
+      <div class="env-head">
+        <h2 class="env-title" id="env-title">Le buste</h2>
+        <p class="env-sub" id="env-sub"></p>
       </div>
+      <div class="env-open" id="env-open" hidden>
+        <span class="dots" aria-hidden="true"></span>
+        <span class="env-open-lab" id="env-open-lab">Busta 1</span>
+        <span class="env-open-prize" id="env-open-prize"></span>
+      </div>
+      <div class="env-others" id="env-others"></div>
+      <button class="pbtn is-big" id="btn-env-keep" hidden>Tieni questa</button>
+      <button class="pbtn is-big is-secondary" id="btn-env-change" hidden>Cambia</button>
+      <p class="pg-note" id="env-note" hidden>Una busta scartata non si pu&ograve; ripescare</p>
     </div>
   </div>
 

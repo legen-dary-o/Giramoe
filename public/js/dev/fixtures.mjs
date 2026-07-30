@@ -330,16 +330,21 @@ const PHONE = {
     message: 'Spareggio! Gira la ruota'
   }]],
 
-  // 1j · esito finalista: vinto
-  '1j': () => [JOINED, ['player:finalist', { name: 'Marco', isMe: true }]],
+  // 1j · esito finalista: vinto (l'altro stato è 1j2)
+  '1j': () => [JOINED, ['player:finalist', { name: 'Marco', isMe: true, bank: 7700, myBank: 7700 }]],
 
-  // 1k · gioco finale: scelta di 3 consonanti + 1 vocale
+  // 1j2 · lo stesso schermo per chi non ce l'ha fatta
+  '1j2': () => [JOINED, ['player:finalist', { name: 'Giulia', isMe: false, bank: 7700, myBank: 3200 }]],
+
+  // 1k · gioco finale: scelta di 3 consonanti + 1 vocale, due già fatte
   '1k': () => [JOINED, ['player:finalStart', { isFinalist: true }],
     ['player:finalState', {
       boardIndex: 0, totalBoards: 3, state: 'PICKING',
       canPickConsonant: true, canPickVowel: true, canBuzz: false,
-      usedLetters: ['N', 'R', 'T', 'E'],
-      message: 'Scegli 3 consonanti e 1 vocale'
+      usedLetters: ['N', 'R', 'T', 'E', 'L', 'M'],
+      message: 'Scegli 3 consonanti e 1 vocale',
+      timeLeft: 60000, total: 60000,
+      picks: { consonants: 2, maxConsonants: 3, vowel: false, letters: ['L', 'M'] }
     }]],
 
   // 1l · buste: ha aperto la prima, può cambiarla una volta

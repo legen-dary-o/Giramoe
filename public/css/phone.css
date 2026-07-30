@@ -339,44 +339,6 @@
   color: var(--accent);
 }
 
-.score-row { display: flex; gap: 12px; }
-.score-pill {
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-soft);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--hairline);
-}
-.score-pill b { color: var(--ink); font-weight: 600; }
-
-.turn-message {
-  font-size: 16px;
-  font-weight: 600;
-  text-align: center;
-  padding: 13px 26px;
-  border-radius: var(--r-sm);
-  border: 1px solid transparent;
-  transition: all 0.4s ease;
-}
-.turn-message.your-turn {
-  color: var(--green);
-  border-color: rgba(48, 184, 255, 0.45);
-  background: rgba(48, 184, 255, 0.08);
-}
-.turn-message.waiting { color: var(--ink-faint); }
-
-.player-nick {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  position: absolute;
-  bottom: 22px;
-}
-
 /* Tastiera: 21 consonanti su 7 colonne, tasto quadrato. Tre stati soli —
    disponibile, già chiamata (spenta), selezionata. */
 .keyboard {
@@ -468,30 +430,6 @@
 @keyframes buzzPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.04); }
-}
-
-.buzz-pill {
-  display: block;
-  width: min(86vw, 360px);
-  margin: 16px auto 0;
-  padding: clamp(14px, 2.4vh, 20px);
-  border-radius: 999px;
-  font-size: clamp(17px, 5vw, 24px);
-  font-weight: 700;
-  letter-spacing: 3px;
-  color: var(--ink);
-  background: rgba(28, 28, 31, 0.9);
-  border: 1px solid rgba(245, 245, 247, 0.65);
-  box-shadow: 0 0 24px rgba(48, 184, 255, 0.18);
-  cursor: pointer;
-  transition: transform 0.12s ease, background-color 0.25s ease, box-shadow 0.25s ease;
-}
-.buzz-pill:not(:disabled):active { transform: scale(0.97); }
-.buzz-pill:disabled { opacity: 0.35; }
-.buzz-pill.armed {
-  background: linear-gradient(150deg, rgba(48, 184, 255, 0.85), var(--accent));
-  color: #000;
-  animation: buzzPulse 0.8s ease-in-out infinite;
 }
 
 /* === 1c TURNO · 1d CONSONANTE · 1e EXPRESS ===
@@ -756,6 +694,227 @@
 }
 #tb-wheel-container { width: 250px; }
 #player-tiebreak-screen .wheel-indicator { width: 18px; height: 23px; }
+
+/* === 1j · ESITO FINALISTA ===
+   Una schermata, due esiti che non convivono mai: vinto è una scheda ciano col
+   numero grande, perso è la stessa scheda spenta. */
+
+.fin-col { justify-content: center; gap: 40px; padding: 0 24px 40px; }
+#player-finalist-screen .ph-dots {
+  -webkit-mask-image: radial-gradient(ellipse 72% 24% at 50% 32%, transparent 62%, #000 96%);
+  mask-image: radial-gradient(ellipse 72% 24% at 50% 32%, transparent 62%, #000 96%);
+}
+.fin-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 28px 24px;
+  border-radius: 24px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  opacity: 0.75;
+}
+.fin-card[hidden] { display: none; }
+.fin-card.is-win {
+  gap: 16px;
+  padding: 34px 24px;
+  background: linear-gradient(180deg, rgba(48, 184, 255, 0.14), var(--panel));
+  border-color: rgba(48, 184, 255, 0.6);
+  box-shadow: 0 0 50px rgba(48, 184, 255, 0.18);
+  opacity: 1;
+}
+.fin-lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.fin-card.is-win .fin-lab { color: var(--ink-soft); }
+.fin-big {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+.fin-unit { font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); }
+.fin-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1.1;
+  text-align: center;
+}
+.fin-say {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--ink-soft);
+}
+.fin-card.is-win .fin-say { margin-top: 6px; font-size: 13.5px; }
+
+/* === 1k · GIOCO FINALE === */
+
+#player-final-screen .mobile-container {
+  justify-content: flex-start;
+  overflow-y: auto;
+  gap: 16px;
+  padding: 18px 20px 20px;
+}
+#player-final-screen .ph-topbar {
+  width: calc(100% + 40px);
+  margin: 0 -20px;
+  padding: 2px 22px 14px;
+}
+
+.fg-clock {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+/* tabular-nums: senza, la cifra balla a ogni secondo che scende */
+.fg-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 44px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.fg-meta { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.fg-bar { height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.10); overflow: hidden; }
+.fg-bar i { display: block; height: 100%; border-radius: 3px; background: rgba(48, 184, 255, 0.55); }
+.fg-bar i { transition: width 0.3s linear; }
+
+.fg-task {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(48, 184, 255, 0.08);
+  border: 1px solid rgba(48, 184, 255, 0.40);
+}
+.fg-task-t { font: 600 15px -apple-system, sans-serif; color: var(--accent); }
+.fg-done { display: flex; align-items: center; gap: 8px; }
+.fg-done .lab { color: var(--ink-soft); letter-spacing: 2px; }
+.fg-boxes { display: flex; gap: 6px; }
+.fg-boxes i {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px dashed rgba(48, 184, 255, 0.6);
+}
+.fg-boxes i.is-done { background: var(--accent); border-style: solid; border-color: var(--accent); }
+/* Lo stacco fra le tre consonanti e la vocale: sono due scelte diverse */
+.fg-boxes i.is-vowel { margin-left: 9px; }
+
+.fg-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.fg-group .lab,
+.fg-meta .lab,
+.fg-done .lab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* === 1l · BUSTE === */
+
+.env-col {
+  justify-content: flex-start;
+  overflow-y: auto;
+  gap: 20px;
+  padding: 22px 20px 20px;
+}
+#player-envelopes-screen .ph-topbar {
+  width: calc(100% + 40px);
+  margin: 0 -20px 0;
+  padding: 2px 22px 14px;
+}
+.env-head { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.env-title { font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.1; }
+.env-sub { font-family: var(--font-mono); font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+
+/* La busta aperta: bordo ciano spesso e il premio in chiaro. Le altre due sono
+   riquadri tratteggiati — chiuse, quindi non hanno niente da mostrare. */
+.env-open {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  padding: 26px 22px;
+  border-radius: 20px;
+  background: #0e0e12;
+  border: 2px solid rgba(48, 184, 255, 0.85);
+  box-shadow: 0 0 40px rgba(48, 184, 255, 0.30);
+}
+.env-open[hidden] { display: none; }
+.env-open .dots {
+  position: absolute;
+  inset: 0;
+  opacity: 0.7;
+  background-image: radial-gradient(circle 1.6px at 50% 50%, rgba(255, 255, 255, 0.55) 99%, transparent 100%);
+  background-size: 7px 7px;
+}
+.env-open-lab {
+  position: relative;
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.env-open-prize {
+  position: relative;
+  display: block;
+  margin-top: 12px;
+  font: 700 26px var(--font-mono);
+  color: #fff;
+}
+
+.env-others { display: flex; gap: 12px; width: 100%; }
+.env-others:empty { display: none; }
+.env-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.20);
+}
+.env-box .n { font: 700 22px var(--font-mono); color: rgba(245, 245, 247, 0.35); }
+.env-box .st {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.30);
+}
+.env-box.is-swap { border-color: rgba(48, 184, 255, 0.45); }
+.env-box.is-swap .n { color: var(--accent); }
+.env-box.is-swap .st { color: rgba(48, 184, 255, 0.8); }
+.env-box.is-pickable { cursor: pointer; }
+.env-box.is-pickable:active { transform: scale(0.96); }
+.env-box.is-gone { opacity: 0.35; }
 
 /* === SAMIRO ===
    L'assistente sul regolamento non compare in nessun mockup, ma deve stare su

@@ -193,7 +193,7 @@ Via il messaggio con l'emoji `🚄 EXPRESS! Spara consonanti o compra vocali`.
 
 **Files:** `server.js`, `public/play.html`, `public/css/phone.css`, `public/js/player.js`
 
-- [ ] **Step 1: la finestra da 5s arriva anche al telefono (server)**
+- [x] **Step 1: la finestra da 5s arriva anche al telefono (server)**
 
 `playerGiramoeView(i)` guadagna il tempo che resta, dallo stesso `giramoeWindowUntil` che la
 slice 4 ha aggiunto per la TV:
@@ -205,7 +205,7 @@ slice 4 ha aggiunto per la TV:
     windowTotal: GIRAMOE_BUZZ_MS,
 ```
 
-- [ ] **Step 2: `1f` e `1g`**
+- [x] **Step 2: `1f` e `1g`**
 
 `gap:26px`. Schede `Triplete` / `Banca`; istruzione centrata; **buzzer 300px** coi valori già
 in `.buzz-button` (cambia la dimensione fissa) più il sottotesto `Tieni premuto per sicurezza`;
@@ -219,7 +219,7 @@ La lista dei tre giocatori con lo stato non c'è nel payload: `player:tripleteSt
 il proprio. Il server la aggiunge (`players: [{ name, locked }]`) — la stessa lista che
 `tripleteScores()` produce già per la TV.
 
-- [ ] **Step 3: `1h` Giramoe**
+- [x] **Step 3: `1h` Giramoe**
 
 Schede `Moltiplicatore ×500` (evidenziata) / `Tuoi punti`; banner `Una sola consonante`;
 tastiera attiva e **nessun bottone vocale** — nel Giramoe le vocali si comprano, quindi il
@@ -227,7 +227,7 @@ bottone resta ma solo quando `canBuyVowel` è vero (il mockup mostra il caso in 
 scheda countdown con anello 58px `conic-gradient` + disco 46px e cifra Syne 800 22px; buzzer
 pillola; nota `Solo chi indovina incassa i propri punti`.
 
-- [ ] **Step 4: `1i` spareggio**
+- [x] **Step 4: `1i` spareggio**
 
 Colonna centrata: eyebrow `Parità in banca`, titolo `Spareggio` Syne 800 44px, spiegazione,
 mini-ruota 250px in variante Giramoe, lista dei contendenti col valore uscito (`—` se non ha
@@ -235,7 +235,7 @@ ancora girato), primario `GIRA LA RUOTA` 62px.
 La ruota nello spareggio oggi sul telefono non c'è: `#player-tiebreak-screen` ha solo il
 bottone. Va aggiunta, con le stesse etichette che il server manda alla TV.
 
-- [ ] **Step 5: verifica `?mock=1f`, `1g`, `1h`, `1i`; test verdi; commit**
+- [x] **Step 5: verifica `?mock=1f`, `1g`, `1h`, `1i`; test verdi; commit**
 
 ---
 
@@ -243,14 +243,14 @@ bottone. Va aggiunta, con le stesse etichette che il server manda alla TV.
 
 **Files:** `server.js`, `public/play.html`, `public/css/phone.css`, `public/js/player.js`
 
-- [ ] **Step 1: gli esiti hanno bisogno dei numeri (server)**
+- [x] **Step 1: gli esiti hanno bisogno dei numeri (server)**
 
 `player:finalist` diventa `{ name, isMe, bank, myBank }`: la schermata dice `punti in banca`
 se hai vinto e `Hai chiuso con 3.200 punti` se hai perso, e oggi nessuno dei due numeri arriva.
 `player:finalState` guadagna `timeLeft`, `total` e `picks` (quante consonanti e se la vocale è
 fatta) per la scheda timer e i quattro quadratini del progresso.
 
-- [ ] **Step 2: `1j`**
+- [x] **Step 2: `1j`**
 
 Due stati alternativi nella stessa schermata.
 Vinto: scheda ciano `padding:34px 24px`, `border-radius:24px`, `Sei il finalista` → banca Syne
@@ -259,7 +259,7 @@ schermo grande.`
 Perso: scheda neutra a `opacity:.75`, `Fine partita` → `Va <nome> al gioco finale` Syne 800
 30px → `Hai chiuso con N punti. Grazie per aver giocato!`
 
-- [ ] **Step 3: `1k`**
+- [x] **Step 3: `1k`**
 
 Scheda timer (`60` Syne 800 44px `tabular-nums`, riga `Il timer parte quando hai scelto`,
 barra piena); scheda istruzione ciano con i quattro quadratini 26px (pieni `--accent`, da fare
@@ -267,7 +267,7 @@ barra piena); scheda istruzione ciano con i quattro quadratini 26px (pieni `--ac
 con le scelte evidenziate; riga vocali; buzzer `PRENOTATI` disattivato finché la scelta non è
 completa — e disattivato **dicendo perché**, come tutti i primari del handoff.
 
-- [ ] **Step 4: `1l` buste**
+- [x] **Step 4: `1l` buste**
 
 Titolo `Hai aperto la busta N` Syne 800 26px + riga dei cambi; busta aperta `padding:26px 22px`,
 `border-radius:20px`, `border:2px solid rgba(48,184,255,.85)`, texture halftone a `opacity:.7`,
@@ -275,7 +275,7 @@ etichetta + premio Space Mono 700 26px; le altre due come riquadri `flex:1` a bo
 tratteggiato con stato `Chiusa` / `Scambiabile`; primario `TIENI QUESTA`, secondario `CAMBIA`,
 nota `Una busta scartata non si può ripescare`.
 
-- [ ] **Step 5: verifica `?mock=1j`, `1k`, `1l`; test verdi; commit**
+- [x] **Step 5: verifica `?mock=1j`, `1k`, `1l`; test verdi; commit**
 
 ---
 
