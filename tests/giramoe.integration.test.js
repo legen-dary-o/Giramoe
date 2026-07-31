@@ -93,7 +93,7 @@ test('giramoe: admin spin sets V, consonants score V x occ, only the winner bank
     await wait(300);
     assert.strictEqual(adminState.giramoe.multiplier, 250, 'multiplier set from the spin');
     assert.strictEqual(adminState.giramoe.state, 'PLAYING');
-    assert.strictEqual(adminState.giramoe.currentTurn, 0, 'P1 starts');
+    assert.strictEqual(adminState.giramoe.currentTurn, 0, 'P1 starts: highest bank out of the express');
 
     // Prima della chiamata la finestra di prenotazione non esiste.
     assert.strictEqual(m.window, null, 'nessuna finestra prima che qualcuno chiami');

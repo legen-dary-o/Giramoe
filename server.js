@@ -1088,7 +1088,9 @@ io.on('connection', (socket) => {
   socket.on('admin:giramoeSetBoard', ({ category, phrase }) => {
     if (state.phase !== 'giramoe' || !state.g) return;
     const players = state.g.players.map(p => ({ id: p.id, name: p.name }));
-    const r = giramoe.createGiramoe(players, category, phrase);
+    // Apre chi esce dall'Express con la banca più alta (a pari merito, sorteggio).
+    const startIndex = giramoe.startingTurnIndex(state.g.players);
+    const r = giramoe.createGiramoe(players, category, phrase, startIndex);
     if (!r.ok) return io.to('admin').emit('admin:giramoeError', r.error);
     state.gi = r.gi;
     io.to('admin').emit('admin:giramoeError', '');
