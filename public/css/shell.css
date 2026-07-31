@@ -287,7 +287,11 @@
 /* === REDUCED MOTION === */
 
 @media (prefers-reduced-motion: reduce) {
-  .wm { animation: none; background-position: 50% 0; }
+  /* `.wm.rise` va nominato per esteso: rimette in piedi le due animazioni con
+     una specificità più alta di `.wm`, quindi un `.wm { animation: none }` da
+     solo non lo spegneva e il wordmark dell'intro continuava a brillare
+     proprio a chi ha chiesto di non far muovere niente. */
+  .wm, .wm.rise { animation: none; background-position: 50% 0; }
   .rise { animation: none; opacity: 1; }
   .live-dot { animation: none; opacity: 1; }
   .disconnect-overlay p { animation: none; opacity: 1; }

@@ -72,6 +72,86 @@ test('nessuna animazione con un nome che non esiste da nessuna parte', () => {
   }
 });
 
+// Secondo modo di sbagliare invisibile: `@media (prefers-reduced-motion)` che
+// spegne `.wm`, e da qualche altra parte un `.wm.rise` che rimette in piedi
+// l'animazione. Il compound ha specificità più alta, quindi vince: chi ha
+// chiesto di non far muovere niente vede muoversi tutto, e la regola che
+// dovrebbe proteggerlo è lì scritta bene, quindi rileggendo il file sembra a
+// posto. Va confrontata la specificità, non l'ordine.
+function reducedMotionBlocks(css) {
+  const out = [];
+  const re = /@media[^{]*prefers-reduced-motion[^{]*\{/g;
+  let m;
+  while ((m = re.exec(css))) {
+    // dalla graffa del @media, si conta fino a quella che lo chiude
+    let depth = 1;
+    let i = re.lastIndex;
+    for (; i < css.length && depth > 0; i++) {
+      if (css[i] === '{') depth++;
+      else if (css[i] === '}') depth--;
+    }
+    out.push({ start: m.index, end: i, body: css.slice(re.lastIndex, i - 1) });
+  }
+  return out;
+}
+
+const norm = (sel) => sel.trim().replace(/\s+/g, ' ');
+
+// Cosa spegne il blocco: le classi finali dei suoi selettori (`.wm` da `.wm`,
+// `.dot` da `.pbanner .dot`) e i selettori interi, che servono a riconoscere i
+// composti già messi a posto — `.wm.rise` nominato per esteso è la cura, non
+// il problema.
+function spente(body) {
+  const classi = new Set();
+  const selettori = new Set();
+  for (const m of body.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!/animation(?:-name)?\s*:\s*none/.test(m[2])) continue;
+    for (const sel of m[1].split(',')) {
+      selettori.add(norm(sel));
+      const last = sel.trim().split(/\s+/).pop();
+      const cls = last.match(/\.[\w-]+/g);
+      if (cls) classi.add(cls[cls.length - 1]);
+    }
+  }
+  return { classi, selettori };
+}
+
+test('a movimento ridotto nessun selettore composto riaccende un\'animazione spenta', () => {
+  const dir = path.join(PUBLIC, 'css');
+  const problems = [];
+  for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.css'))) {
+    const css = fs.readFileSync(path.join(dir, file), 'utf8');
+    const blocks = reducedMotionBlocks(css);
+    if (!blocks.length) continue;
+    const dentro = (i) => blocks.some(b => i >= b.start && i < b.end);
+    const off = new Set();
+    const curate = new Set();
+    blocks.forEach(b => {
+      const s = spente(b.body);
+      s.classi.forEach(c => off.add(c));
+      s.selettori.forEach(x => curate.add(x));
+    });
+
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (dentro(m.index)) continue;                       // le regole del blocco stesso
+      const decl = m[2];
+      if (!/animation(?:-name)?\s*:/.test(decl) || /animation(?:-name)?\s*:\s*none/.test(decl)) continue;
+      for (const parte of m[1].split(',')) {
+        if (curate.has(norm(parte))) continue;             // il blocco lo nomina per esteso
+        for (const cls of off) {
+          // `.wm` seguito subito da un'altra classe/pseudo: stesso elemento,
+          // specificità più alta. `.wm .rise` (spazio) è un altro elemento e va bene.
+          const composto = new RegExp(cls.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[.:#\\[]');
+          if (composto.test(parte)) {
+            problems.push(`${file}: "${norm(parte)}" riaccende ${cls}, spenta a movimento ridotto`);
+          }
+        }
+      }
+    }
+  }
+  assert.deepStrictEqual(problems, [], 'animazioni che sopravvivono a movimento ridotto:\n  ' + problems.join('\n  '));
+});
+
 test('le pagine non caricano più style.css', () => {
   for (const page of PAGES) {
     assert.ok(!cssOf(page).files.includes('style.css'), `${page} carica ancora style.css`);
