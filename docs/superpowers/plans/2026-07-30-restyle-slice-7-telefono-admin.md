@@ -235,7 +235,7 @@ girano la ruota dal telefono. Non serve fare nulla.`, una scheda per contendente
 
 **Files:** `public/admin.html`, `public/css/admin.css`, `public/js/admin.js`, `fixtures.mjs`
 
-- [ ] **Step 1: `1v`**
+- [x] **Step 1: `1v`**
 
 È il form più lungo di tutta l'app: scheda del finalista (avatar, `FINALISTA` + nome,
 banca Syne 24px in ciano), tre chip di passo (`1 ARGOMENTO`, `2 FRASI`, `3 BUSTE`) che si
@@ -245,7 +245,7 @@ con `INIZIA IL FINALE` spento e la nota che dice cosa manca.
 I chip non sono decorazione: il form ha sette campi e senza un indicatore non si capisce a
 che punto si è. Si accendono da soli guardando i campi, non da un payload.
 
-- [ ] **Step 2: `1w` finale live**
+- [x] **Step 2: `1w` finale live**
 
 Scheda del timer: cifra Syne 800 **64px** `tabular-nums`, `TABELLONE 1 DI 3`, barra
 ciano col bagliore, nota `il tempo si trasporta`. Tre riquadri quadrati dei tabelloni
@@ -253,22 +253,22 @@ ciano col bagliore, nota `il tempo si trasporta`. Tre riquadri quadrati dei tabe
 TABELLONE` (tessere bianche su nero) e `CHIAMATE DAL GIOCATORE` (tessere ciano). Barra in
 basso: `INDOVINATA` + `SBAGLIATA`, spenti se non è prenotato.
 
-- [ ] **Step 3: `1x` buste**
+- [x] **Step 3: `1x` buste**
 
 Scheda `ESITI DEL GIOCO FINALE` coi tre pip colorati e la frase che ne consegue
 (`Due verdi: il finalista sceglie e ha 1 cambio.`), scheda `STATO DELLE BUSTE` con le tre
 righe (aperta dal finalista = ciano piena; rossa = bottone `RIVELA`; verde chiusa =
 tratteggiata), scheda `CAMBI RIMASTI` col numero Syne 26px, nota finale.
 
-- [ ] **Step 4: verifica `?mock=1v`, `1w`, `1x`; test verdi; commit**
+- [x] **Step 4: verifica `?mock=1v`, `1w`, `1x`; test verdi; commit**
 
 ---
 
 ## Task 7: consegna
 
-- [ ] **Step 1:** `node --test --test-concurrency=1` — tutti verdi
-- [ ] **Step 2:** tutte e undici a 430×932: niente scroll orizzontale, nessuna scheda
+- [x] **Step 1:** `node --test --test-concurrency=1` — tutti verdi
+- [x] **Step 2:** tutte e undici a 430×932: niente scroll orizzontale, nessuna scheda
       sotto la barra d'azione, tutti gli `input` a 16px
-- [ ] **Step 3:** giro di controllo su TV (`?mock=1c`) e telefono (`?mock=1c`): i campi
+- [x] **Step 3:** giro di controllo su TV (`?mock=1c`) e telefono (`?mock=1c`): i campi
       nuovi del server non devono aver mosso niente
-- [ ] **Step 4:** riferire al committente
+- [x] **Step 4:** riferire al committente

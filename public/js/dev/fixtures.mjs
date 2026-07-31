@@ -427,21 +427,27 @@ const ADMIN = {
 
   // 1v · finalista + setup del gioco finale
   '1v': () => [['admin:state', admin({
-    phase: 'finalist', finalist: { id: 0, name: 'Marco' }
+    phase: 'finalist', finalist: { id: 0, name: 'Marco', bank: 7700 }
   })]],
 
   // 1w · gioco finale live, tabellone 1, 42s
   '1w': () => [['admin:state', admin({
-    phase: 'final', finalist: { id: 0, name: 'Marco' },
+    phase: 'final', finalist: { id: 0, name: 'Marco', bank: 7700 },
     final: {
       category: 'CANZONI ITALIANE', boardIndex: 0, totalBoards: 3,
-      state: 'RUNNING', results: [null, null, null], timeLeft: 42000, buzzed: false
+      state: 'BUZZED', results: [null, null, null],
+      timeLeft: 42000, total: 60000, buzzed: true,
+      given: ['N', 'R', 'T', 'E'],
+      picks: [
+        { letter: 'L', present: true }, { letter: 'M', present: true },
+        { letter: 'C', present: true }, { letter: 'I', present: true }
+      ]
     }
   })]],
 
   // 1x · buste: due verdi, una rossa da rivelare
   '1x': () => [['admin:state', admin({
-    phase: 'envelopes', finalist: { id: 0, name: 'Marco' }, envelopes: ENVELOPES
+    phase: 'envelopes', finalist: { id: 0, name: 'Marco', bank: 7700 }, envelopes: ENVELOPES
   })]]
 };
 

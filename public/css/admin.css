@@ -25,8 +25,9 @@
 }
 /* Le schermate con la barra d'azione le lasciano il posto: senza, l'ultima
    scheda ci finisce sotto e non si legge. */
-.ad-col.has-bar { padding-bottom: 132px; }
-.ad-col.has-bar.is-single { padding-bottom: 116px; }
+.ad-col.has-bar { padding-bottom: 136px; }
+/* Un bottone solo, ma con la riga del perché sotto: è più alta, non più bassa */
+.ad-col.has-bar.is-single { padding-bottom: 146px; }
 
 /* Colonna centrata (pre-partita, tabelloni finiti, spareggio) */
 .ad-center {
@@ -455,6 +456,189 @@
 }
 .tb-card.is-done .tb-val { color: var(--accent); }
 
+/* === 1v · FINALISTA + SETUP DEL FINALE === */
+
+.acard.fin-who { flex-direction: row; align-items: center; gap: 14px; }
+.fin-who-tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fin-who-tx .nome { font: 600 19px -apple-system, sans-serif; }
+.fin-bank {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+/* Tre passi: il form ha sette campi e senza un indicatore non si capisce a che
+   punto si è. Si accendono guardando i campi, non un payload. */
+.fin-steps { display: flex; gap: 8px; }
+.fin-steps span {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(245, 245, 247, 0.4);
+}
+.fin-steps span.is-done {
+  background: rgba(48, 184, 255, 0.14);
+  border-color: rgba(48, 184, 255, 0.5);
+  color: var(--accent);
+}
+/* Le buste si numerano in mono: sono etichette, non una sequenza da leggere */
+.afield-n.is-env .n { font: 700 15px var(--font-mono); color: var(--accent); }
+
+/* === 1w · GIOCO FINALE LIVE === */
+
+.acard.fg-clock { flex-direction: row; align-items: center; gap: 18px; padding: 22px; border-radius: 20px; }
+.fg-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 64px;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+.fg-meta { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fg-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.fg-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 14px rgba(48, 184, 255, 0.6);
+  transition: width 0.3s linear;
+}
+
+/* I tre tabelloni: quadrati, perché a colpo d'occhio conta lo stato, non il testo */
+.fg-tiles { display: flex; gap: 12px; }
+.fg-tiles .tile {
+  flex: 1;
+  aspect-ratio: 1;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.fg-tiles .n { font-family: var(--font-display); font-weight: 800; font-size: 32px; color: rgba(245, 245, 247, 0.28); }
+.fg-tiles .st {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.3);
+}
+.fg-tiles .tile.is-now { background: rgba(48, 184, 255, 0.1); border-color: rgba(48, 184, 255, 0.6); }
+.fg-tiles .tile.is-now .n, .fg-tiles .tile.is-now .st { color: var(--accent); }
+.fg-tiles .tile.is-ok .n, .fg-tiles .tile.is-ok .st { color: var(--ink); }
+.fg-tiles .tile.is-ok { border-color: rgba(245, 245, 247, 0.35); }
+
+.fg-group { display: flex; flex-direction: column; gap: 9px; }
+.fg-group.is-split { padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.10); }
+.fg-keys { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Regalate: tessere bianche. Chiamate: ciano — chi le ha volute è il giocatore */
+.fg-keys .k {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font: 700 17px var(--font-mono);
+  background: rgba(255, 255, 255, 0.9);
+  color: #000;
+}
+.fg-keys .k.is-pick {
+  background: rgba(48, 184, 255, 0.14);
+  border: 1px solid rgba(48, 184, 255, 0.6);
+  color: var(--accent);
+}
+/* Una lettera chiamata che nella frase non c'era: spenta, così si vede subito
+   quante ne ha buttate via. */
+.fg-keys .k.is-miss { background: none; border: 1px solid rgba(255, 255, 255, 0.16); color: rgba(245, 245, 247, 0.3); }
+.fg-keys:empty::after {
+  content: 'nessuna';
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(245, 245, 247, 0.3);
+}
+
+.fg-live {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(48, 184, 255, 0.1);
+  border: 1px solid rgba(48, 184, 255, 0.45);
+  font: 600 15px -apple-system, sans-serif;
+  color: var(--accent);
+}
+.fg-live[hidden] { display: none; }
+.fg-live .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: liveBlink 1.2s ease-in-out infinite; }
+
+/* === 1x · BUSTE === */
+
+.env-pips { display: flex; gap: 9px; margin-top: 2px; }
+.env-pips i { flex: 1; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); }
+.env-pips i.is-ok { background: var(--accent); box-shadow: 0 0 12px rgba(48, 184, 255, 0.6); }
+.env-pips i.is-ko { background: rgba(245, 245, 247, 0.35); }
+
+#admin-envelopes-list { display: flex; flex-direction: column; gap: 12px; }
+.env-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+}
+.env-row .n { flex: none; min-width: 20px; font: 700 20px var(--font-mono); color: rgba(245, 245, 247, 0.6); }
+.env-row .tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.env-row .tx .t { font: 600 15px -apple-system, sans-serif; }
+.env-row .tx .s {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.45);
+}
+.env-row.is-open { background: rgba(48, 184, 255, 0.08); border-color: rgba(48, 184, 255, 0.55); }
+.env-row.is-open .n, .env-row.is-open .tx .s { color: var(--accent); }
+.env-row.is-red { border-color: rgba(245, 245, 247, 0.28); }
+.env-row.is-red .tx .t { color: var(--ink-soft); }
+.env-row.is-green { border: 1px dashed rgba(48, 184, 255, 0.4); }
+.env-row.is-green .n, .env-row.is-green .tx .s { color: rgba(48, 184, 255, 0.8); }
+.env-row.is-green .tx .t { color: var(--ink-soft); }
+.env-row.is-gone { opacity: 0.4; }
+.env-reveal {
+  margin-left: auto;
+  flex: none;
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: none;
+  border: 1px solid rgba(245, 245, 247, 0.45);
+  font: 600 11px var(--font-mono);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+}
+.env-reveal:active { transform: scale(0.96); }
+.acard.env-left { flex-direction: row; align-items: center; justify-content: space-between; }
+
 /* === 1q · TRE TABELLONI FATTI === */
 
 .ad-pips.is-big i { width: 44px; height: 6px; border-radius: 3px; }
@@ -542,82 +726,3 @@
 @media (prefers-reduced-motion: reduce) {
   .abtn { transition: none; }
 }
-
-/* ============================================================
-   VECCHIA CONSOLE — da smontare
-   Le schermate da 1p a 1x non sono ancora state rifatte e usano ancora queste
-   classi. Ogni task della slice 7 ne porta via un pezzo: quando questo blocco
-   è vuoto, la console è tutta nuova. Sta in fondo apposta, così è evidente
-   quanto ne resta.
-   ============================================================ */
-
-.admin-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px 20px;
-  gap: 18px;
-  width: 100%;
-  max-width: 460px;
-  height: 100%;
-  overflow-y: auto;
-}
-.admin-container h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
-
-.admin-section {
-  width: 100%;
-  padding: 16px;
-  border-radius: var(--r-md);
-  background: var(--glass);
-  border: var(--glass-border);
-  box-shadow: var(--glass-edge);
-}
-.admin-section h2 {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 2.5px;
-  margin-bottom: 12px;
-  color: var(--ink-faint);
-}
-.admin-section .glass-button { width: 100%; padding: 14px 12px; font-size: 14px; }
-
-.admin-player-list { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-.admin-player-item {
-  padding: 13px 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--r-sm);
-}
-
-.board-error { color: var(--red); font-size: 13px; font-weight: 600; margin-top: 8px; min-height: 16px; }
-.board-error.ok { color: var(--accent); }
-
-.turn-state-tag {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--accent);
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(48, 184, 255, 0.12);
-  border: 1px solid rgba(48, 184, 255, 0.35);
-}
-
-.admin-scorenums { font-size: 13px; color: var(--ink-soft); }
-.admin-scorenums b { color: var(--ink); }
-
-.admin-actions {
-  display: flex;
-  gap: 10px;
-  background: none;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
-.admin-actions .glass-button { flex: 1; padding: 15px 10px; font-size: 14px; }
-

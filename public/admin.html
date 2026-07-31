@@ -186,48 +186,95 @@
     </div>
   </div>
 
-  <!-- Finalist -->
+  <!-- 1v · Finalista + setup del gioco finale -->
   <div id="admin-finalist" class="screen hidden">
-    <div class="admin-container">
-      <h1>Finalista</h1>
-      <div class="admin-player-item glass-panel" id="admin-finalist-name"></div>
-      <div class="admin-section" style="margin-top:16px;">
-        <h2>Gioco finale</h2>
-        <input type="text" id="fin-topic" class="glass-input" placeholder="Argomento" autocomplete="off">
-        <input type="text" id="fin-phrase-1" class="glass-input" placeholder="Frase 1" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-phrase-2" class="glass-input" placeholder="Frase 2" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-phrase-3" class="glass-input" placeholder="Frase 3" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-env-1" class="glass-input" placeholder="Busta 1 (testo)" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-env-2" class="glass-input" placeholder="Busta 2 (testo)" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-env-3" class="glass-input" placeholder="Busta 3 (testo)" autocomplete="off" style="margin-top:8px;">
-        <button class="glass-button" id="btn-start-final" style="margin-top:10px;">Inizia il finale</button>
-        <div class="board-error" id="final-error"></div>
+    <div class="ad-col has-bar is-single">
+      <div class="ad-topbar" id="fin-topbar"></div>
+      <div class="acard is-accent fin-who">
+        <span class="tb-av" id="fin-av">?</span>
+        <div class="fin-who-tx">
+          <span class="alab">Finalista</span>
+          <span class="nome" id="fin-name">&mdash;</span>
+        </div>
+        <span class="fin-bank" id="fin-bank">0</span>
       </div>
+      <div class="fin-steps" id="fin-steps">
+        <span data-step="topic">1 Argomento</span>
+        <span data-step="phrases">2 Frasi</span>
+        <span data-step="env">3 Buste</span>
+      </div>
+      <div class="acard">
+        <span class="alab">Argomento</span>
+        <input type="text" id="fin-topic" class="afield" placeholder="Canzoni italiane" autocomplete="off">
+      </div>
+      <div class="acard">
+        <span class="alab">Tre frasi</span>
+        <div class="afield-n"><span class="n">1</span><input type="text" id="fin-phrase-1" class="afield" placeholder="Prima frase" autocomplete="off"></div>
+        <div class="afield-n"><span class="n">2</span><input type="text" id="fin-phrase-2" class="afield" placeholder="Seconda frase" autocomplete="off"></div>
+        <div class="afield-n"><span class="n">3</span><input type="text" id="fin-phrase-3" class="afield" placeholder="Terza frase" autocomplete="off"></div>
+      </div>
+      <div class="acard">
+        <span class="alab">Contenuto delle tre buste</span>
+        <div class="afield-n is-env"><span class="n">1</span><input type="text" id="fin-env-1" class="afield" placeholder="Premio della prima" autocomplete="off"></div>
+        <div class="afield-n is-env"><span class="n">2</span><input type="text" id="fin-env-2" class="afield" placeholder="Premio della seconda" autocomplete="off"></div>
+        <div class="afield-n is-env"><span class="n">3</span><input type="text" id="fin-env-3" class="afield" placeholder="Premio della terza" autocomplete="off"></div>
+        <p class="ad-note">Il colore lo decide il gioco: qui scrivi solo il contenuto</p>
+      </div>
+    </div>
+    <div class="ad-bar">
+      <div class="ad-btns">
+        <button class="abtn is-solid" id="btn-start-final" disabled>Inizia il finale</button>
+      </div>
+      <span class="ad-why" id="final-error"></span>
     </div>
   </div>
 
-  <!-- Final control -->
+  <!-- 1w · Gioco finale live -->
   <div id="admin-final" class="screen hidden">
-    <div class="admin-container">
-      <h1>Gioco finale</h1>
-      <div class="admin-section">
-        <h2><span id="fin-board-counter">Tabellone 1 / 3</span> · <span id="fin-timer">60s</span></h2>
-        <div class="admin-player-list" id="fin-results"></div>
-        <div id="fin-state" class="turn-state-tag" style="margin-top:8px;"></div>
+    <div class="ad-col has-bar">
+      <div class="ad-topbar" id="fg-topbar"></div>
+      <div class="acard fg-clock">
+        <span class="fg-num" id="fin-timer">60</span>
+        <div class="fg-meta">
+          <span class="alab" id="fin-board-counter">Tabellone 1 di 3</span>
+          <span class="fg-bar"><i id="fin-bar"></i></span>
+          <span class="ad-note">il tempo si trasporta</span>
+        </div>
       </div>
-      <div class="admin-section admin-actions">
-        <button class="glass-button" id="btn-final-correct" disabled>Frase indovinata</button>
-        <button class="glass-button" id="btn-final-wrong" disabled>Frase sbagliata</button>
+      <div class="fg-tiles" id="fin-results"></div>
+      <div class="acard">
+        <div class="fg-group">
+          <span class="alab">Regalate dal tabellone</span>
+          <div class="fg-keys" id="fin-given"></div>
+        </div>
+        <div class="fg-group is-split">
+          <span class="alab">Chiamate dal giocatore</span>
+          <div class="fg-keys" id="fin-picks"></div>
+        </div>
       </div>
+      <div class="fg-live" id="fin-state" hidden><span class="dot"></span><span class="tx"></span></div>
     </div>
+    <div class="ad-bar" id="final-actions"></div>
   </div>
 
-  <!-- Envelopes -->
+  <!-- 1x · Buste -->
   <div id="admin-envelopes" class="screen hidden">
-    <div class="admin-container">
-      <h1>Buste</h1>
-      <p style="margin-bottom: 12px; color: var(--ink-soft);">Il finalista apre/cambia le verdi. Le rosse le riveli tu.</p>
-      <div class="admin-player-list" id="admin-envelopes-list"></div>
+    <div class="ad-col">
+      <div class="ad-topbar" id="env-topbar"></div>
+      <div class="acard is-quiet">
+        <span class="alab">Esiti del gioco finale</span>
+        <div class="env-pips" id="env-pips"></div>
+        <p class="ad-rule" id="env-recap"></p>
+      </div>
+      <div class="acard">
+        <span class="alab">Stato delle buste</span>
+        <div id="admin-envelopes-list"></div>
+      </div>
+      <div class="acard is-quiet env-left">
+        <span class="alab">Cambi rimasti</span>
+        <span class="gi-mult" id="env-changes">0</span>
+      </div>
+      <p class="ad-note is-center">Il cambio lo fa il finalista dal suo telefono</p>
     </div>
   </div>
 

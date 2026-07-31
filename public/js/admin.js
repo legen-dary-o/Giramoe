@@ -118,20 +118,58 @@ watchPhrase('gi-phrase', 'giramoe-error');
 function setGiramoeMsg(text, tone) { fillCheck(document.getElementById('giramoe-error'), text, tone); }
 
 // --- Final game ---
+function finalFields() {
+  return {
+    topic: document.getElementById('fin-topic').value.trim(),
+    phrases: [1, 2, 3].map(i => document.getElementById(`fin-phrase-${i}`).value.trim()),
+    envelopes: [1, 2, 3].map(i => document.getElementById(`fin-env-${i}`).value.trim())
+  };
+}
+
 document.getElementById('btn-start-final').addEventListener('click', () => {
-  const topic = document.getElementById('fin-topic').value.trim();
-  const phrases = [1, 2, 3].map(i => document.getElementById(`fin-phrase-${i}`).value.trim());
-  const envelopes = [1, 2, 3].map(i => document.getElementById(`fin-env-${i}`).value.trim());
-  if (!topic || phrases.some(p => !p)) { document.getElementById('final-error').textContent = 'Inserisci argomento e 3 frasi'; return; }
-  if (envelopes.some(e => !e)) { document.getElementById('final-error').textContent = 'Inserisci anche i 3 testi delle buste'; return; }
-  document.getElementById('final-error').textContent = '';
+  const { topic, phrases, envelopes } = finalFields();
+  if (!topic || phrases.some(p => !p) || envelopes.some(e => !e)) return;
   socket.emit('admin:startFinal', { topic, phrases, envelopes });
 });
-document.getElementById('btn-final-correct').addEventListener('click', () => socket.emit('admin:finalCorrect'));
-document.getElementById('btn-final-wrong').addEventListener('click', () => socket.emit('admin:finalWrong'));
-socket.on('admin:finalError', (err) => { document.getElementById('final-error').textContent = err; });
+socket.on('admin:finalError', (err) => setFinalWhy(err));
+
+// Sette campi in una schermata sola: i tre passi in cima si accendono man mano
+// e il bottone dice quale gruppo manca. Senza, l'unico modo di capire dove sei
+// rimasto è scorrere tutto il form.
+['fin-topic', 'fin-phrase-1', 'fin-phrase-2', 'fin-phrase-3', 'fin-env-1', 'fin-env-2', 'fin-env-3']
+  .forEach(id => document.getElementById(id).addEventListener('input', refreshFinalSetup));
+
+function setFinalWhy(msg) {
+  const el = document.getElementById('final-error');
+  el.textContent = msg;
+  el.hidden = !msg;
+}
+
+function refreshFinalSetup() {
+  const { topic, phrases, envelopes } = finalFields();
+  const fatti = {
+    topic: !!topic,
+    phrases: phrases.every(p => p),
+    env: envelopes.every(e => e)
+  };
+  document.querySelectorAll('#fin-steps span').forEach(s => {
+    s.classList.toggle('is-done', !!fatti[s.dataset.step]);
+  });
+  const pronto = fatti.topic && fatti.phrases && fatti.env;
+  document.getElementById('btn-start-final').disabled = !pronto;
+  setFinalWhy(pronto ? ''
+    : !fatti.topic ? 'Manca l’argomento'
+      : !fatti.phrases ? 'Mancano delle frasi'
+        : 'Mancano i contenuti delle buste');
+}
+refreshFinalSetup();
+
+// Il nome del finalista sta in barra alta anche durante il gioco finale e le
+// buste: `adminView().finalist` c'è in tutte e tre le fasi, si tiene da parte.
+let adminFinalistName = '';
 
 socket.on('admin:state', (s) => {
+  if (s.finalist) adminFinalistName = s.finalist.name;
   if (s.phase === 'video') showScreen('admin-pregame');
   else if (s.phase === 'lobby') {
     showScreen('admin-lobby');
@@ -153,8 +191,7 @@ socket.on('admin:state', (s) => {
     renderTiebreak(s.tiebreak);
   } else if (s.phase === 'finalist') {
     showScreen('admin-finalist');
-    document.getElementById('admin-finalist-name').innerHTML =
-      s.finalist ? `<span>🏆 ${s.finalist.name}</span><span>finale</span>` : '';
+    renderFinalist(s.finalist);
   } else if (s.phase === 'final') {
     showScreen('admin-final');
     renderFinal(s.final);
@@ -359,57 +396,145 @@ function setBoardMsg(text, tone) { fillCheck(document.getElementById('board-msg'
 function showBoardError(msg) { setBoardMsg(msg, msg ? 'bad' : null); }
 function showBoardNotice(msg) { setBoardMsg(msg, 'ok'); }
 
+function renderFinalist(fin) {
+  AdminShell.renderTopBar(document.getElementById('fin-topbar'), {
+    title: 'GIOCO FINALE', phase: 'Fase 05 · setup'
+  });
+  document.getElementById('fin-av').textContent = fin ? fin.name.charAt(0).toUpperCase() : '?';
+  document.getElementById('fin-name').textContent = fin ? fin.name : '—';
+  document.getElementById('fin-bank').textContent = AdminShell.num(fin ? fin.bank : 0);
+  refreshFinalSetup();
+}
+
 const FINAL_STATE_LABEL = {
-  PICKING: 'sceglie le lettere',
-  RUNNING: 'timer in corso',
-  BUZZED: 'si è prenotato — giudica',
-  BOARD_DONE: 'tabellone risolto',
-  DONE: 'fine'
+  PICKING: 'Sta scegliendo le lettere',
+  RUNNING: 'Timer in corso',
+  BUZZED: 'Si è prenotato — timer in pausa',
+  BOARD_DONE: 'Tabellone risolto',
+  DONE: 'Gioco finale finito'
 };
+
+function keyTile(letter, cls) {
+  const k = document.createElement('span');
+  k.className = 'k' + (cls ? ' ' + cls : '');
+  k.textContent = letter;
+  return k;
+}
 
 function renderFinal(f) {
   if (!f) return;
-  document.getElementById('fin-board-counter').textContent = `Tabellone ${f.boardIndex + 1} / ${f.totalBoards}`;
-  document.getElementById('fin-timer').textContent = Math.ceil(f.timeLeft / 1000) + 's';
-  document.getElementById('fin-state').textContent = (f.category ? f.category + ' · ' : '') + (FINAL_STATE_LABEL[f.state] || '');
-  document.getElementById('btn-final-correct').disabled = !f.buzzed;
-  document.getElementById('btn-final-wrong').disabled = !f.buzzed;
-
-  const list = document.getElementById('fin-results');
-  list.innerHTML = '';
-  f.results.forEach((res, i) => {
-    const item = document.createElement('div');
-    item.className = 'admin-player-item glass-panel';
-    const label = res === true ? '✅ indovinato' : res === false ? '❌ sbagliato' : (i === f.boardIndex ? '▶ in corso' : '—');
-    item.innerHTML = `<span>Tabellone ${i + 1}</span><span>${label}</span>`;
-    list.appendChild(item);
+  AdminShell.renderTopBar(document.getElementById('fg-topbar'), {
+    title: 'GIOCO FINALE',
+    phase: adminFinalistName || 'Gioco finale'
   });
+
+  const total = f.total || 60000;
+  document.getElementById('fin-timer').textContent = Math.ceil(f.timeLeft / 1000);
+  document.getElementById('fin-bar').style.width = (f.timeLeft / total) * 100 + '%';
+  document.getElementById('fin-board-counter').textContent =
+    `Tabellone ${f.boardIndex + 1} di ${f.totalBoards}`;
+
+  // Tre riquadri: esito se già giocato, "in corso" su quello attuale, "attesa"
+  // sugli altri. È l'unico posto in cui l'host vede com'è andata finora.
+  const tiles = document.getElementById('fin-results');
+  tiles.innerHTML = '';
+  f.results.forEach((res, i) => {
+    const tile = document.createElement('div');
+    const done = res === true || res === false;
+    tile.className = 'tile' + (done ? ' is-ok' : (i === f.boardIndex ? ' is-now' : ''));
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = String(i + 1);
+    const st = document.createElement('span');
+    st.className = 'st';
+    st.textContent = res === true ? 'Presa' : res === false ? 'Persa' : (i === f.boardIndex ? 'In corso' : 'Attesa');
+    tile.append(n, st);
+    tiles.append(tile);
+  });
+
+  const given = document.getElementById('fin-given');
+  given.innerHTML = '';
+  (f.given || []).forEach(L => given.append(keyTile(L)));
+  const picks = document.getElementById('fin-picks');
+  picks.innerHTML = '';
+  (f.picks || []).forEach(p => picks.append(keyTile(p.letter, p.present ? 'is-pick' : 'is-miss')));
+
+  const live = document.getElementById('fin-state');
+  live.hidden = !FINAL_STATE_LABEL[f.state];
+  live.querySelector('.tx').textContent = FINAL_STATE_LABEL[f.state] || '';
+
+  AdminShell.renderActions(document.getElementById('final-actions'), {
+    hint: f.buzzed ? 'In ogni caso si passa al tabellone dopo' : 'Aspetta che si prenoti',
+    buttons: [
+      { id: 'btn-final-correct', label: 'Indovinata', tone: 'accent', disabled: !f.buzzed },
+      { id: 'btn-final-wrong', label: 'Sbagliata', tone: 'plain', disabled: !f.buzzed }
+    ]
+  });
+  document.getElementById('btn-final-correct').addEventListener('click', () => socket.emit('admin:finalCorrect'));
+  document.getElementById('btn-final-wrong').addEventListener('click', () => socket.emit('admin:finalWrong'));
 }
 
 function renderAdminEnvelopes(view) {
+  AdminShell.renderTopBar(document.getElementById('env-topbar'), {
+    title: 'LE BUSTE', phase: 'Fase 06'
+  });
   const el = document.getElementById('admin-envelopes-list');
   el.innerHTML = '';
   if (!view) return;
+
+  // Gli esiti del gioco finale decidono quante buste sono verdi: la riga di
+  // pip lo mostra, e la frase sotto lo dice a parole per chi non la conosce.
+  const pips = document.getElementById('env-pips');
+  pips.innerHTML = '';
+  const verdi = view.envelopes.filter(e => e.color === 'green').length;
+  view.envelopes.forEach((e) => {
+    const i = document.createElement('i');
+    i.className = e.color === 'green' ? 'is-ok' : 'is-ko';
+    pips.append(i);
+  });
+  document.getElementById('env-recap').textContent = verdi === 0
+    ? 'Nessuna verde: niente da scegliere.'
+    : verdi === 1
+      ? 'Una verde sola: si apre quella, senza cambi.'
+      : `${verdi === 2 ? 'Due' : 'Tre'} verdi: il finalista sceglie e ha ${view.changesLeft} cambio.`;
+  document.getElementById('env-changes').textContent = String(view.changesLeft);
+
   view.envelopes.forEach((e, i) => {
-    const item = document.createElement('div');
-    item.className = 'admin-player-item glass-panel';
-    const dot = e.color === 'green' ? '🟢' : '🔴';
-    const right = document.createElement('span');
-    if (e.revealed) {
-      right.innerHTML = `<b>${e.content || ''}</b>`;
-    } else if (e.color === 'red') {
+    const row = document.createElement('div');
+    const aperta = e.revealed;
+    const scelta = i === view.current;
+    row.className = 'env-row'
+      + (aperta && scelta ? ' is-open' : '')
+      + (!aperta && e.color === 'red' ? ' is-red' : '')
+      + (!aperta && e.color === 'green' ? ' is-green' : '')
+      + (e.abandoned ? ' is-gone' : '');
+
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = String(i + 1);
+
+    const tx = document.createElement('div');
+    tx.className = 'tx';
+    const t = document.createElement('span');
+    t.className = 't';
+    t.textContent = aperta ? (e.content || '—') : 'Nascosta';
+    const s = document.createElement('span');
+    s.className = 's';
+    s.textContent = e.abandoned ? 'Scartata'
+      : aperta ? (scelta ? 'Aperta dal finalista' : 'Rivelata')
+        : e.color === 'red' ? 'Rossa — la riveli tu'
+          : 'Verde — scambiabile';
+    tx.append(t, s);
+    row.append(n, tx);
+
+    if (!aperta && e.color === 'red') {
       const btn = document.createElement('button');
-      btn.className = 'glass-button';
-      btn.style.padding = '4px 12px';
+      btn.className = 'env-reveal';
       btn.textContent = 'Rivela';
       btn.addEventListener('click', () => socket.emit('admin:envelopeRevealRed', { index: i }));
-      right.appendChild(btn);
-    } else {
-      right.textContent = i === view.current ? 'scelta' : (e.abandoned ? 'scartata' : 'verde');
+      row.append(btn);
     }
-    item.innerHTML = `<span>${dot} Busta ${i + 1}</span>`;
-    item.appendChild(right);
-    el.appendChild(item);
+    el.append(row);
   });
 }
 
