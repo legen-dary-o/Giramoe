@@ -40,8 +40,22 @@ document.getElementById('btn-set-board').addEventListener('click', () => {
   showBoardError('');
   socket.emit('admin:setBoard', { category, phrase });
 });
-document.getElementById('btn-solve').addEventListener('click', () => socket.emit('admin:solve'));
-document.getElementById('btn-pass').addEventListener('click', () => socket.emit('admin:passTurn'));
+
+// Anteprima della disposizione mentre si scrive. Il debounce non è cortesia
+// verso il server: senza, ogni tasto è un giro di socket e la riga sfarfalla
+// fra "ci sta" e "troppo lunga" a ogni lettera di una parola non finita.
+let checkTimer = null;
+document.getElementById('phrase-input').addEventListener('input', (e) => {
+  const phrase = e.target.value;
+  clearTimeout(checkTimer);
+  checkTimer = setTimeout(() => socket.emit('admin:checkPhrase', { phrase }), 250);
+});
+socket.on('admin:phraseCheck', (r) => {
+  if (r.empty) return setBoardMsg('');
+  if (!r.ok) return setBoardMsg(r.error, 'bad');
+  const righe = r.rows === 1 ? '1 riga' : `${r.rows} righe`;
+  setBoardMsg(`Sta in ${righe} · ${r.letters} lettere`, 'ok');
+});
 
 // --- Triplete ---
 document.getElementById('btn-go-triplete').addEventListener('click', () => socket.emit('admin:startTriplete'));
@@ -93,6 +107,7 @@ socket.on('admin:state', (s) => {
     renderGame(s);
   } else if (s.phase === 'tripleteReady') {
     showScreen('admin-tripleteready');
+    renderReady(s.players);
   } else if (s.phase === 'triplete') {
     showScreen('admin-triplete');
     renderTriplete(s.triplete);
@@ -173,44 +188,86 @@ function updateLobby(s) {
 }
 
 const STATE_LABEL = {
-  MUST_SPIN: 'deve girare',
-  PICK_CONSONANT: 'consonante',
-  PICK_CONSONANT_DOUBLE: 'consonante (raddoppia)',
-  CONTINUE: 'continua/vocale/risolve',
-  EXPRESS: 'EXPRESS (raffica)'
+  MUST_SPIN: 'Deve girare',
+  PICK_CONSONANT: 'Consonante',
+  PICK_CONSONANT_DOUBLE: 'Consonante ×2',
+  CONTINUE: 'Rigira o risolve',
+  EXPRESS: 'Raffica'
 };
 
-let prevScores = {};
+// `turno 1.400 · banca 3.200` — il turno in ciano solo per chi sta giocando:
+// è l'unico numero che si muove, gli altri sono zero fino al loro giro.
+function scoreCell(p, isTurn) {
+  const box = document.createElement('span');
+  box.className = 'ar-right';
+  const t = document.createElement('b');
+  t.textContent = AdminShell.num(p.roundPoints);
+  if (isTurn) t.className = 'acc';
+  const b = document.createElement('b');
+  b.textContent = AdminShell.num(p.bank);
+  box.append('turno ', t, ' · banca ', b);
+  return box;
+}
 
 function renderGame(s) {
+  const express = s.phase === 'express';
+  AdminShell.renderTopBar(document.getElementById('game-topbar'), {
+    title: 'GIRAMOE', gm: true,
+    phase: express ? 'Fase 03 · express' : 'Fase 01',
+    tone: express ? 'accent' : null,
+    pips: { done: s.boardNumber, total: s.totalBoards }
+  });
   document.getElementById('admin-board-counter').textContent =
-    `${s.phase === 'express' ? 'Express' : 'Tabellone'} ${s.boardNumber} / ${s.totalBoards}`;
+    `${express ? 'Express' : 'Tabellone'} ${s.boardNumber} di ${s.totalBoards}`;
+  // "IN CORSO" solo quando un tabellone è davvero in gioco: prima è l'admin che
+  // deve muoversi, e dirgli "in corso" lo farebbe aspettare a vuoto.
+  const stato = document.getElementById('board-status');
+  stato.textContent = s.turnState ? 'IN CORSO' : 'DA IMPOSTARE';
+
   const turnPlayer = s.players[s.currentTurn];
   document.getElementById('admin-turn-name').textContent = turnPlayer ? turnPlayer.name : '—';
-  document.getElementById('admin-turn-state').textContent = STATE_LABEL[s.turnState] || '';
-  // In express, "Passa turno" becomes the wrong-solution button (full bancarotta).
-  document.getElementById('btn-pass').textContent =
-    s.turnState === 'EXPRESS' ? 'Frase sbagliata' : 'Passa turno';
+  const tag = document.getElementById('admin-turn-state');
+  tag.textContent = STATE_LABEL[s.turnState] || '';
+  tag.hidden = !s.turnState;
 
   const list = document.getElementById('admin-scores');
   list.innerHTML = '';
   s.players.forEach((p, i) => {
-    const prev = prevScores[p.name];
-    const changed = prev && (prev.rp !== p.roundPoints || prev.bank !== p.bank);
-
-    const item = document.createElement('div');
-    item.className = 'admin-player-item glass-panel' + (changed ? ' score-flash' : '');
-    if (i === s.currentTurn) {
-      item.style.border = '1px solid rgba(100, 180, 255, 0.5)';
-      item.style.boxShadow = '0 0 12px rgba(100, 180, 255, 0.2)';
-    }
-    item.innerHTML = `<span>${p.name}</span>
-      <span class="admin-scorenums">T: <b>${p.roundPoints}</b> · B: <b>${p.bank}</b></span>`;
-    list.appendChild(item);
+    const isTurn = i === s.currentTurn;
+    list.append(AdminShell.playerRow({
+      name: p.name, right: scoreCell(p, isTurn), tone: isTurn ? 'accent' : null
+    }));
   });
 
-  prevScores = {};
-  s.players.forEach(p => { prevScores[p.name] = { rp: p.roundPoints, bank: p.bank }; });
+  // In express "Passa turno" diventa il tasto della frase sbagliata: lì non si
+  // passa, si azzera tutto.
+  AdminShell.renderActions(document.getElementById('game-actions'), {
+    hint: 'Il giocatore ha detto la frase a voce',
+    buttons: [
+      { id: 'btn-solve', label: 'Indovinata', tone: 'accent' },
+      { id: 'btn-pass', label: express ? 'Frase sbagliata' : 'Passa turno', tone: 'plain' }
+    ]
+  });
+  document.getElementById('btn-solve').addEventListener('click', () => socket.emit('admin:solve'));
+  document.getElementById('btn-pass').addEventListener('click', () => socket.emit('admin:passTurn'));
+}
+
+// 1q · classifica delle banche prima del bonus round
+function renderReady(players) {
+  const box = document.getElementById('ready-standings');
+  box.innerHTML = '';
+  [...(players || [])].sort((a, b) => b.bank - a.bank).forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'srow';
+    const n = document.createElement('span');
+    n.className = 'nome';
+    n.textContent = p.name;
+    const v = document.createElement('span');
+    v.className = 'val';
+    v.textContent = AdminShell.num(p.bank);
+    row.append(n, v);
+    box.append(row);
+  });
 }
 
 function renderTiebreak(tb) {
@@ -231,17 +288,25 @@ function renderTiebreak(tb) {
   });
 }
 
-function showBoardError(msg) {
-  const el = document.getElementById('board-error');
-  el.classList.remove('ok');
-  el.textContent = msg;
+// Una riga sola sotto i campi: o l'anteprima della disposizione, o l'errore, o
+// la conferma del tabellone risolto. Non capitano mai insieme — appena si
+// ricomincia a scrivere l'anteprima prende il posto della conferma, ed è giusto
+// così: la conferma vecchia parlerebbe del tabellone precedente.
+function setBoardMsg(text, tone) {
+  const el = document.getElementById('board-msg');
+  el.hidden = !text;
+  el.className = 'acheck' + (tone === 'bad' ? ' is-bad' : '');
+  el.innerHTML = '';
+  if (!text) return;
+  const mark = document.createElement('span');
+  mark.className = 'mark';
+  mark.textContent = tone === 'bad' ? '!' : '✓';
+  const txt = document.createElement('span');
+  txt.textContent = text;
+  el.append(mark, txt);
 }
-
-function showBoardNotice(msg) {
-  const el = document.getElementById('board-error');
-  el.classList.add('ok');
-  el.textContent = msg;
-}
+function showBoardError(msg) { setBoardMsg(msg, msg ? 'bad' : null); }
+function showBoardNotice(msg) { setBoardMsg(msg, 'ok'); }
 
 const FINAL_STATE_LABEL = {
   PICKING: 'sceglie le lettere',

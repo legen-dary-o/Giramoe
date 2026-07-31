@@ -319,6 +319,42 @@
 .aturn { display: flex; align-items: center; gap: 10px; }
 .aturn .nome { font: 600 16px -apple-system, sans-serif; }
 
+/* Primario dentro una scheda: più basso, perché la scheda gli fa già da
+   cornice e a 60px sembrerebbe la barra d'azione finita nel posto sbagliato. */
+.abtn.is-card {
+  width: 100%;
+  height: 52px;
+  background: var(--accent);
+  color: #000;
+  letter-spacing: 2.5px;
+  font-size: 14px;
+}
+.abtn.is-card:disabled { background: rgba(48, 184, 255, 0.25); color: rgba(0, 0, 0, 0.55); }
+.abtn.is-mono { font: 700 16px var(--font-mono); letter-spacing: 3px; text-transform: none; }
+
+/* === 1q · TRE TABELLONI FATTI === */
+
+.ad-pips.is-big i { width: 44px; height: 6px; border-radius: 3px; }
+.ad-head { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.ad-h { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1.1; }
+.ad-sub { font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; color: var(--ink-soft); }
+
+/* Classifica delle banche: nome a sinistra, numero grosso a destra */
+.astand { width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.10); }
+.astand .srow {
+  display: flex;
+  align-items: center;
+  padding: 15px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+.astand .srow .nome { font: 600 15px -apple-system, sans-serif; }
+.astand .srow .val {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+}
+
 /* === 1n · PRE-PARTITA === */
 
 .ad-dots {
@@ -366,7 +402,7 @@
 
 /* === 1o · LOBBY === */
 
-#admin-players { display: flex; flex-direction: column; gap: 12px; }
+#admin-players, #admin-scores { display: flex; flex-direction: column; gap: 12px; }
 
 .ad-link {
   font: 700 15px var(--font-mono);
@@ -462,8 +498,3 @@
 }
 .admin-actions .glass-button { flex: 1; padding: 15px 10px; font-size: 14px; }
 
-.admin-player-item.score-flash { animation: scoreFlash 0.7s ease; }
-@keyframes scoreFlash {
-  0% { background: rgba(48, 184, 255, 0.25); }
-  100% { background: none; }
-}

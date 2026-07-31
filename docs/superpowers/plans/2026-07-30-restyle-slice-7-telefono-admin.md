@@ -159,7 +159,7 @@ PARTITA` spento finché non sono tre, con la nota `Serve il terzo giocatore`.
 
 **Files:** `public/admin.html`, `public/css/admin.css`, `public/js/admin.js`, `fixtures.mjs`
 
-- [ ] **Step 1: `1p`**
+- [x] **Step 1: `1p`**
 
 Barra alta `GIRAMOE + GM` / `Fase 01` con tre pip. Scheda tabellone: intestazione
 `Tabellone 1 di 3` + stato `IN CORSO` in ciano, campo categoria, campo frase (multilinea
@@ -170,13 +170,13 @@ inutile), primario `AVVIA TABELLONE`. Seconda scheda: `TURNO Marco` + pillola de
 gioca accesa di ciano. Barra in basso: `INDOVINATA` (accento tenue) + `PASSA TURNO`
 (contorno), sopra la riga `IL GIOCATORE HA DETTO LA FRASE A VOCE`.
 
-- [ ] **Step 2: `1q` tabelloni finiti**
+- [x] **Step 2: `1q` tabelloni finiti**
 
 Colonna centrata: tre pip pieni, titolo `Tre tabelloni fatti` Syne 34px, spiegazione,
 classifica delle banche (nome + Syne 22px, ordinata dalla più alta), primario `IL TRIPLETE`
 in Space Mono 700 16px ls 3px.
 
-- [ ] **Step 3: verifica `?mock=1p`, `1q`; test verdi; commit**
+- [x] **Step 3: verifica `?mock=1p`, `1q`; test verdi; commit**
 
 ---
 

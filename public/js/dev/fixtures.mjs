@@ -376,8 +376,8 @@ const ADMIN = {
     players: [{ id: 0, name: 'Marco', connected: true }, { id: 1, name: 'Giulia', connected: true }]
   })]],
 
-  // 1p · partita in corso, turno di Marco
-  '1p': () => [['admin:state', admin({ phase: 'playing' })]],
+  // 1p · partita in corso, turno di Marco: ha già girato e deve chiamare
+  '1p': () => [['admin:state', admin({ phase: 'playing', turnState: 'PICK_CONSONANT' })]],
 
   // 1q · tre tabelloni finiti
   '1q': () => [['admin:state', admin({ phase: 'tripleteReady', boardNumber: 3 })]],

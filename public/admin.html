@@ -51,34 +51,43 @@
     </div>
   </div>
 
-  <!-- Game -->
+  <!-- 1p · Partita: imposta il tabellone e governa il turno -->
   <div id="admin-game" class="screen hidden">
-    <div class="admin-container">
-      <h1>Giramoe</h1>
-      <div class="admin-section">
-        <h2 id="admin-board-counter">Tabellone</h2>
-        <input type="text" id="cat-input" class="glass-input" placeholder="Categoria" autocomplete="off">
-        <input type="text" id="phrase-input" class="glass-input" placeholder="Frase" autocomplete="off" style="margin-top:8px;">
-        <button class="glass-button" id="btn-set-board" style="margin-top:8px;">Avvia tabellone</button>
-        <div class="board-error" id="board-error"></div>
+    <div class="ad-col has-bar">
+      <div class="ad-topbar" id="game-topbar"></div>
+      <div class="acard">
+        <div class="acard-head">
+          <span class="alab" id="admin-board-counter">Tabellone</span>
+          <span class="val" id="board-status"></span>
+        </div>
+        <input type="text" id="cat-input" class="afield" placeholder="Categoria" autocomplete="off">
+        <textarea id="phrase-input" class="afield" rows="2" placeholder="Frase" autocomplete="off"></textarea>
+        <p class="acheck" id="board-msg" hidden></p>
+        <button class="abtn is-card" id="btn-set-board">Avvia tabellone</button>
       </div>
-      <div class="admin-section">
-        <h2>Turno: <span id="admin-turn-name">—</span> <span id="admin-turn-state" class="turn-state-tag"></span></h2>
-        <div class="admin-player-list" id="admin-scores"></div>
-      </div>
-      <div class="admin-section admin-actions">
-        <button class="glass-button" id="btn-solve">Frase indovinata</button>
-        <button class="glass-button" id="btn-pass">Passa turno</button>
+      <div class="acard">
+        <div class="aturn">
+          <span class="alab">Turno</span>
+          <span class="nome" id="admin-turn-name">&mdash;</span>
+          <span class="atag" id="admin-turn-state" hidden></span>
+        </div>
+        <div id="admin-scores"></div>
       </div>
     </div>
+    <div class="ad-bar" id="game-actions"></div>
   </div>
 
-  <!-- Triplete: ready (button appears after the 3 wheel boards) -->
+  <!-- 1q · Tre tabelloni fatti -->
   <div id="admin-tripleteready" class="screen hidden">
-    <div class="admin-container">
-      <h1>Tabelloni finiti!</h1>
-      <p style="margin-bottom: 22px; color: var(--ink-soft);">Pronti per il gioco finale.</p>
-      <button class="glass-button" id="btn-go-triplete">IL TRIPLETE</button>
+    <div class="ad-dots" aria-hidden="true"></div>
+    <div class="ad-col ad-center">
+      <div class="ad-pips is-big"><i class="is-done"></i><i class="is-done"></i><i class="is-done"></i></div>
+      <div class="ad-head">
+        <h2 class="ad-h">Tre tabelloni fatti</h2>
+        <p class="ad-sub">Si passa al bonus round. Prepara un argomento e tre frasi.</p>
+      </div>
+      <div class="astand" id="ready-standings"></div>
+      <button class="abtn is-solid is-mono" id="btn-go-triplete">IL TRIPLETE</button>
     </div>
   </div>
 
