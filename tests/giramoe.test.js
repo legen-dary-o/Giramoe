@@ -30,6 +30,49 @@ test('createGiramoe builds the board, players zeroed, awaiting the admin spin', 
   assert.ok(gi.players.every(p => p.points === 0));
 });
 
+test('startingTurnIndex: apre chi ha la banca più alta dopo l\'express', () => {
+  const players = [
+    { id: 0, name: 'A', bank: 1200 },
+    { id: 1, name: 'B', bank: 5000 },
+    { id: 2, name: 'C', bank: 0 }
+  ];
+  assert.strictEqual(giramoe.startingTurnIndex(players), 1);
+});
+
+test('startingTurnIndex: a pari merito sorteggia fra i primi, mai fra gli altri', () => {
+  const players = [
+    { id: 0, name: 'A', bank: 3000 },
+    { id: 1, name: 'B', bank: 3000 },
+    { id: 2, name: 'C', bank: 900 }
+  ];
+  // rng deterministico: il primo e il secondo dei pari merito, estremi inclusi
+  assert.strictEqual(giramoe.startingTurnIndex(players, () => 0), 0);
+  assert.strictEqual(giramoe.startingTurnIndex(players, () => 0.99), 1);
+  assert.strictEqual(giramoe.startingTurnIndex(players, () => 1), 1, 'rng degenere non sfora');
+  // e su 200 sorteggi veri non esce mai chi non è in testa
+  for (let i = 0; i < 200; i++) {
+    assert.ok(giramoe.startingTurnIndex(players) < 2, 'C non parte mai');
+  }
+});
+
+test('startingTurnIndex: banche tutte a zero -> sorteggio fra tutti', () => {
+  const players = [{ id: 0, bank: 0 }, { id: 1, bank: 0 }, { id: 2, bank: 0 }];
+  assert.strictEqual(giramoe.startingTurnIndex(players, () => 0.7), 2);
+});
+
+test('createGiramoe parte dal giocatore indicato', () => {
+  const r = giramoe.createGiramoe(
+    [{ id: 0, name: 'A' }, { id: 1, name: 'B' }, { id: 2, name: 'C' }], 'CAT', 'CECE', 2);
+  assert.strictEqual(r.ok, true, r.error);
+  assert.strictEqual(r.gi.currentTurnIndex, 2);
+  giramoe.setMultiplier(r.gi, 100);
+  assert.strictEqual(giramoe.callConsonant(r.gi, 'C').ok, true, 'muove C, non A');
+  assert.strictEqual(r.gi.players[2].points, 200);
+  assert.strictEqual(r.gi.players[0].points, 0);
+  giramoe.timeout(r.gi);
+  assert.strictEqual(r.gi.currentTurnIndex, 0, 'e da lì il giro riparte in ordine');
+});
+
 test('callConsonant is rejected before the admin spins', () => {
   const gi = make();
   assert.strictEqual(giramoe.callConsonant(gi, 'C').ok, false);

@@ -96,6 +96,10 @@ _keyword: express bancarotta, lettera assente, sbaglio_
 **R:** L'admin (Moe) gira una ruota che ha solo punteggi: il valore ottenuto diventa il moltiplicatore. Poi i giocatori a turno fanno una sola mossa ciascuno: chiamano una consonante — ogni consonante presente vale quel moltiplicatore × le sue occorrenze — oppure comprano una vocale a 500 punti. Comprare la vocale esclude la consonante per quel turno, e viceversa.
 _keyword: giramoe, quarta fase, moltiplicatore, moe_
 
+**D:** In Giramoe chi comincia?
+**R:** Comincia il giocatore che esce dall'Express con più punti in banca; poi si va a turno nell'ordine dei giocatori. Se due o più sono a pari banca, chi apre viene sorteggiato fra loro.
+_keyword: giramoe chi inizia, chi comincia giramoe, primo turno giramoe, ordine giramoe, pareggio banca giramoe_
+
 **D:** In Giramoe come ci si prenota per rispondere?
 **R:** Dopo aver chiamato una consonante presente o comprato una vocale presente hai pochi secondi (5) per prenotarti e dire la frase. Se la lettera è assente niente prenotazione e passi il turno. Quando tutte le consonanti sono state rivelate ti puoi prenotare subito, senza chiamare né comprare nulla.
 _keyword: giramoe prenotarsi, 5 secondi, buzz_

@@ -10,7 +10,19 @@ const VOWEL_COST = 500; // price of a vowel, same as in the other rounds
 // Only the player who solves banks their own points; everyone else banks nothing.
 // Pure state machine — the 5s buzz timer lives in server.js.
 
-function createGiramoe(players, category, phrase) {
+// Chi apre il Giramoe: il giocatore che arriva dall'Express con la banca più alta.
+// A pari merito si sorteggia fra i primi (rng iniettabile per rendere i test
+// deterministici). Torna l'indice nell'array passato, che è anche l'indice di turno.
+function startingTurnIndex(players, rng = Math.random) {
+  const bankOf = p => p.bank || 0;
+  const max = Math.max(...players.map(bankOf));
+  const top = players.reduce((acc, p, i) => (bankOf(p) === max ? acc.concat(i) : acc), []);
+  return top[Math.min(top.length - 1, Math.floor(rng() * top.length))];
+}
+
+// `startIndex` è chi muove per primo: il chiamante lo ricava da startingTurnIndex
+// sulle banche di fine Express.
+function createGiramoe(players, category, phrase, startIndex = 0) {
   const r = board.createBoard(category, phrase);
   if (!r.ok) return { ok: false, error: r.error };
   return {
@@ -22,7 +34,7 @@ function createGiramoe(players, category, phrase) {
       // non si ricostruisce.
       players: players.map(p => ({ id: p.id, name: p.name, points: 0, lastLetter: null, lastCount: 0 })),
       multiplier: null,
-      currentTurnIndex: 0,
+      currentTurnIndex: startIndex,
       calledThisTurn: false,    // a letter must be called before buzzing
       usedLetters: [],
       buzzedBy: null,
@@ -170,7 +182,7 @@ function bankResult(gi, gamePlayers) {
 
 module.exports = {
   VOWEL_COST,
-  createGiramoe, currentPlayer, setMultiplier, passTurn,
+  createGiramoe, startingTurnIndex, currentPlayer, setMultiplier, passTurn,
   callConsonant, buyVowel, consonantsFinished, vowelsFinished, canBuyVowel,
   buzz, judgeCorrect, judgeWrong, timeout, bankResult
 };
