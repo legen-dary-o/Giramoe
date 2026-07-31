@@ -209,7 +209,7 @@ Scheda `SE SBAGLIA` con la regola. Barra in basso: `INDOVINATA` + `SBAGLIATA`, s
 
 **Files:** `public/admin.html`, `public/css/admin.css`, `public/js/admin.js`, `fixtures.mjs`
 
-- [ ] **Step 1: `1t`**
+- [x] **Step 1: `1t`**
 
 Barra alta `GIRAMOE` / `Fase 04 · tabellone finale` in ciano. Scheda del tabellone (due
 campi + verifica come in `1p`). Scheda del moltiplicatore, accesa di ciano:
@@ -219,7 +219,7 @@ le tre righe `L ×2 · 1.000` (dai campi nuovi del task 1) e la pillola `5s PER 
 sul giocatore di turno quando la finestra è aperta. Barra in basso: `INDOVINATA` +
 `SBAGLIATA`, sopra `SOLO CHI INDOVINA INCASSA`.
 
-- [ ] **Step 2: `1u` spareggio**
+- [x] **Step 2: `1u` spareggio**
 
 Colonna centrata, niente barra d'azione: qui l'admin non fa nulla e la schermata deve
 dirlo. Eyebrow `PARITÀ IN BANCA`, titolo `Spareggio` Syne 40px, spiegazione `I concorrenti
@@ -227,7 +227,7 @@ girano la ruota dal telefono. Non serve fare nulla.`, una scheda per contendente
 44px, nome, stato `sta girando…` / `fatto`, valore Syne 26px), nota finale
 `Questi punti non vengono aggiunti alla banca. Se resta parità si rigira.`
 
-- [ ] **Step 3: verifica `?mock=1t`, `1u`; test verdi; commit**
+- [x] **Step 3: verifica `?mock=1t`, `1u`; test verdi; commit**
 
 ---
 

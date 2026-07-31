@@ -405,22 +405,23 @@ const ADMIN = {
   '1t': () => [['admin:state', admin({
     phase: 'giramoe',
     giramoe: {
-      started: true, category: 'GEOGRAFIA', multiplier: 500, state: 'PLAYING',
+      started: true, category: 'Geografia', phrase: 'LE CINQUE TERRE DELLA LIGURIA',
+      multiplier: 500, state: 'PLAYING',
       currentTurn: 2, buzzedBy: null, currentName: 'Elia',
       players: [
-        { id: 0, name: 'Marco',  points: 1000, bank: 7700 },
-        { id: 1, name: 'Giulia', points: 500,  bank: 6800 },
-        { id: 2, name: 'Elia',   points: 1000, bank: 2100 }
+        { id: 0, name: 'Marco',  points: 1000, bank: 7700, lastLetter: 'L', lastCount: 2 },
+        { id: 1, name: 'Giulia', points: 500,  bank: 6800, lastLetter: 'R', lastCount: 1 },
+        { id: 2, name: 'Elia',   points: 1000, bank: 2100, lastLetter: 'C', lastCount: 2 }
       ]
     }
   })]],
 
-  // 1u · spareggio in corso
+  // 1u · spareggio in corso: Marco sta girando, Giulia ha già fatto 700
   '1u': () => [['admin:state', admin({
     phase: 'tiebreak',
     tiebreak: {
-      current: 1, currentId: 1,
-      contenders: [{ id: 0, name: 'Marco', value: 900 }, { id: 1, name: 'Giulia', value: null }]
+      current: 0, currentId: 0,
+      contenders: [{ id: 0, name: 'Marco', value: null }, { id: 1, name: 'Giulia', value: 700 }]
     }
   })]],
 

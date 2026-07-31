@@ -212,6 +212,8 @@
   resize: none;
 }
 .afield::placeholder { color: rgba(245, 245, 247, 0.32); font-weight: 400; }
+/* Campo bloccato: resta leggibile, smette di sembrare toccabile */
+.afield:disabled { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08); color: var(--ink-soft); opacity: 1; }
 .afield:focus { border-color: rgba(48, 184, 255, 0.55); }
 /* Campo numerato: il numero fuori, il campo dentro */
 .afield-n { display: flex; align-items: center; gap: 12px; }
@@ -396,6 +398,62 @@
   color: rgba(245, 245, 247, 0.5);
 }
 .ar-locked + .ar-pts { margin-left: 12px; }
+
+/* === 1t · GIRAMOE === */
+
+#giramoe-live { display: flex; flex-direction: column; gap: 14px; }
+#giramoe-live.hidden, #giramoe-setup.hidden { display: none; }
+.gi-mult {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--accent);
+}
+.ad-note.is-center { text-align: center; }
+/* L'ultima mossa: `L ×2 · 1.000`. Il moltiplicatore è uguale per tutti, quindi
+   il numero che conta è quante volte la lettera c'era. */
+.ar-move { margin-left: auto; font-family: var(--font-mono); font-size: 12.5px; color: rgba(245, 245, 247, 0.5); }
+.ar-move b { color: var(--accent); font-weight: 700; }
+
+/* === 1u · SPAREGGIO === */
+
+.ad-h.is-tb { font-size: 40px; letter-spacing: -0.02em; }
+.tb-list { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.tb-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+/* Chi ha già girato ha il bordo ciano: il suo numero è quello da battere */
+.tb-card.is-done { border-color: rgba(48, 184, 255, 0.45); }
+.tb-av {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 600 18px -apple-system, sans-serif;
+  background: linear-gradient(150deg, #3c3c40, #232327);
+}
+.tb-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tb-who .nome { font: 600 17px -apple-system, sans-serif; }
+.tb-who .st { font-family: var(--font-mono); font-size: 11.5px; color: rgba(245, 245, 247, 0.45); }
+.tb-card.is-done .tb-who .st { color: var(--accent); }
+.tb-val {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  color: rgba(245, 245, 247, 0.3);
+}
+.tb-card.is-done .tb-val { color: var(--accent); }
 
 /* === 1q · TRE TABELLONI FATTI === */
 

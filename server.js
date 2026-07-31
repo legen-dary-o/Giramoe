@@ -172,6 +172,10 @@ function adminView() {
           ? {
               started: true,
               category: state.gi.board.category,
+              // La frase serve alla console per giudicare "l'ha detta giusta?".
+              // Senza, dopo un refresh a metà tabellone l'host non ce l'ha più
+              // da nessuna parte — sulla TV è coperta.
+              phrase: state.gi.board.phrase,
               multiplier: state.gi.multiplier,
               state: state.gi.state,
               currentTurn: state.gi.currentTurnIndex,

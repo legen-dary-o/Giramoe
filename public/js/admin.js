@@ -45,17 +45,28 @@ document.getElementById('btn-set-board').addEventListener('click', () => {
 // Anteprima della disposizione mentre si scrive. Il debounce non è cortesia
 // verso il server: senza, ogni tasto è un giro di socket e la riga sfarfalla
 // fra "ci sta" e "troppo lunga" a ogni lettera di una parola non finita.
+//
+// Le due schermate che impostano un tabellone (partita e Giramoe) usano lo
+// stesso evento: la risposta va a quella in cui si sta scrivendo, ricordata qui.
 let checkTimer = null;
-document.getElementById('phrase-input').addEventListener('input', (e) => {
-  const phrase = e.target.value;
-  clearTimeout(checkTimer);
-  checkTimer = setTimeout(() => socket.emit('admin:checkPhrase', { phrase }), 250);
-});
+let checkTarget = 'board-msg';
+
+function watchPhrase(inputId, msgId) {
+  document.getElementById(inputId).addEventListener('input', (e) => {
+    const phrase = e.target.value;
+    checkTarget = msgId;
+    clearTimeout(checkTimer);
+    checkTimer = setTimeout(() => socket.emit('admin:checkPhrase', { phrase }), 250);
+  });
+}
+watchPhrase('phrase-input', 'board-msg');
+
 socket.on('admin:phraseCheck', (r) => {
-  if (r.empty) return setBoardMsg('');
-  if (!r.ok) return setBoardMsg(r.error, 'bad');
+  const el = document.getElementById(checkTarget);
+  if (r.empty) return fillCheck(el, '');
+  if (!r.ok) return fillCheck(el, r.error, 'bad');
   const righe = r.rows === 1 ? '1 riga' : `${r.rows} righe`;
-  setBoardMsg(`Sta in ${righe} · ${r.letters} lettere`, 'ok');
+  fillCheck(el, `Sta in ${righe} · ${r.letters} lettere`, 'ok');
 });
 
 // --- Triplete ---
@@ -94,14 +105,17 @@ function refreshTripleteSetup() {
 document.getElementById('btn-giramoe-setboard').addEventListener('click', () => {
   const category = document.getElementById('gi-cat').value.trim();
   const phrase = document.getElementById('gi-phrase').value.trim();
-  if (!category || !phrase) { document.getElementById('giramoe-error').textContent = 'Inserisci categoria e frase'; return; }
-  document.getElementById('giramoe-error').textContent = '';
+  if (!category || !phrase) return setGiramoeMsg('Inserisci categoria e frase', 'bad');
   socket.emit('admin:giramoeSetBoard', { category, phrase });
 });
 document.getElementById('btn-giramoe-spin').addEventListener('click', () => socket.emit('admin:giramoeSpin'));
-document.getElementById('btn-giramoe-correct').addEventListener('click', () => socket.emit('admin:giramoeCorrect'));
-document.getElementById('btn-giramoe-wrong').addEventListener('click', () => socket.emit('admin:giramoeWrong'));
-socket.on('admin:giramoeError', (err) => { document.getElementById('giramoe-error').textContent = err; });
+socket.on('admin:giramoeError', (err) => setGiramoeMsg(err, 'bad'));
+
+// Stessa anteprima della frase del tabellone normale: la frase del Giramoe
+// deve stare nella stessa griglia.
+watchPhrase('gi-phrase', 'giramoe-error');
+
+function setGiramoeMsg(text, tone) { fillCheck(document.getElementById('giramoe-error'), text, tone); }
 
 // --- Final game ---
 document.getElementById('btn-start-final').addEventListener('click', () => {
@@ -295,16 +309,32 @@ function renderTiebreak(tb) {
   el.innerHTML = '';
   if (!tb) return;
   tb.contenders.forEach((c, i) => {
-    const item = document.createElement('div');
-    item.className = 'admin-player-item glass-panel';
-    if (i === tb.current) {
-      item.style.border = '1px solid rgba(100, 180, 255, 0.5)';
-      item.style.boxShadow = '0 0 12px rgba(100, 180, 255, 0.2)';
-    }
-    const tag = i === tb.current ? ' ▶' : '';
-    item.innerHTML = `<span>${c.name}${tag}</span>
-      <span class="admin-scorenums"><b>${c.value != null ? c.value : '—'}</b></span>`;
-    el.appendChild(item);
+    const fatto = c.value != null;
+    const card = document.createElement('div');
+    card.className = 'tb-card' + (fatto ? ' is-done' : '');
+
+    const av = document.createElement('span');
+    av.className = 'tb-av';
+    av.textContent = (c.name || '?').charAt(0).toUpperCase();
+
+    const who = document.createElement('div');
+    who.className = 'tb-who';
+    const nome = document.createElement('span');
+    nome.className = 'nome';
+    nome.textContent = c.name;
+    const st = document.createElement('span');
+    st.className = 'st';
+    // Tre stati e non due: chi non ha ancora girato e non è nemmeno il suo
+    // turno sta solo aspettando, e dirgli "sta girando" sarebbe falso.
+    st.textContent = fatto ? 'fatto' : (i === tb.current ? 'sta girando…' : 'aspetta il turno');
+    who.append(nome, st);
+
+    const val = document.createElement('span');
+    val.className = 'tb-val';
+    val.textContent = fatto ? AdminShell.num(c.value) : '—';
+
+    card.append(av, who, val);
+    el.append(card);
   });
 }
 
@@ -312,8 +342,8 @@ function renderTiebreak(tb) {
 // la conferma del tabellone risolto. Non capitano mai insieme — appena si
 // ricomincia a scrivere l'anteprima prende il posto della conferma, ed è giusto
 // così: la conferma vecchia parlerebbe del tabellone precedente.
-function setBoardMsg(text, tone) {
-  const el = document.getElementById('board-msg');
+function fillCheck(el, text, tone) {
+  if (!el) return;
   el.hidden = !text;
   el.className = 'acheck' + (tone === 'bad' ? ' is-bad' : '');
   el.innerHTML = '';
@@ -325,6 +355,7 @@ function setBoardMsg(text, tone) {
   txt.textContent = text;
   el.append(mark, txt);
 }
+function setBoardMsg(text, tone) { fillCheck(document.getElementById('board-msg'), text, tone); }
 function showBoardError(msg) { setBoardMsg(msg, msg ? 'bad' : null); }
 function showBoardNotice(msg) { setBoardMsg(msg, 'ok'); }
 
@@ -392,44 +423,71 @@ function showTripleteError(msg) {
 function renderGiramoe(gr) {
   const setup = document.getElementById('giramoe-setup');
   const live = document.getElementById('giramoe-live');
-  const actions = document.getElementById('giramoe-actions');
+  const bar = document.getElementById('giramoe-actions');
+  const started = !!(gr && gr.started);
 
-  if (!gr || !gr.started) {
-    setup.classList.remove('hidden');
-    live.classList.add('hidden');
-    actions.classList.add('hidden');
-    return;
+  AdminShell.renderTopBar(document.getElementById('gi-topbar'), {
+    title: 'GIRAMOE', phase: 'Fase 04 · tabellone finale', tone: 'accent'
+  });
+  // La scheda del tabellone resta a schermo anche dopo l'avvio, ma spenta:
+  // quando deve giudicare "ha detto la frase" l'host la rilegge da qui, ed è
+  // l'unico posto dove sta scritta. Nasconderla lo costringerebbe a ricordarla.
+  live.classList.toggle('hidden', !started);
+  setup.querySelectorAll('.afield').forEach(f => { f.disabled = started; });
+  if (started) {
+    // Dopo un refresh i campi sono vuoti ma la partita no: si ripescano dal
+    // payload, o l'host resta senza la frase da giudicare.
+    document.getElementById('gi-cat').value = gr.category || '';
+    document.getElementById('gi-phrase').value = gr.phrase || '';
   }
+  document.getElementById('btn-giramoe-setboard').hidden = started;
+  setup.querySelector('.alab').textContent = started ? 'Tabellone finale · in gioco' : 'Tabellone finale';
+  if (started) fillCheck(document.getElementById('giramoe-error'), '');
 
-  setup.classList.add('hidden');
-  live.classList.remove('hidden');
-  actions.classList.remove('hidden');
+  if (!started) { bar.innerHTML = ''; bar.hidden = true; return; }
+
+  // Il giro è uno solo per tutta la fase: a giro fatto il bottone sparisce,
+  // resta il valore. Lasciarlo lì spento inviterebbe a premerlo di nuovo.
+  document.getElementById('gi-mult').textContent = gr.multiplier ? '×' + AdminShell.num(gr.multiplier) : '—';
+  const spin = document.getElementById('btn-giramoe-spin');
+  spin.hidden = gr.state !== 'AWAIT_SPIN';
+  document.getElementById('gi-spin-note').textContent = gr.state === 'AWAIT_SPIN'
+    ? 'Un solo giro, poi vale per tutti'
+    : 'Vale per tutti fino alla fine del tabellone';
 
   document.getElementById('gi-turn-name').textContent = gr.currentName || '—';
-  document.getElementById('gi-mult-tag').textContent =
-    gr.multiplier ? '×' + gr.multiplier : (gr.state === 'AWAIT_SPIN' ? 'gira la ruota' : '');
-  document.getElementById('btn-giramoe-spin').disabled = gr.state !== 'AWAIT_SPIN';
-
+  const tag = document.getElementById('gi-turn-tag');
   const buzzed = gr.buzzedBy != null;
-  document.getElementById('btn-giramoe-correct').disabled = !buzzed;
-  document.getElementById('btn-giramoe-wrong').disabled = !buzzed;
+  tag.textContent = buzzed ? 'Ha risposto' : '5s per prenotarsi';
+  tag.hidden = gr.state !== 'PLAYING' && !buzzed;
 
   const list = document.getElementById('giramoe-scores');
   list.innerHTML = '';
   gr.players.forEach((p, i) => {
-    const item = document.createElement('div');
-    item.className = 'admin-player-item glass-panel';
-    if (p.id === gr.buzzedBy) {
-      item.style.border = '1px solid rgba(245, 179, 1, 0.7)';
-      item.style.boxShadow = '0 0 12px rgba(245, 179, 1, 0.3)';
-    } else if (i === gr.currentTurn) {
-      item.style.border = '1px solid rgba(100, 180, 255, 0.5)';
+    const move = document.createElement('span');
+    move.className = 'ar-move';
+    if (p.lastLetter) {
+      const b = document.createElement('b');
+      b.textContent = AdminShell.num(p.points);
+      move.append(`${p.lastLetter} ×${p.lastCount} · `, b);
+    } else {
+      move.textContent = 'non ha ancora chiamato';
     }
-    const tag = p.id === gr.buzzedBy ? ' 🔔' : (i === gr.currentTurn ? ' ▶' : '');
-    item.innerHTML = `<span>${p.name}${tag}</span>
-      <span class="admin-scorenums">P: <b>${p.points}</b> · B: <b>${p.bank != null ? p.bank : 0}</b></span>`;
-    list.appendChild(item);
+    const isTurn = i === gr.currentTurn;
+    list.append(AdminShell.playerRow({
+      name: p.name, right: move, tone: (p.id === gr.buzzedBy || isTurn) ? 'accent' : null
+    }));
   });
+
+  AdminShell.renderActions(bar, {
+    hint: buzzed ? 'Solo chi indovina incassa' : 'Aspetta che qualcuno si prenoti',
+    buttons: [
+      { id: 'btn-giramoe-correct', label: 'Indovinata', tone: 'accent', disabled: !buzzed },
+      { id: 'btn-giramoe-wrong', label: 'Sbagliata', tone: 'plain', disabled: !buzzed }
+    ]
+  });
+  document.getElementById('btn-giramoe-correct').addEventListener('click', () => socket.emit('admin:giramoeCorrect'));
+  document.getElementById('btn-giramoe-wrong').addEventListener('click', () => socket.emit('admin:giramoeWrong'));
 }
 
 function renderTriplete(tr) {

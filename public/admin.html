@@ -139,35 +139,50 @@
     <div class="ad-bar" id="triplete-actions"></div>
   </div>
 
-  <!-- Giramoe (final wheel board) -->
+  <!-- 1t · Giramoe: il giro lo fa l'admin -->
   <div id="admin-giramoe" class="screen hidden">
-    <div class="admin-container">
-      <h1>GIRAMOE</h1>
-      <div class="admin-section" id="giramoe-setup">
-        <h2>Tabellone finale</h2>
-        <input type="text" id="gi-cat" class="glass-input" placeholder="Categoria" autocomplete="off">
-        <input type="text" id="gi-phrase" class="glass-input" placeholder="Frase" autocomplete="off" style="margin-top:8px;">
-        <button class="glass-button" id="btn-giramoe-setboard" style="margin-top:8px;">Avvia tabellone</button>
-        <div class="board-error" id="giramoe-error"></div>
+    <div class="ad-col has-bar">
+      <div class="ad-topbar" id="gi-topbar"></div>
+      <div class="acard" id="giramoe-setup">
+        <span class="alab">Tabellone finale</span>
+        <input type="text" id="gi-cat" class="afield" placeholder="Categoria" autocomplete="off">
+        <textarea id="gi-phrase" class="afield" rows="2" placeholder="Frase" autocomplete="off"></textarea>
+        <p class="acheck" id="giramoe-error" hidden></p>
+        <button class="abtn is-card" id="btn-giramoe-setboard">Avvia tabellone</button>
       </div>
-      <div class="admin-section hidden" id="giramoe-live">
-        <button class="glass-button" id="btn-giramoe-spin">Gira la ruota</button>
-        <h2 style="margin-top:12px;">Turno: <span id="gi-turn-name">—</span> <span id="gi-mult-tag" class="turn-state-tag"></span></h2>
-        <div class="admin-player-list" id="giramoe-scores"></div>
-      </div>
-      <div class="admin-section admin-actions hidden" id="giramoe-actions">
-        <button class="glass-button" id="btn-giramoe-correct" disabled>Frase indovinata</button>
-        <button class="glass-button" id="btn-giramoe-wrong" disabled>Frase sbagliata</button>
+      <div id="giramoe-live" class="hidden">
+        <div class="acard is-accent">
+          <div class="acard-head">
+            <span class="alab">Moltiplicatore V</span>
+            <span class="gi-mult" id="gi-mult">&mdash;</span>
+          </div>
+          <button class="abtn is-card" id="btn-giramoe-spin">Gira la ruota</button>
+          <p class="ad-note" id="gi-spin-note">Un solo giro, poi vale per tutti</p>
+        </div>
+        <div class="acard">
+          <div class="aturn">
+            <span class="alab">Turno</span>
+            <span class="nome" id="gi-turn-name">&mdash;</span>
+            <span class="atag" id="gi-turn-tag" hidden></span>
+          </div>
+          <div id="giramoe-scores"></div>
+        </div>
       </div>
     </div>
+    <div class="ad-bar" id="giramoe-actions"></div>
   </div>
 
-  <!-- Tie-break -->
+  <!-- 1u · Spareggio: qui l'admin non fa niente -->
   <div id="admin-tiebreak" class="screen hidden">
-    <div class="admin-container">
-      <h1>Spareggio</h1>
-      <p style="margin-bottom: 16px; color: var(--ink-soft);">I concorrenti girano la ruota dal telefono.</p>
-      <div class="admin-player-list" id="admin-tiebreak-list"></div>
+    <div class="ad-dots" aria-hidden="true"></div>
+    <div class="ad-col ad-center">
+      <div class="ad-head">
+        <span class="eyebrow">Parit&agrave; in banca</span>
+        <h2 class="ad-h is-tb">Spareggio</h2>
+        <p class="ad-sub">I concorrenti girano la ruota dal telefono. Non serve fare nulla.</p>
+      </div>
+      <div class="tb-list" id="admin-tiebreak-list"></div>
+      <p class="ad-note is-center">Questi punti non vengono aggiunti alla banca.<br>Se resta parit&agrave; si rigira.</p>
     </div>
   </div>
 
