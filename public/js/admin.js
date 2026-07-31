@@ -3,6 +3,10 @@
 // <script type="module"> di admin.html.
 const socket = window.__mockSocket || io();
 
+// La cornice comune della console: caricata come modulo da admin.html e appesa
+// a window, perché questo file è uno script classico (vedi js/admin/shell.js).
+const AdminShell = window.AdminShell;
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
@@ -83,7 +87,7 @@ socket.on('admin:state', (s) => {
   if (s.phase === 'video') showScreen('admin-pregame');
   else if (s.phase === 'lobby') {
     showScreen('admin-lobby');
-    updateLobby(s.players);
+    updateLobby(s);
   } else if (s.phase === 'playing' || s.phase === 'express') {
     showScreen('admin-game');
     renderGame(s);
@@ -120,43 +124,52 @@ socket.on('admin:boardSolved', ({ boardNumber }) => {
   showBoardNotice(`Tabellone risolto — imposta il tabellone ${boardNumber}.`);
 });
 
-function updateLobby(players) {
+const MAX_PLAYERS = 3;
+
+function updateLobby(s) {
+  const players = s.players || [];
+  AdminShell.renderTopBar(document.getElementById('lobby-topbar'), {
+    title: 'GIRAMOE', gm: true, phase: 'Sala d’attesa'
+  });
+  document.getElementById('lobby-count').textContent = `${players.length} / ${MAX_PLAYERS}`;
+  // L'URL si legge ad alta voce quando il QR non si inquadra: senza schema è
+  // più corto da dettare e non cambia niente per chi lo digita.
+  const link = document.getElementById('lobby-link');
+  link.textContent = s.lobbyUrl ? s.lobbyUrl.replace(/^https?:\/\//, '') : '—';
+
   const list = document.getElementById('admin-players');
   list.innerHTML = '';
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < MAX_PLAYERS; i++) {
     const p = players[i];
-    const item = document.createElement('div');
-    item.className = 'admin-player-item glass-panel';
-    if (p) {
-      const name = document.createElement('span');
-      name.className = 'apl-name';
-      name.textContent = p.name;
-      const right = document.createElement('span');
-      right.className = 'apl-right';
-      const dot = document.createElement('span');
-      dot.className = 'status-dot' + (p.connected ? '' : ' disconnected');
-      const kick = document.createElement('button');
-      kick.className = 'kick-btn';
-      kick.textContent = '✕';
-      kick.title = 'Rimuovi';
-      kick.addEventListener('click', () => socket.emit('admin:kick', { name: p.name }));
-      right.appendChild(dot);
-      right.appendChild(kick);
-      item.appendChild(name);
-      item.appendChild(right);
-    } else {
-      const name = document.createElement('span');
-      name.className = 'apl-name empty';
-      name.textContent = 'In attesa...';
-      const dot = document.createElement('span');
-      dot.className = 'status-dot disconnected';
-      item.appendChild(name);
-      item.appendChild(dot);
+    const dot = document.createElement('span');
+    dot.className = 'ar-dot' + (p && p.connected ? '' : ' is-off');
+    if (!p) {
+      const row = AdminShell.playerRow({ name: 'Slot libero' });
+      row.classList.add('is-free');
+      row.prepend(dot);
+      list.append(row);
+      continue;
     }
-    list.appendChild(item);
+    const kick = document.createElement('button');
+    kick.className = 'ar-kick';
+    kick.textContent = '✕';
+    kick.title = 'Rimuovi';
+    kick.addEventListener('click', () => socket.emit('admin:kick', { name: p.name }));
+    const row = AdminShell.playerRow({ name: p.name, extra: kick });
+    row.prepend(dot);
+    list.append(row);
   }
-  document.getElementById('btn-avvia').disabled =
-    !(players.length === 3 && players.every(p => p.connected));
+
+  const pronti = players.length === MAX_PLAYERS && players.every(p => p.connected);
+  document.getElementById('btn-avvia').disabled = !pronti;
+  const why = document.getElementById('lobby-why');
+  why.hidden = pronti;
+  // Dice cosa manca davvero: "serve il terzo" quando manca gente, "qualcuno si è
+  // disconnesso" quando ci sono tutti ma uno è caduto.
+  const mancanti = MAX_PLAYERS - players.length;
+  why.textContent = mancanti > 0
+    ? (mancanti === 1 ? 'Serve il terzo giocatore' : `Servono ancora ${mancanti} giocatori`)
+    : 'Un giocatore è disconnesso';
 }
 
 const STATE_LABEL = {

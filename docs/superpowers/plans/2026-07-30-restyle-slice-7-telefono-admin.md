@@ -109,7 +109,7 @@ test.
 **Files:** `public/js/admin/shell.js` (nuovo), `public/admin.html`, `public/css/admin.css`,
 `public/js/admin.js`, `public/js/dev/fixtures.mjs`
 
-- [ ] **Step 1: `public/js/admin/shell.js`**
+- [x] **Step 1: `public/js/admin/shell.js`**
 
 Stesso schema di `js/phone/shell.js` — caricato come modulo da `admin.html` e appeso a
 `window.AdminShell`, perché `admin.js` è uno script classico.
@@ -124,7 +124,7 @@ export function renderActions(host, opts)
 export function playerRow({ name, right, tone, dim })
 ```
 
-- [ ] **Step 2: lo scheletro CSS**
+- [x] **Step 2: lo scheletro CSS**
 
 In `admin.css`: `.ad-topbar` (titolo Syne 17px + chip `GM`, fase mono 10px ls 2,5px, pip
 18×4), `.ad-bar` (fissa in basso: `padding:16px 20px 26px`, hairline sopra, fondo
@@ -137,21 +137,21 @@ In `admin.css`: `.ad-topbar` (titolo Syne 17px + chip `GM`, fase mono 10px ls 2,
 La colonna delle schermate con barra d'azione ha `padding-bottom` pari all'altezza della
 barra, o l'ultima scheda ci finisce sotto.
 
-- [ ] **Step 3: `1n` pre-partita**
+- [x] **Step 3: `1n` pre-partita**
 
 Colonna centrata: wordmark 46px col glint che c'è già, chip `GAME MASTER`, tre righe
-numerate (Syne 800 24px + testo mono), primario `INIZIA`, nota `Schermo principale
-collegato` — la nota dice il vero: si accende solo quando la TV è connessa. Serve un campo
-nel payload (`mainConnected`) oppure si toglie la nota: decidere leggendo `adminView()`.
+numerate (Syne 800 24px + testo mono), primario `INIZIA`. La riga `Schermo principale collegato` del handoff non si fa: il
+committente l'ha esclusa, e senza un campo che dica davvero se la TV è agganciata sarebbe
+una rassicurazione finta.
 
-- [ ] **Step 4: `1o` lobby**
+- [x] **Step 4: `1o` lobby**
 
 Scheda `Giocatori` con `2 / 3` in ciano, tre righe (pallino, nome, `×` per cacciare;
 lo slot libero è tratteggiato e dice `Slot libero`), scheda `Link giocatori` con l'URL —
 lo stesso del QR sulla TV, quindi arriva dallo stesso campo. Barra in basso: `AVVIA
 PARTITA` spento finché non sono tre, con la nota `Serve il terzo giocatore`.
 
-- [ ] **Step 5: verifica `?mock=1n`, `1o`; test verdi; commit**
+- [x] **Step 5: verifica `?mock=1n`, `1o`; test verdi; commit**
 
 ---
 

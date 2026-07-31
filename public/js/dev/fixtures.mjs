@@ -355,7 +355,7 @@ const PHONE = {
 
 // Scheletro di adminView(): le chiavi non pertinenti alla fase restano null
 const admin = (over) => Object.assign({
-  phase: 'lobby', roomCode: 'ABCD',
+  phase: 'lobby', roomCode: 'ABCD', lobbyUrl: LOBBY_URL + '/play.html?room=ABCD',
   players: PLAYERS, boardNumber: 1, totalBoards: 3,
   currentTurn: 0, turnState: 'SPIN',
   triplete: null, giramoe: null, tiebreak: null,
@@ -363,9 +363,10 @@ const admin = (over) => Object.assign({
 }, over);
 
 const ADMIN = {
-  // 1n · pre-partita
+  // 1n · pre-partita. La fase si chiama 'video' anche sul server: è il momento
+  // in cui la TV mostra la sigla e la console aspetta il via.
   '1n': () => [['admin:state', admin({
-    phase: 'pregame',
+    phase: 'video', roomCode: null, lobbyUrl: null,
     players: [], boardNumber: 0, turnState: null
   })]],
 

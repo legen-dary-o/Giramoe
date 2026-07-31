@@ -55,14 +55,12 @@
    Fuori da questa lista i bottoni del giocatore, che ora sono `.pbtn` e hanno
    tre stati: un selettore con l'id vinceva sempre e li teneva ciano anche da
    spenti. */
-#btn-inizia, #btn-avvia,
 #btn-set-board, #btn-go-triplete, #btn-triplete-start, #btn-giramoe-setboard,
 #btn-giramoe-spin, #btn-start-final {
   background: var(--accent);
   color: #000;
   border-color: var(--accent);
 }
-#btn-inizia:hover, #btn-avvia:hover,
 #btn-set-board:hover, #btn-go-triplete:hover, #btn-triplete-start:hover, #btn-giramoe-setboard:hover,
 #btn-giramoe-spin:hover, #btn-start-final:hover {
   background: var(--accent); color: #000; border-color: var(--accent);

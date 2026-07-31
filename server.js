@@ -145,6 +145,8 @@ function adminView() {
   return {
     phase: state.phase,
     roomCode: state.roomCode,
+    // Lo stesso URL del QR sulla TV: se il QR non si legge, l'host lo detta.
+    lobbyUrl: state.roomCode ? lobbyUrl() : null,
     players: inGame
       ? publicScores()
       : state.lobby.map((p, i) => ({ id: i, name: p.name, connected: p.connected })),

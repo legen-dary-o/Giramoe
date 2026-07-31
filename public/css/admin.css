@@ -1,9 +1,396 @@
 /* ============================================================
    GIRAMOE — telefono del Game Master (430×932)
-   Solo admin.html. Console di regia: sezioni, liste, azioni.
+   Solo admin.html. Console di regia: barra alta, schede, barra d'azione.
    ============================================================ */
 
-/* === ADMIN === */
+/* La console non è una schermata di gioco: è un pannello che si guarda di
+   sfuggita mentre si conduce. Tre cose la distinguono dal telefono del
+   giocatore — la barra alta dice sempre in che fase siamo, le due azioni
+   stanno fisse in fondo (si premono al volo, non devono mai finire sotto la
+   piega) e i campi sono vestiti da schede. */
+
+/* === COLONNA === */
+
+.ad-col {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow-y: auto;
+  gap: 14px;
+  padding: 18px 20px 20px;
+}
+/* Le schermate con la barra d'azione le lasciano il posto: senza, l'ultima
+   scheda ci finisce sotto e non si legge. */
+.ad-col.has-bar { padding-bottom: 132px; }
+.ad-col.has-bar.is-single { padding-bottom: 116px; }
+
+/* Colonna centrata (pre-partita, tabelloni finiti, spareggio) */
+.ad-center {
+  justify-content: center;
+  align-items: center;
+  gap: 34px;
+  padding: 0 26px 60px;
+  overflow: hidden;
+}
+
+/* === BARRA ALTA === */
+
+.ad-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% + 40px);
+  margin: 0 -20px 4px;
+  padding: 2px 22px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+.ad-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ad-wm {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.ad-gm {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(48, 184, 255, 0.14);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 8.5px;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+.ad-phase-wrap { display: flex; align-items: center; gap: 10px; flex: none; }
+.ad-phase {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.ad-phase.is-accent { color: var(--accent); }
+.ad-pips { display: flex; gap: 5px; }
+.ad-pips i { width: 18px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.18); }
+.ad-pips i.is-done { background: var(--accent); }
+
+/* === BARRA D'AZIONE === */
+
+.ad-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  padding: 16px 20px calc(26px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(0deg, rgba(10, 10, 12, 0.96), rgba(10, 10, 12, 0.6));
+}
+.ad-bar[hidden] { display: none; }
+.ad-hint {
+  display: block;
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(245, 245, 247, 0.34);
+}
+.ad-btns { display: flex; gap: 12px; }
+
+/* `flex: 1` solo dentro la barra: in colonna farebbe crescere il bottone in
+   altezza fino a riempire lo schermo. */
+.ad-btns .abtn { flex: 1; }
+/* Fuori dalla barra il primario è largo quanto la colonna */
+.ad-col > .abtn { width: 100%; }
+.abtn {
+  flex: none;
+  height: 58px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font: 600 13px -apple-system, sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.2s ease;
+}
+.abtn:active:not(:disabled) { transform: scale(0.97); }
+/* L'azione principale non è mai piena: sta accanto a un'altra ugualmente
+   probabile, e una piena e una vuota farebbero sembrare la seconda sbagliata. */
+.abtn.is-accent {
+  background: rgba(48, 184, 255, 0.14);
+  border-color: rgba(48, 184, 255, 0.6);
+  color: var(--accent);
+}
+.abtn.is-plain {
+  background: none;
+  border-color: rgba(245, 245, 247, 0.4);
+  color: var(--ink);
+}
+/* Primario pieno: quando è l'unica azione della schermata */
+.abtn.is-solid {
+  height: 60px;
+  background: var(--accent);
+  color: #000;
+  letter-spacing: 3px;
+  box-shadow: 0 12px 40px rgba(48, 184, 255, 0.30);
+}
+.abtn.is-solid:disabled { background: rgba(48, 184, 255, 0.25); color: rgba(0, 0, 0, 0.55); box-shadow: none; }
+.abtn:disabled { cursor: not-allowed; }
+.abtn.is-accent:disabled, .abtn.is-plain:disabled { opacity: 0.35; }
+/* Perché è spento: sotto la barra, come i primari del telefono giocatore */
+.ad-why {
+  display: block;
+  margin-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-align: center;
+  color: rgba(245, 245, 247, 0.34);
+}
+.ad-why[hidden] { display: none; }
+
+/* === SCHEDE E CAMPI === */
+
+.acard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.acard[hidden] { display: none; }
+/* Variante spenta: le schede di sola lettura (spiegazioni, regole) */
+.acard.is-quiet { background: rgba(255, 255, 255, 0.03); padding: 16px 18px; gap: 8px; }
+/* Variante accesa: la scheda che porta l'azione del momento */
+.acard.is-accent {
+  background: linear-gradient(180deg, rgba(48, 184, 255, 0.12), var(--panel));
+  border-color: rgba(48, 184, 255, 0.5);
+}
+
+.alab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.acard-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.acard-head .val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+
+/* 16px e non i 14,5 del handoff: sotto i 16 iOS zooma la pagina al fuoco del
+   campo, e su una console che si usa in piedi è peggio del disallineamento. */
+.afield {
+  width: 100%;
+  padding: 15px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font: 500 16px -apple-system, sans-serif;
+  line-height: 1.35;
+  color: var(--ink);
+  outline: none;
+  resize: none;
+}
+.afield::placeholder { color: rgba(245, 245, 247, 0.32); font-weight: 400; }
+.afield:focus { border-color: rgba(48, 184, 255, 0.55); }
+/* Campo numerato: il numero fuori, il campo dentro */
+.afield-n { display: flex; align-items: center; gap: 12px; }
+.afield-n .n {
+  flex: none;
+  min-width: 22px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: rgba(48, 184, 255, 0.9);
+}
+
+/* Esito della verifica della frase: verde quando ci sta, bianco quando no.
+   Il rosso non esiste in questa palette — l'errore lo dice il testo. */
+.acheck {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--accent);
+  min-height: 16px;
+}
+.acheck[hidden] { display: none; }
+.acheck .mark {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+}
+.acheck.is-bad { color: var(--ink); }
+
+/* === RIGHE GIOCATORE === */
+
+.arow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+}
+.ar-name { font: 600 15px -apple-system, sans-serif; color: rgba(245, 245, 247, 0.7); }
+.ar-right {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: rgba(245, 245, 247, 0.5);
+}
+.ar-right b { color: var(--ink); font-weight: 700; }
+.ar-right b.acc { color: var(--accent); }
+.arow.is-accent {
+  background: rgba(48, 184, 255, 0.08);
+  border-color: rgba(48, 184, 255, 0.3);
+}
+.arow.is-accent .ar-name { color: var(--ink); }
+.arow.is-accent .ar-right { color: rgba(245, 245, 247, 0.6); }
+.arow.is-dim { opacity: 0.55; }
+/* Slot ancora libero in lobby */
+.arow.is-free { background: none; border: 1px dashed rgba(255, 255, 255, 0.16); }
+.arow.is-free .ar-name { color: rgba(245, 245, 247, 0.3); font-weight: 500; }
+
+.ar-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+.arow.is-free .ar-dot, .ar-dot.is-off { background: rgba(255, 255, 255, 0.16); }
+
+.ar-kick {
+  flex: none;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 245, 247, 0.45);
+  background: none;
+  color: var(--ink);
+  font: 700 13px var(--font-mono);
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.ar-kick:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.14); }
+
+/* Pillola di stato accanto al nome di turno */
+.atag {
+  flex: none;
+  margin-left: auto;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(48, 184, 255, 0.12);
+  border: 1px solid rgba(48, 184, 255, 0.35);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.atag.is-plain { background: rgba(255, 255, 255, 0.05); border-color: rgba(245, 245, 247, 0.3); color: var(--ink-soft); }
+.aturn { display: flex; align-items: center; gap: 10px; }
+.aturn .nome { font: 600 16px -apple-system, sans-serif; }
+
+/* === 1n · PRE-PARTITA === */
+
+.ad-dots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle 1.6px at 50% 50%, rgba(255, 255, 255, 0.55) 99%, transparent 100%);
+  background-size: 7px 7px;
+  opacity: 0.40;
+  -webkit-mask-image: radial-gradient(ellipse 74% 28% at 50% 44%, transparent 62%, #000 96%);
+  mask-image: radial-gradient(ellipse 74% 28% at 50% 44%, transparent 62%, #000 96%);
+}
+#admin-pregame .wm { font-size: 44px; letter-spacing: -0.03em; }
+.ad-brand { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.ad-chip {
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(48, 184, 255, 0.5);
+  background: rgba(48, 184, 255, 0.1);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+/* I tre passi: dicono in che ordine si fanno le cose, non sono decorazione */
+.ad-steps { width: 100%; margin: 0; padding: 0; border-top: 1px solid rgba(255, 255, 255, 0.10); }
+.ad-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 16px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  list-style: none;
+}
+.ad-steps .n {
+  flex: none;
+  min-width: 38px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+}
+.ad-steps .t { font-family: var(--font-mono); font-size: 13px; line-height: 1.4; color: var(--ink-soft); }
+
+/* === 1o · LOBBY === */
+
+#admin-players { display: flex; flex-direction: column; gap: 12px; }
+
+.ad-link {
+  font: 700 15px var(--font-mono);
+  color: var(--accent);
+  word-break: break-all;
+}
+.ad-note {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(245, 245, 247, 0.34);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abtn { transition: none; }
+}
+
+/* ============================================================
+   VECCHIA CONSOLE — da smontare
+   Le schermate da 1p a 1x non sono ancora state rifatte e usano ancora queste
+   classi. Ogni task della slice 7 ne porta via un pezzo: quando questo blocco
+   è vuoto, la console è tutta nuova. Sta in fondo apposta, così è evidente
+   quanto ne resta.
+   ============================================================ */
 
 .admin-container {
   display: flex;
@@ -16,13 +403,7 @@
   height: 100%;
   overflow-y: auto;
 }
-
-.admin-container h1 {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-}
+.admin-container h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
 
 .admin-section {
   width: 100%;
@@ -52,18 +433,8 @@
   font-weight: 600;
   border-radius: var(--r-sm);
 }
-.admin-player-item.winner { border-color: rgba(255, 255, 255, 0.4); }
-
-.status-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--green);
-}
-.status-dot.disconnected { background: var(--red); }
 
 .board-error { color: var(--red); font-size: 13px; font-weight: 600; margin-top: 8px; min-height: 16px; }
-/* stesso slot, ma per una conferma: niente alert() bloccante sul telefono dell'host */
 .board-error.ok { color: var(--accent); }
 
 .turn-state-tag {
@@ -90,32 +461,6 @@
   padding: 0;
 }
 .admin-actions .glass-button { flex: 1; padding: 15px 10px; font-size: 14px; }
-
-#btn-solve {
-  border-color: rgba(48, 184, 255, 0.6);
-  color: var(--green);
-}
-#btn-solve:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
-
-.admin-player-item .apl-name { font-weight: 600; }
-.admin-player-item .apl-name.empty { color: var(--ink-faint); font-weight: 500; }
-.admin-player-item .apl-right { display: flex; align-items: center; gap: 12px; }
-
-.kick-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 1px solid rgba(245, 245, 247, 0.45);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--red);
-  background: transparent;
-  cursor: pointer;
-  transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
-}
-.kick-btn:hover { background: var(--red); color: #fff; }
-.kick-btn:active { transform: scale(0.9); }
 
 .admin-player-item.score-flash { animation: scoreFlash 0.7s ease; }
 @keyframes scoreFlash {
