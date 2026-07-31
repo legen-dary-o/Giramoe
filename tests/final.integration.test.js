@@ -23,10 +23,11 @@ test('final: picks/timer/carry/-3s, then envelopes (open, blind change, admin re
 
   const admin = connect(), main = connect();
   let adminState = null;
-  const m = { board: null, timer: null, buzzed: 0, wrong: 0, env: null };
+  const m = { board: null, timer: null, total: null, buzzed: 0, wrong: 0, env: null, penalty: null };
   admin.on('admin:state', s => { adminState = s; });
   main.on('main:finalBoard', d => { m.board = d; });
-  main.on('main:finalTimer', d => { m.timer = d.ms; });
+  main.on('main:finalTimer', d => { m.timer = d.ms; m.total = d.total; });
+  main.on('main:finalPenalty', d => { m.penalty = d; });
   main.on('main:finalBuzzed', () => { m.buzzed++; });
   main.on('main:wrong', () => { m.wrong++; });
   main.on('main:envelopes', d => { m.env = d; });
@@ -86,6 +87,18 @@ test('final: picks/timer/carry/-3s, then envelopes (open, blind change, admin re
     assert.strictEqual(adminState.final.state, 'RUNNING', 'timer running after the vowel');
     await wait(400);
     assert.ok(m.timer < 60000, 'timer is counting down');
+    // La barra sotto il numero è una percentuale: senza il totale la TV
+    // dovrebbe saperlo a memoria.
+    assert.strictEqual(m.total, 60000, 'il timer porta anche il totale');
+
+    // La TV disegna il nome del finalista in barra alta e le tessere delle
+    // lettere: tutto deve arrivare dentro main:finalBoard.
+    assert.strictEqual(m.board.finalist, 'P1', 'il tabellone porta il nome del finalista');
+    assert.deepStrictEqual(m.board.given, ['N', 'R', 'T', 'E'], 'le 4 lettere regalate');
+    assert.deepStrictEqual(m.board.picks.map(p => p.letter), ['C', 'D', 'B', 'O'], 'le 4 scelte, in ordine');
+    // "CENTRO NORD": C sì, D sì (NORD), B no, O sì
+    assert.deepStrictEqual(m.board.picks.map(p => p.present), [true, true, false, true],
+      'ogni scelta dice se è nella frase');
 
     // Buzz + correct -> board 1 green, carry time to board 2.
     players[0].emit('player:finalBuzz'); await wait(120);
@@ -105,12 +118,22 @@ test('final: picks/timer/carry/-3s, then envelopes (open, blind change, admin re
     assert.strictEqual(adminState.final.boardIndex, 2, 'advanced to board 3');
     assert.strictEqual(adminState.final.results[1], false, 'board 2 red');
 
+    // Sui tabelloni 2 e 3 non c'è niente di regalato: le tessere di sinistra
+    // cambiano contenuto, e la TV lo sa da qui.
+    assert.deepStrictEqual(m.board.given, [], 'nessuna lettera regalata fuori dal tabellone 1');
+
     // Board 3 (empty): a wrong letter docks ~3s.
     players[0].emit('player:finalPick', { letter: 'S' }); await wait(120); // present in SOLE
+    assert.strictEqual(m.penalty, null, 'lettera presente: nessuna penalità');
     const before = m.timer;
     players[0].emit('player:finalPick', { letter: 'Z' }); await wait(120); // absent -> -3s + main:wrong
     assert.ok(m.wrong >= 1, 'wrong sound on the bad letter');
     assert.ok(before - m.timer >= 2500, `timer docked ~3s (was ${before}, now ${m.timer})`);
+    // Senza questo evento lo scossone del timer non partirebbe: tre secondi in
+    // meno su un display che scorre non si distinguono dal normale.
+    assert.ok(m.penalty && m.penalty.ms === 3000, 'la penalità viene annunciata alla TV');
+    assert.deepStrictEqual(m.board.picks.map(p => p.letter), ['S', 'Z'], 'il tabellone 3 elenca le chiamate');
+    assert.deepStrictEqual(m.board.picks.map(p => p.present), [true, false], 'e dice quale era assente');
 
     // Buzz + correct on board 3 -> finished with [green, red, green] -> ENVELOPES.
     players[0].emit('player:finalBuzz'); await wait(120);

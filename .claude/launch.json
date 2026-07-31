@@ -8,6 +8,12 @@
       "port": 4173
     },
     {
+      "name": "handoff-tv",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4174", "-d", "design_handoff_tv_screens"],
+      "port": 4174
+    },
+    {
       "name": "giramoe",
       "runtimeExecutable": "node",
       "runtimeArgs": ["server.js"],

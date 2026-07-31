@@ -189,7 +189,13 @@ Seam utili a test/debug (variabili d'ambiente, opzionali): `PORT`/`HOST` (bind),
 - `public/js/fx/roundscenes.js` — le 6 animazioni di round a schermo intero (Triplete,
   apertura Express, treno Express, Giramoe, Finalista, Buste), palco logico 1920×1080 scalato
 - `public/js/audio.js` — effetti sonori del main display
-- `public/css/style.css` — stile liquid glass condiviso
+- `public/css/` — uno stile per superficie, caricati in quest'ordine:
+  - `tokens.css` — @font-face, variabili colore/raggio/ombra, reset. Lo caricano tutte.
+  - `shell.css` — primitive condivise (bottoni, campi, wordmark, `.screen`), ruota comune a
+    TV e telefono, buste, overlay di disconnessione, keyframes usate da più superfici
+  - `tv.css` — solo `index.html`: intro, lobby, tabelloni, ruota TV, barra giocatori, cursore
+  - `phone.css` — solo `play.html`: ingresso, tastiera, buzzer
+  - `admin.css` — solo `admin.html`: console di regia
 - `public/assets/` — i 5 file audio (incl. `buzzer.mp3` del Triplete)
 - `tests/` — test unitari (board, game) e di integrazione (socket)
 

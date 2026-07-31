@@ -1,7 +1,10 @@
-// SAMIRO — assistente "finto AI" sul regolamento. Cerchio fisso su tutte le
-// schermate del giocatore; al tocco apre una chat che risponde SOLO a domande
-// sul regolamento (dati in samiro-faq.js) tramite keyword-matching, con
+// SAMIRO — assistente "finto AI" sul regolamento. Pillola fissa in basso su
+// tutte le schermate del giocatore; al tocco apre una chat che risponde SOLO a
+// domande sul regolamento (dati in samiro-faq.js) tramite keyword-matching, con
 // fallback quando la domanda esce dal seminato. Nessuna chiamata di rete.
+//
+// Lo stile sta in public/css/phone.css (sezione SAMIRO), non più iniettato da
+// qui: così il test delle keyframes lo vede come tutto il resto.
 (function () {
   'use strict';
   if (typeof SAMIRO_FAQ === 'undefined') return; // samiro-faq.js non caricato
@@ -107,95 +110,14 @@
     return bestScore >= 1 ? SAMIRO_FAQ[best].a : SAMIRO_FALLBACK;
   }
 
-  // ---- Stile (iniettato: widget autonomo, rimovibile) ----------------------
-
-  const css = `
-  .samiro-fab {
-    position: fixed; right: 16px; bottom: max(16px, env(safe-area-inset-bottom));
-    width: 60px; height: 60px; border-radius: 50%; z-index: 9998;
-    background: #fff; border: 2px solid var(--accent, #30b8ff);
-    box-shadow: 0 8px 26px rgba(0,0,0,.5); cursor: pointer; overflow: hidden;
-    display: grid; place-items: center; padding: 0;
-    transition: transform .18s var(--ease-spring, ease);
-  }
-  .samiro-fab:active { transform: scale(.92); }
-  .samiro-fab img {
-    width: 100%; height: 100%; object-fit: cover; object-position: center center;
-    /* immagine già ritagliata sull'unicorno (public/assets/samiro.png) */
-  }
-  .samiro-fab .samiro-fallback { font-size: 30px; line-height: 1; }
-  .samiro-fab.hidden { display: none; }
-
-  .samiro-panel {
-    position: fixed; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom));
-    width: min(360px, calc(100vw - 24px));
-    height: min(70vh, 540px); z-index: 9999;
-    background: var(--panel, #16161a); color: var(--ink, #f5f5f7);
-    border: var(--glass-border, 1px solid rgba(255,255,255,.1));
-    border-radius: var(--r-lg, 22px); box-shadow: var(--shadow-lg, 0 24px 70px rgba(0,0,0,.6));
-    display: flex; flex-direction: column; overflow: hidden;
-    transform-origin: bottom right;
-    animation: samiroIn .22s var(--ease-out, ease) both;
-  }
-  @keyframes samiroIn { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
-  .samiro-panel.hidden { display: none; }
-
-  .samiro-head {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 14px; border-bottom: 1px solid var(--hairline, rgba(255,255,255,.14));
-  }
-  .samiro-head .samiro-ava {
-    width: 34px; height: 34px; border-radius: 50%; overflow: hidden; background: #fff;
-    display: grid; place-items: center; flex: none;
-  }
-  .samiro-head .samiro-ava img { width: 100%; height: 100%; object-fit: cover; object-position: center center; }
-  .samiro-head .samiro-ava .samiro-fallback { font-size: 18px; }
-  .samiro-head .samiro-name { font-family: var(--font-display, sans-serif); font-weight: 800; font-size: 17px; letter-spacing: .5px; }
-  .samiro-head .samiro-sub { font-family: var(--font-mono, monospace); font-size: 10px; color: var(--ink-soft, #999); letter-spacing: 1px; text-transform: uppercase; }
-  .samiro-head .samiro-close {
-    margin-left: auto; background: none; border: none; color: var(--ink-soft, #999);
-    font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 6px;
-  }
-
-  .samiro-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
-  .samiro-msg { max-width: 82%; padding: 9px 12px; border-radius: 14px; font-family: var(--font-mono, monospace); font-size: 13px; line-height: 1.45; word-wrap: break-word; }
-  .samiro-msg.bot { align-self: flex-start; background: rgba(255,255,255,.06); border: 1px solid var(--hairline, rgba(255,255,255,.14)); border-bottom-left-radius: 4px; }
-  .samiro-msg.me { align-self: flex-end; background: var(--accent, #30b8ff); color: #001018; border-bottom-right-radius: 4px; }
-
-  .samiro-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 2px 2px; }
-  .samiro-chip {
-    background: rgba(255,255,255,.05); color: var(--ink, #f5f5f7);
-    border: 1px solid var(--hairline, rgba(255,255,255,.2)); border-radius: 999px;
-    padding: 7px 11px; font-family: var(--font-mono, monospace); font-size: 11.5px;
-    cursor: pointer; transition: background .15s; text-align: left;
-  }
-  .samiro-chip:active { background: rgba(255,255,255,.14); }
-
-  .samiro-input { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--hairline, rgba(255,255,255,.14)); }
-  .samiro-input input {
-    flex: 1; background: rgba(255,255,255,.05); border: 1px solid var(--hairline, rgba(255,255,255,.2));
-    border-radius: 999px; padding: 9px 14px; color: var(--ink, #f5f5f7);
-    font-family: var(--font-mono, monospace); font-size: 13px; outline: none;
-  }
-  .samiro-input input::placeholder { color: var(--ink-faint, rgba(245,245,247,.4)); }
-  .samiro-input button {
-    flex: none; width: 40px; border-radius: 50%; border: none; cursor: pointer;
-    background: var(--accent, #30b8ff); color: #001018; font-size: 17px;
-  }
-  .samiro-input button:disabled { opacity: .4; }
-  `;
-  const style = document.createElement('style');
-  style.textContent = css;
-  document.head.appendChild(style);
-
   // ---- DOM -----------------------------------------------------------------
 
   const IMG_SRC = '/assets/samiro.png';
 
-  // <img> con fallback a emoji se l'immagine non è ancora stata caricata.
-  function avatar(cls) {
+  // <img> con fallback a emoji se l'immagine non c'è o non si carica.
+  function avatar() {
     const wrap = document.createElement('span');
-    if (cls) wrap.className = cls;
+    wrap.className = 'samiro-ava';
     const img = document.createElement('img');
     img.src = IMG_SRC; img.alt = 'Samiro';
     img.onerror = () => { img.remove(); const e = document.createElement('span'); e.className = 'samiro-fallback'; e.textContent = '🦄'; wrap.appendChild(e); };
@@ -203,16 +125,19 @@
     return wrap;
   }
 
-  const fab = document.createElement('button');
-  fab.className = 'samiro-fab';
-  fab.setAttribute('aria-label', 'Apri Samiro');
-  fab.appendChild(avatar(null));
+  // Pillola ancorata in basso al centro (vedi la sezione SAMIRO di phone.css).
+  const dock = document.createElement('button');
+  dock.className = 'samiro-dock';
+  dock.setAttribute('aria-label', 'Apri Samiro, l’assistente sul regolamento');
+  const lab = document.createElement('span');
+  lab.className = 'samiro-lab';
+  lab.innerHTML = 'Samiro <i>· Regolamento</i>';
+  dock.append(avatar(), lab);
 
   const panel = document.createElement('div');
   panel.className = 'samiro-panel hidden';
   panel.innerHTML = `
     <div class="samiro-head">
-      <span class="samiro-ava"></span>
       <div>
         <div class="samiro-name">Samiro</div>
         <div class="samiro-sub">Assistente regolamento</div>
@@ -224,9 +149,10 @@
       <input type="text" placeholder="Scrivi una domanda…" maxlength="140">
       <button type="submit" aria-label="Invia">➤</button>
     </form>`;
-  panel.querySelector('.samiro-ava').appendChild(avatar(null));
+  const head = panel.querySelector('.samiro-head');
+  head.insertBefore(avatar(), head.firstChild);
 
-  document.body.appendChild(fab);
+  document.body.appendChild(dock);
   document.body.appendChild(panel);
 
   const body = panel.querySelector('.samiro-body');
@@ -270,7 +196,7 @@
 
   function open() {
     panel.classList.remove('hidden');
-    fab.classList.add('hidden');
+    dock.classList.add('hidden');
     if (!opened) {
       opened = true;
       addMsg(SAMIRO_INTRO, 'bot');
@@ -280,10 +206,10 @@
   }
   function close() {
     panel.classList.add('hidden');
-    fab.classList.remove('hidden');
+    dock.classList.remove('hidden');
   }
 
-  fab.addEventListener('click', open);
+  dock.addEventListener('click', open);
   panel.querySelector('.samiro-close').addEventListener('click', close);
   form.addEventListener('submit', e => {
     e.preventDefault();

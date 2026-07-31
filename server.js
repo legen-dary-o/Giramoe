@@ -14,6 +14,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Le pagine e i fixture di sviluppo (public/dev, public/js/dev) servono solo a
+// costruire e rivedere le schermate: fuori da sviluppo non sono raggiungibili.
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && /^\/(dev|js\/dev)\//.test(req.path)) {
+    return res.status(404).end();
+  }
+  next();
+});
 app.use(express.static(require('path').join(__dirname, 'public')));
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -72,6 +80,10 @@ let state = {
 let tripleteTimer = null;  // single reveal/flash timer for the bonus round
 let giramoeTimer = null;   // 5s buzz window timer for the giramoe board
 const GIRAMOE_BUZZ_MS = 5000;
+// Quando scade la finestra aperta, in ms epoch (0 = nessuna). Serve solo alla TV
+// che si ricollega a metà finestra: senza, l'anello del conto alla rovescia
+// resterebbe spento fino al turno dopo.
+let giramoeWindowUntil = 0;
 
 // True while a wheel spin is animating on screen. The spin result is applied to
 // the game state immediately, but clients aren't told (scores/turn) until the
@@ -115,7 +127,16 @@ function mainGameView() {
     currentTurn: state.g.currentTurnIndex,
     boardNumber: state.g.boardNumber,
     totalBoards: TOTAL_BOARDS,
-    segments: state.g.segments
+    segments: state.g.segments,
+    // Il valore dello spicchio uscito resta a schermo per tutto il turno: senza
+    // questo campo un refresh della TV lo perderebbe fino al giro dopo.
+    currentWedge: state.g.lastSpinValue,
+    // L'accento magenta segue il giocatore dentro l'express, non la fase: la
+    // fase 'express' dura tre tabelloni durante i quali si gioca normalmente.
+    // Nello stato e non solo nell'evento perché dopo un refresh la TV non
+    // avrebbe nessun altro modo di sapere che qualcuno è in raffica.
+    expressActive: state.g.turnState === 'EXPRESS',
+    expressValue: game.EXPRESS_VALUE
   };
 }
 
@@ -124,6 +145,8 @@ function adminView() {
   return {
     phase: state.phase,
     roomCode: state.roomCode,
+    // Lo stesso URL del QR sulla TV: se il QR non si legge, l'host lo detta.
+    lobbyUrl: state.roomCode ? lobbyUrl() : null,
     players: inGame
       ? publicScores()
       : state.lobby.map((p, i) => ({ id: i, name: p.name, connected: p.connected })),
@@ -149,6 +172,10 @@ function adminView() {
           ? {
               started: true,
               category: state.gi.board.category,
+              // La frase serve alla console per giudicare "l'ha detta giusta?".
+              // Senza, dopo un refresh a metà tabellone l'host non ce l'ha più
+              // da nessuna parte — sulla TV è coperta.
+              phrase: state.gi.board.phrase,
               multiplier: state.gi.multiplier,
               state: state.gi.state,
               currentTurn: state.gi.currentTurnIndex,
@@ -160,7 +187,9 @@ function adminView() {
       : null,
     tiebreak: state.phase === 'tiebreak' && state.tiebreak ? tiebreakView() : null,
     finalist: state.finalistId != null && ['finalist', 'final', 'envelopes'].includes(state.phase)
-      ? { id: state.finalistId, name: state.g.players[state.finalistId].name }
+      // La banca serve alla scheda del finalista nella console: è il numero con
+      // cui ha vinto, e senza si vedrebbe solo un nome.
+      ? { id: state.finalistId, name: state.g.players[state.finalistId].name, bank: state.g.players[state.finalistId].bank }
       : null,
     final: state.phase === 'final' && state.fg
       ? {
@@ -170,6 +199,10 @@ function adminView() {
           state: state.fg.state,
           results: state.fg.results.slice(),
           timeLeft: state.finalTimeLeft,
+          // `total` per la barra del timer, `given`/`picks` per le due file di
+          // lettere: la console mostra le stesse cose della TV.
+          total: FINAL_TIME_MS,
+          ...finalLetters(),
           buzzed: state.fg.state === 'BUZZED'
         }
       : null,
@@ -223,8 +256,12 @@ function playerTripleteView(i) {
     state: t.state,
     message,
     points: t.players[i].points,
+    bank: state.g.players[i] ? state.g.players[i].bank : 0,
     boardNumber: t.boardIndex + 1,
-    totalBoards: triplete.TOTAL_BOARDS
+    totalBoards: triplete.TOTAL_BOARDS,
+    // Chi è bloccato e chi è ancora in gioco: da fermo è l'unica cosa che il
+    // giocatore vuole sapere, e finora il telefono conosceva solo se stesso.
+    players: t.players.map((p) => ({ name: p.name, locked: t.lockedOut.includes(p.id) }))
   };
 }
 
@@ -373,7 +410,13 @@ function declareFinalist(id) {
   const f = state.g.players.find(p => p.id === id);
   io.to('main').emit('main:finalist', { id, name: f.name, standings: finalistStandings(id) });
   io.to('admin').emit('admin:state', adminView());
-  state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:finalist', { id, name: f.name, isMe: i === id }));
+  // I due esiti dicono un numero ciascuno — la banca del finalista se hai vinto,
+  // la tua se hai perso — e finora al telefono non arrivava nessuno dei due.
+  state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:finalist', {
+    id, name: f.name, isMe: i === id,
+    bank: f.bank,
+    myBank: state.g.players[i] ? state.g.players[i].bank : 0
+  }));
 }
 
 function tiebreakView() {
@@ -395,7 +438,8 @@ function startTiebreak(contenderIds) {
 }
 
 function broadcastTiebreak() {
-  io.to('main').emit('main:tiebreakState', tiebreakView());
+  const view = tiebreakView();
+  io.to('main').emit('main:tiebreakState', view);
   io.to('admin').emit('admin:state', adminView());
   const tb = state.tiebreak;
   state.lobby.forEach((p, i) => {
@@ -404,6 +448,10 @@ function broadcastTiebreak() {
       isContender,
       canSpin: isContender && tb.contenders[tb.current] === i && tb.spins[i] == null,
       myValue: tb.spins[i] != null ? tb.spins[i] : null,
+      // La ruota e i valori usciti: sul telefono c'era solo il bottone, e chi
+      // aspettava il proprio giro non sapeva che numero doveva battere.
+      segments: game.GIRAMOE_SEGMENTS,
+      contenders: view.contenders,
       message: !isContender ? 'Spareggio in corso…'
         : tb.contenders[tb.current] === i && tb.spins[i] == null ? 'Spareggio! Gira la ruota'
         : 'Aspetta il tuo turno…'
@@ -420,12 +468,37 @@ function evaluateTiebreak() {
 
 // --- FINAL game: 3 boards, one shared 60s countdown (solo finalist) ---
 
+// Lettere regalate dal tabellone e lettere chiamate dal finalista, con la loro
+// sorte. Le mostrano sia la TV sia la console dell'admin: una funzione sola, o
+// le due superfici prima o poi divergono.
+function finalLetters() {
+  const fg = state.fg;
+  const b = fg.boards[fg.boardIndex];
+  // Una lettera è "presente" se compare nella frase, rivelata o no: la griglia
+  // porta la lettera base su ogni cella, anche su quelle ancora chiuse.
+  const inPhrase = (L) => b.grid.some(row => row.some(c => c.type === 'letter' && c.letter === L));
+  const given = fg.boardIndex === 0 ? finalgame.BOARD1_REVEAL.slice() : [];
+  const picks = fg.usedLetters
+    .filter(L => !given.includes(L))
+    .map(L => ({ letter: L, present: inPhrase(L) }));
+  return { given, picks };
+}
+
 function finalBoardView() {
-  const b = state.fg.boards[state.fg.boardIndex];
+  const fg = state.fg;
+  const b = fg.boards[fg.boardIndex];
+  const { given, picks } = finalLetters();
   return {
     category: b.category,
-    boardIndex: state.fg.boardIndex,
+    boardIndex: fg.boardIndex,
     totalBoards: 3,
+    // Il gioco finale è di uno solo: il nome sta in barra alta al posto dei
+    // punteggi, e senza questo campo la TV non ce l'ha.
+    finalist: state.finalistId != null ? state.g.players[state.finalistId].name : '',
+    state: fg.state,        // PICKING | RUNNING | BUZZED | DONE
+    given,
+    picks,
+    results: fg.results.slice(),
     grid: b.grid.map(row => row.map(cell => {
       if (cell.type === 'letter') {
         return { type: 'letter', revealed: cell.revealed, letter: cell.revealed ? (cell.display || cell.letter) : null };
@@ -451,13 +524,25 @@ function playerFinalView() {
   return {
     boardIndex: fg.boardIndex, totalBoards: 3, state: fg.state,
     canPickConsonant, canPickVowel, canBuzz: fg.state === 'RUNNING',
-    usedLetters: fg.usedLetters, message
+    usedLetters: fg.usedLetters, message,
+    // Scheda del timer e quadratini del progresso: il finalista deve vedere
+    // quanti secondi restano e quante scelte gli mancano, non solo leggerlo.
+    timeLeft: state.finalTimeLeft,
+    total: FINAL_TIME_MS,
+    picks: {
+      consonants: fg.consonantPicks,
+      maxConsonants: finalgame.BOARD1_CONSONANTS,
+      vowel: fg.vowelPicked,
+      // Le lettere scelte da lui, distinte da quelle regalate dal tabellone:
+      // sulla tastiera le prime restano accese, le seconde solo spente.
+      letters: fg.usedLetters.filter(L => !(fg.boardIndex === 0 ? finalgame.BOARD1_REVEAL : []).includes(L))
+    }
   };
 }
 
 function broadcastFinal() {
   io.to('main').emit('main:finalBoard', finalBoardView());
-  io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });
+  io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft, total: FINAL_TIME_MS });
   io.to('admin').emit('admin:state', adminView());
   if (state.finalistId != null && state.lobby[state.finalistId]) {
     io.to(state.lobby[state.finalistId].socketId).emit('player:finalState', playerFinalView());
@@ -472,7 +557,7 @@ function startFinalCountdown() {
   if (finalTimer || !state.fg || state.fg.state !== 'RUNNING') return;
   finalTimer = setInterval(() => {
     state.finalTimeLeft = Math.max(0, state.finalTimeLeft - FINAL_TICK_MS);
-    io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });
+    io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft, total: FINAL_TIME_MS });
     if (state.finalTimeLeft <= 0) { clearFinalTimer(); finalgame.expire(state.fg); endFinal(); }
   }, FINAL_TICK_MS);
 }
@@ -501,7 +586,9 @@ function envelopesView() {
     })),
     current: env.current,
     changesLeft: env.changesLeft,
-    state: env.state
+    state: env.state,
+    // Il nome in barra alta, come nel gioco finale: alle buste ci arriva uno solo.
+    finalist: state.finalistId != null ? state.g.players[state.finalistId].name : ''
   };
 }
 
@@ -527,6 +614,7 @@ function startGiramoe() {
 
 function clearGiramoeTimer() {
   if (giramoeTimer) { clearTimeout(giramoeTimer); giramoeTimer = null; }
+  giramoeWindowUntil = 0;
 }
 
 function giramoeBoardView() {
@@ -545,7 +633,11 @@ function giramoeBoardView() {
 function giramoeScores() {
   return state.gi.players.map(p => {
     const gp = state.g.players.find(x => x.id === p.id);
-    return { id: p.id, name: p.name, points: p.points, bank: gp ? gp.bank : 0 };
+    return {
+      id: p.id, name: p.name, points: p.points, bank: gp ? gp.bank : 0,
+      // La console mostra l'ultima mossa di ciascuno: "L ×2 · 1.000"
+      lastLetter: p.lastLetter || null, lastCount: p.lastCount || 0
+    };
   });
 }
 
@@ -577,7 +669,11 @@ function playerGiramoeView(i) {
     multiplier: gi.multiplier,
     usedLetters: gi.usedLetters,
     currentTurnName: gi.players[gi.currentTurnIndex].name,
-    message
+    message,
+    // L'anello del conto alla rovescia: senza, sul telefono i 5 secondi della
+    // finestra di prenotazione sono una frase e basta.
+    windowMs: Math.max(0, giramoeWindowUntil - Date.now()),
+    windowTotal: GIRAMOE_BUZZ_MS
   };
 }
 
@@ -588,10 +684,19 @@ function broadcastGiramoe() {
   state.lobby.forEach((p, i) => io.to(p.socketId).emit('player:giramoeState', playerGiramoeView(i)));
 }
 
+// La finestra da 5s è l'unico momento in cui qualcuno può prenotarsi: finora la
+// TV non la vedeva affatto, era solo un setTimeout qui dentro.
 function startGiramoeBuzzWindow() {
   clearGiramoeTimer();
+  giramoeWindowUntil = Date.now() + GIRAMOE_BUZZ_MS;
+  io.to('main').emit('main:giramoeWindow', {
+    ms: GIRAMOE_BUZZ_MS,
+    total: GIRAMOE_BUZZ_MS,
+    name: state.gi.players[state.gi.currentTurnIndex].name
+  });
   giramoeTimer = setTimeout(() => {
     giramoeTimer = null;
+    giramoeWindowUntil = 0;
     if (state.phase !== 'giramoe' || !state.gi) return;
     if (giramoe.timeout(state.gi).ok) {
       io.to('main').emit('main:giramoeResume');
@@ -609,16 +714,45 @@ function playerView(playerIndex) {
     bank: p.bank,
     usedLetters: state.g.usedLetters,
     canBuyVowel: state.g.currentTurnIndex === playerIndex && game.canBuyVowel(state.g),
-    currentTurnName: state.g.players[state.g.currentTurnIndex].name
+    currentTurnName: state.g.players[state.g.currentTurnIndex].name,
+    // La mini-ruota del telefono mostra i valori come quella grande: senza gli
+    // spicchi era un disco colorato e basta, e nel round express nessuno vedeva
+    // che un PASSA era diventato EXPRESS.
+    segments: state.g.segments,
+    // La barra alta dice fase e tabellone, e la seconda scheda "Spicchio 500"
+    // quando tocca chiamare la consonante.
+    phase: state.phase,
+    boardNumber: state.g.boardNumber,
+    totalBoards: TOTAL_BOARDS,
+    wedge: state.g.lastSpinValue,
+    // In raffica la seconda scheda dice quanto vale ogni lettera
+    expressValue: game.EXPRESS_VALUE
   };
 }
 
 function mainScoresView() {
-  return { scores: publicScores(), currentTurn: state.g.currentTurnIndex };
+  // `expressActive` anche qui e non solo in mainGameView(): l'ingresso in
+  // raffica arriva dopo un giro di ruota, e in quel momento l'unico payload di
+  // stato che parte è questo.
+  return {
+    scores: publicScores(),
+    currentTurn: state.g.currentTurnIndex,
+    expressActive: state.g.turnState === 'EXPRESS'
+  };
 }
 
 function lobbyPlayers() {
   return state.lobby.map(p => ({ name: p.name, connected: p.connected }));
+}
+
+const MAX_PLAYERS = 3;
+
+// La composizione della lobby serve anche a chi NON è ancora entrato: la
+// schermata d'ingresso scrive quanti posti restano. Chi non ha ancora fatto
+// `player:join` non è in nessuna room, quindi qui si manda a tutti — la TV e
+// l'admin lo ignorano.
+function broadcastLobbyToPhones() {
+  io.emit('player:lobby', { players: lobbyPlayers(), max: MAX_PLAYERS });
 }
 
 function lobbyUrl() {
@@ -680,6 +814,10 @@ io.on('connection', (socket) => {
   // la sincronizzazione parte subito dopo (setImmediate) con lo stato risultante.
   socket.onAny(() => queueAdminSync());
 
+  // Un telefono che apre la pagina d'ingresso deve sapere subito quanti posti
+  // restano, prima ancora di digitare un nome.
+  socket.emit('player:lobby', { players: lobbyPlayers(), max: MAX_PLAYERS });
+
   socket.on('admin:init', () => {
     socket.join('admin');
     socket.emit('admin:state', adminView());
@@ -700,6 +838,15 @@ io.on('connection', (socket) => {
       socket.emit('main:giramoeStart', { segments: game.GIRAMOE_SEGMENTS });
       socket.emit('main:giramoeBoard', giramoeBoardView());
       socket.emit('main:giramoeScores', { scores: giramoeScores(), currentTurn: state.gi.currentTurnIndex, multiplier: state.gi.multiplier });
+      // Se la finestra è aperta si riparte dal tempo che resta, non da capo: un
+      // anello che ricomincia da 5 direbbe una bugia proprio mentre si gioca.
+      const left = giramoeWindowUntil - Date.now();
+      if (left > 0) {
+        socket.emit('main:giramoeWindow', {
+          ms: left, total: GIRAMOE_BUZZ_MS,
+          name: state.gi.players[state.gi.currentTurnIndex].name
+        });
+      }
       socket.emit('main:boardStatus', board.boardStatus(state.gi.board.grid));
     } else if (state.phase === 'tiebreak' && state.tiebreak) {
       socket.emit('main:tiebreakStart', { segments: game.GIRAMOE_SEGMENTS, contenders: tiebreakView().contenders });
@@ -712,7 +859,7 @@ io.on('connection', (socket) => {
       });
     } else if (state.phase === 'final' && state.fg) {
       socket.emit('main:finalBoard', finalBoardView());
-      socket.emit('main:finalTimer', { ms: state.finalTimeLeft });
+      socket.emit('main:finalTimer', { ms: state.finalTimeLeft, total: FINAL_TIME_MS });
     } else if (state.phase === 'envelopes' && state.env) {
       socket.emit('main:envelopes', envelopesView());
     }
@@ -738,6 +885,7 @@ io.on('connection', (socket) => {
     socket.playerIndex = playerIndex;
     socket.emit('player:joined', { playerIndex, name });
     io.to('main').emit('main:playerJoined', { players: state.lobby.map(p => ({ name: p.name, connected: p.connected })) });
+    broadcastLobbyToPhones();
     io.to('admin').emit('admin:state', adminView());
   });
 
@@ -748,6 +896,22 @@ io.on('connection', (socket) => {
     io.to('main').emit('main:startGame');
     state.lobby.forEach(p => io.to(p.socketId).emit('player:gameStarted'));
     io.to('admin').emit('admin:state', adminView());
+  });
+
+  // Anteprima della disposizione mentre la frase si scrive. La calcola
+  // board.layoutPhrase, cioè lo stesso codice che poi costruisce il tabellone:
+  // una copia dell'algoritmo nel browser direbbe "ci sta" su frasi che il
+  // server rifiuta un secondo dopo.
+  socket.on('admin:checkPhrase', ({ phrase }) => {
+    const testo = String(phrase == null ? '' : phrase).trim();
+    if (!testo) return socket.emit('admin:phraseCheck', { ok: false, empty: true });
+    const r = board.layoutPhrase(testo);
+    if (!r.ok) return socket.emit('admin:phraseCheck', { ok: false, error: r.error });
+    socket.emit('admin:phraseCheck', {
+      ok: true,
+      rows: r.rows.filter(row => row.length > 0).length,
+      letters: r.rows.flat().join('').length
+    });
   });
 
   socket.on('admin:setBoard', ({ category, phrase }) => {
@@ -1014,6 +1178,9 @@ io.on('connection', (socket) => {
     const value = game.GIRAMOE_SEGMENTS[seg];
     tb.spins[currentId] = value;
     io.to('main').emit('main:spin', { winningSegment: seg, spins, value, result: { type: 'number', value } });
+    // Anche i telefoni hanno la ruota, ora: senza questo girerebbe solo la TV e
+    // sul telefono il valore comparirebbe dal nulla.
+    state.lobby.forEach((p) => io.to(p.socketId).emit('player:tiebreakSpinResult', { winningSegment: seg, spins }));
     setTimeout(() => {
       if (state.phase !== 'tiebreak' || state.tiebreak !== tb) return;
       tb.current += 1;
@@ -1052,7 +1219,10 @@ io.on('connection', (socket) => {
     if (res.positions && res.positions.length) io.to('main').emit('main:finalReveal', { positions: res.positions });
     if (res.wrong) {
       state.finalTimeLeft = Math.max(0, state.finalTimeLeft - FINAL_PENALTY_MS);
-      io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft });
+      io.to('main').emit('main:finalTimer', { ms: state.finalTimeLeft, total: FINAL_TIME_MS });
+      // Tre secondi in meno non si vedono: il display scorre già da solo. Lo
+      // scossone del timer è l'unica cosa che dice che si è appena pagato.
+      io.to('main').emit('main:finalPenalty', { ms: FINAL_PENALTY_MS });
       io.to('main').emit('main:wrong');
       if (state.finalTimeLeft <= 0) { clearFinalTimer(); finalgame.expire(state.fg); return endFinal(); }
     }
@@ -1135,6 +1305,7 @@ io.on('connection', (socket) => {
     const [removed] = state.lobby.splice(idx, 1);
     if (removed.connected) io.to(removed.socketId).emit('player:kicked');
     io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
+    broadcastLobbyToPhones();
     io.to('admin').emit('admin:state', adminView());
   });
 
@@ -1152,6 +1323,7 @@ io.on('connection', (socket) => {
     } else {
       // lobby: keep the QR visible, just refresh the slots
       io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
+    broadcastLobbyToPhones();
     }
     io.to('admin').emit('admin:state', adminView());
   });
@@ -1195,6 +1367,7 @@ io.on('connection', (socket) => {
       io.to('main').emit('main:playerReconnected', { players: lobbyPlayers() });
     } else {
       io.to('main').emit('main:playerJoined', { players: lobbyPlayers() });
+    broadcastLobbyToPhones();
     }
     io.to('admin').emit('admin:state', adminView());
   });

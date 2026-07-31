@@ -1,13 +1,17 @@
 // public/js/fx/board3d.js
 // Tabellone 3D: una tessera-box per ogni cella non-edge della griglia 4x16.
-// Celle lettera = bianche (lettera nera al flip), celle senza lettera = blu
-// petrolio. Si allinea al rettangolo del board DOM (nascosto), così il layout
-// CSS esistente continua a comandare posizioni e responsive.
+// Cella chiusa = bianco sporco, cella rivelata = bianco pieno con la lettera
+// nera, cella senza lettera = blu petrolio. Si allinea al rettangolo del board
+// DOM (nascosto), così il layout CSS continua a comandare posizioni e misure.
 import * as THREE from '../../vendor/three.module.js';
 import { gridToTiles } from './boardlayout.mjs';
 
 const PETROL = 0x0d2433;
 const WHITE = 0xf5f5f7;
+// Faccia di una tessera ancora chiusa: rgba(245,245,247,.88) su nero. Sta un
+// gradino sotto il bianco pieno di una rivelata, così da lontano si distingue
+// cosa è già uscito senza dover leggere le lettere.
+const CLOSED = 0xd8d8d9;
 const ACCENT = new THREE.Color('#30b8ff');
 const FLIP_S = 0.38;       // durata flip (s)
 const GRID_COLS = 16, GRID_ROWS = 4;
@@ -75,7 +79,7 @@ export class Board3D {
         mats = this._petrolMat;
       } else {
         // [+x,-x,+y,-y,+z(front),-z]: fronte separato per il flip della lettera
-        const front = t.revealed ? this._letterMat(t.letter) : new THREE.MeshBasicMaterial({ color: WHITE });
+        const front = t.revealed ? this._letterMat(t.letter) : new THREE.MeshBasicMaterial({ color: CLOSED });
         mats = [this._whiteMat, this._whiteMat, this._whiteMat, this._whiteMat, front, this._whiteMat];
       }
       const mesh = new THREE.Mesh(this._geo, mats);
@@ -91,7 +95,7 @@ export class Board3D {
       const cnv = document.createElement('canvas');
       cnv.width = cnv.height = 128;
       const ctx = cnv.getContext('2d');
-      ctx.fillStyle = '#f5f5f7';
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, 128, 128);
       ctx.fillStyle = '#000';
       ctx.font = '700 88px "Space Mono", monospace';
@@ -151,7 +155,7 @@ export class Board3D {
       mesh.rotation.x = (p < 0.5 ? p : 1 - p) * Math.PI;
       if (p >= 0.5 && !a.swapped) {
         a.swapped = true;
-        mesh.material[4] = a.letter ? this._letterMat(a.letter) : new THREE.MeshBasicMaterial({ color: WHITE });
+        mesh.material[4] = a.letter ? this._letterMat(a.letter) : new THREE.MeshBasicMaterial({ color: CLOSED });
       }
       if (a.swapped && a.letter) {
         // flash ciano che sfuma verso bianco dopo il flip

@@ -4,6 +4,7 @@
 // onSpinEnd, spinning). Spicchi mono a densità alternata, speciali in ciano.
 import * as THREE from '../../vendor/three.module.js';
 import { createHalftoneMaterial, addBarycentric, ACCENT_CSS } from './halftone.js';
+import { boundaryAngle, midAngle } from './wheelgeom.mjs';
 
 // Stessa semantica degli speciali della ruota 2D (wheel.js).
 const SPECIAL_STYLE = {
@@ -90,7 +91,7 @@ export class Wheel3D {
     const seg = (2 * Math.PI) / this.segments;
 
     for (let i = 0; i < this.segments; i++) {
-      const start = -Math.PI / 2 + i * seg;
+      const start = boundaryAngle(i, this.segments);
       const shape = new THREE.Shape();
       shape.moveTo(0, 0);
       const STEPS = 6;
@@ -117,14 +118,9 @@ export class Wheel3D {
       this.group.add(mesh);
     }
 
-    // hub piccolo, stessi punti
-    const hubGeo = addBarycentric(new THREE.SphereGeometry(0.5, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2));
-    const hubMat = createHalftoneMaterial({ isTouch: true, dotScale: 0.8 });
-    this._materials.push(hubMat);
-    const hub = new THREE.Mesh(hubGeo, hubMat);
-    hub.rotation.x = Math.PI / 2;
-    hub.position.z = DEPTH / 2;
-    this.group.add(hub);
+    // Il mozzo non è più una mesh: è disegnato piatto dentro l'anello etichette
+    // (_drawHub). La vecchia semisfera halftone bianca sporgeva in z e bucherebbe
+    // il piano delle scritte.
 
     this._labelMesh = null;
     if (this.showLabels) this._buildLabelRing(R, DEPTH);
@@ -137,7 +133,6 @@ export class Wheel3D {
     cnv.width = cnv.height = SIZE;
     const ctx = cnv.getContext('2d');
     const cx = SIZE / 2;
-    const seg = (2 * Math.PI) / this.segments;
     const rr = (SIZE / 2) * 0.96;
 
     ctx.translate(cx, cx);
@@ -145,7 +140,7 @@ export class Wheel3D {
     // Separatori radiali tra gli spicchi: gap scuro con filo ciano al centro.
     // Disegnati sopra il tappeto di punti halftone, danno struttura ai 16 settori.
     for (let i = 0; i < this.segments; i++) {
-      const a = -Math.PI / 2 + i * seg;
+      const a = boundaryAngle(i, this.segments);
       ctx.save();
       ctx.rotate(a);
       ctx.lineCap = 'round';
@@ -178,7 +173,7 @@ export class Wheel3D {
       const label = this.labels[i];
       if (label == null) continue;
       const special = SPECIAL_STYLE[label];
-      const mid = -Math.PI / 2 + i * seg + seg / 2;
+      const mid = midAngle(i, this.segments);
       ctx.save();
       ctx.rotate(mid);
       ctx.textAlign = 'right';
@@ -203,7 +198,7 @@ export class Wheel3D {
     // Perni al bordo, uno per separatore: ruotano con la ruota e passano sotto
     // la freccia, che ci fa l'attrito (vedi animazione flap in _tick).
     for (let i = 0; i < this.segments; i++) {
-      const a = -Math.PI / 2 + i * seg;
+      const a = boundaryAngle(i, this.segments);
       const px = Math.cos(a) * rr * 0.985, py = Math.sin(a) * rr * 0.985;
       ctx.beginPath(); ctx.arc(px, py, SIZE * 0.013, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(48,184,255,0.95)';
@@ -213,8 +208,16 @@ export class Wheel3D {
       ctx.shadowBlur = 0; ctx.fillStyle = '#eaffff'; ctx.fill();
     }
 
+    // Per ultimo, così copre il punto dove convergono i 16 separatori.
+    ctx.shadowBlur = 0;
+    this._drawHub(ctx, SIZE);
+
     const tex = new THREE.CanvasTexture(cnv);
     tex.anisotropy = 4;
+    // Senza questo three.js legge il canvas come lineare e lo ri-encoda in sRGB:
+    // i toni scuri si schiariscono di brutto (il #131b22 del mozzo usciva
+    // rgb(77,92,102)). Con bianco e nero non si notava, col mozzo scuro sì.
+    tex.colorSpace = THREE.SRGBColorSpace;
     const mesh = new THREE.Mesh(
       new THREE.CircleGeometry(R, 64),
       new THREE.MeshBasicMaterial({ map: tex, transparent: true })
@@ -222,6 +225,73 @@ export class Wheel3D {
     mesh.position.z = DEPTH / 2 + 0.055;
     this._labelMesh = mesh;
     this.group.add(mesh);
+  }
+
+  // Mozzo piatto (handoff TV § Ruota), al posto della vecchia semisfera halftone
+  // bianca che staccava troppo. Disegnato dentro il canvas dell'anello etichette
+  // e non come mesh: la semisfera sporgeva in z e avrebbe bucato il piano delle
+  // scritte. `ctx` è già traslato al centro del canvas.
+  _drawHub(ctx, SIZE) {
+    const hubR = SIZE * 0.10;    // disco: 20% del diametro della ruota
+    const coreR = SIZE * 0.011;  // nucleo: 2.2% del diametro
+    const oy = -hubR * 0.36;     // "circle at 50% 32%"
+
+    // disco: radial-gradient(circle at 50% 32%, #26343f, #131b22 52%, #080d12)
+    const disc = ctx.createRadialGradient(0, oy, hubR * 0.05, 0, oy, hubR * 1.3);
+    disc.addColorStop(0, '#26343f');
+    disc.addColorStop(0.52, '#131b22');
+    disc.addColorStop(1, '#080d12');
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, hubR, 0, Math.PI * 2);
+    ctx.fillStyle = disc; ctx.fill();
+    ctx.clip();
+
+    // Punti halftone. Nel mockup sono rgba(255,255,255,.55) dentro un layer a
+    // opacity .45 → alpha effettiva .2475; maschera radiale piena fino al 46%
+    // del raggio, poi lineare fino a 0 al 96% (mask-image: closest-side,
+    // #000 46%, transparent 96%).
+    const step = SIZE * 0.0126, dotR = SIZE * 0.0029;
+    ctx.fillStyle = '#ffffff';
+    for (let y = -hubR; y <= hubR; y += step) {
+      for (let x = -hubR; x <= hubR; x += step) {
+        const d = Math.hypot(x, y) / hubR;
+        if (d > 0.96) continue;
+        const mask = d <= 0.46 ? 1 : 1 - (d - 0.46) / 0.5;
+        ctx.globalAlpha = 0.2475 * mask;
+        ctx.beginPath(); ctx.arc(x, y, dotR, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // ombre interne: inset 0 -8px 20px rgba(0,0,0,.9) + inset 0 4px 12px rgba(255,255,255,.07)
+    const down = ctx.createLinearGradient(0, hubR * 0.1, 0, hubR);
+    down.addColorStop(0, 'rgba(0,0,0,0)');
+    down.addColorStop(1, 'rgba(0,0,0,0.9)');
+    ctx.fillStyle = down; ctx.fillRect(-hubR, -hubR, hubR * 2, hubR * 2);
+    const up = ctx.createLinearGradient(0, -hubR, 0, -hubR * 0.55);
+    up.addColorStop(0, 'rgba(255,255,255,0.07)');
+    up.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = up; ctx.fillRect(-hubR, -hubR, hubR * 2, hubR * 2);
+    ctx.restore();
+
+    // bordo ciano
+    ctx.beginPath(); ctx.arc(0, 0, hubR, 0, Math.PI * 2);
+    ctx.lineWidth = SIZE * 0.002;
+    ctx.strokeStyle = 'rgba(48,184,255,0.45)';
+    ctx.stroke();
+
+    // nucleo ciano con alone
+    const core = ctx.createRadialGradient(0, -coreR * 0.32, 0, 0, 0, coreR);
+    core.addColorStop(0, '#d8f3ff');
+    core.addColorStop(0.7, ACCENT_CSS);
+    core.addColorStop(1, ACCENT_CSS);
+    ctx.save();
+    ctx.shadowColor = 'rgba(48,184,255,0.55)';
+    ctx.shadowBlur = SIZE * 0.02;
+    ctx.beginPath(); ctx.arc(0, 0, coreR, 0, Math.PI * 2);
+    ctx.fillStyle = core; ctx.fill();
+    ctx.fill(); // secondo passaggio: rinforza l'alone
+    ctx.restore();
   }
 
   setLabels(labels) {

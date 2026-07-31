@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Giramoe</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/shell.css">
+  <link rel="stylesheet" href="/css/tv.css">
   <script src="/js/qrcode.min.js"></script>
 </head>
 <body>
@@ -14,17 +16,22 @@
   <!-- Intro: tap per sbloccare audio e partire (niente più video) -->
   <div id="start-tap-screen" class="screen">
     <canvas id="home-canvas" aria-hidden="true"></canvas>
-    <span class="corner-label" style="top:4.5%; left:3.5%;">Giramoe&reg;</span>
-    <span class="corner-label" style="top:4.5%; right:3.5%;">Est. 2026</span>
-    <span class="corner-label" style="bottom:4.5%; left:3.5%;"><span class="live-dot"></span>Live</span>
-    <span class="corner-label" style="bottom:4.5%; right:3.5%;">Show dal vivo &mdash; IT</span>
+    <span class="corner-label" style="top:calc(48 * var(--u)); left:calc(66 * var(--u));">Giramoe&reg;</span>
+    <span class="corner-label" style="top:calc(48 * var(--u)); right:calc(66 * var(--u));">Est. 2026</span>
+    <span class="corner-label" style="bottom:calc(48 * var(--u)); left:calc(66 * var(--u));"><span class="live-dot"></span>Live</span>
+    <span class="corner-label" style="bottom:calc(48 * var(--u)); right:calc(66 * var(--u));">Show dal vivo &mdash; IT</span>
+    <div id="intro-scrim" aria-hidden="true"></div>
     <div id="intro-stage">
       <div class="eyebrow rise">Giramoe Studio presenta</div>
       <div class="wm rise">GIRAMOE</div>
-      <div class="intro-wheel-gap" aria-hidden="true"></div>
-      <div class="tagline rise">Il gioco della ruota. Tre giocatori, un finalista.</div>
+      <div class="tagline rise">
+        <span class="rule"></span>Il gioco della ruota<span class="rule"></span>
+      </div>
+    </div>
+    <div id="intro-bottom">
       <button class="glass-button rise" id="tap-start-btn" data-cursor-label="Tap">Tocca per iniziare</button>
       <div class="intro-wait-hint">In attesa dell'host&hellip;</div>
+      <div class="intro-phases" id="intro-phases"></div>
     </div>
   </div>
 
@@ -39,49 +46,106 @@
 
   <!-- Lobby -->
   <div id="lobby-screen" class="screen hidden">
+    <header class="tv-topbar" id="lobby-topbar"></header>
     <div class="lobby-grid">
       <div class="lobby-col">
-        <div class="col-title">Giocatori</div>
-        <div class="player-slot" id="slot-0">&mdash;<span class="slot-idx">P1</span></div>
-        <div class="player-slot" id="slot-1">&mdash;<span class="slot-idx">P2</span></div>
-        <div class="player-slot" id="slot-2">&mdash;<span class="slot-idx">P3</span></div>
+        <div class="col-head"><span class="lab">Giocatori</span><span class="max">MAX 3</span></div>
+        <div class="lobby-slots" id="lobby-slots"></div>
       </div>
       <div class="lobby-center">
-        <div class="wm">GIRAMOE</div>
-        <div class="qr-container">
+        <div class="lab">Inquadra per entrare</div>
+        <div class="qr-plate">
           <canvas id="qr-canvas"></canvas>
+          <div class="qr-badge" aria-hidden="true">G</div>
         </div>
-        <p class="lobby-hint">Inquadra per entrare</p>
+        <div class="qr-url"><span>oppure apri</span><b id="lobby-url"></b></div>
       </div>
       <div class="lobby-col">
-        <div class="col-title">Partita</div>
-        <div class="stat-row"><b>3</b><small>tabelloni</small></div>
-        <div class="stat-row"><b>6</b><small>fasi</small></div>
-        <div class="stat-row"><b>3</b><small>buste finali</small></div>
-      </div>
-      <div class="phases">
-        <span class="ph now"><em>01</em>Tabelloni</span><span class="ph"><em>02</em>Triplete</span>
-        <span class="ph"><em>03</em>Express</span><span class="ph"><em>04</em>Giramoe</span>
-        <span class="ph"><em>05</em>Finale</span><span class="ph"><em>06</em>Buste</span>
+        <span class="lab">Come si gioca</span>
+        <div class="howto">
+          <div class="howto-step">
+            <span class="n">01</span>
+            <div><b>Gira la ruota</b><span>Chiama una consonante: se c&rsquo;&egrave;, vale valore &times; occorrenze.</span></div>
+          </div>
+          <div class="howto-step">
+            <span class="n">02</span>
+            <div><b>Compra le vocali</b><span>500 punti l&rsquo;una, da spendere sui punti del turno.</span></div>
+          </div>
+          <div class="howto-step">
+            <span class="n">03</span>
+            <div><b>Risolvi a voce</b><span>Chi ha pi&ugrave; banca dopo sei fasi va al gioco finale.</span></div>
+          </div>
+        </div>
+        <div class="stat-boxes">
+          <div class="stat-box"><b>6</b><span>Fasi</span></div>
+          <div class="stat-box"><b>7</b><span>Tabelloni</span></div>
+          <div class="stat-box"><b>3</b><span>Buste</span></div>
+        </div>
       </div>
     </div>
+    <footer class="intro-phases is-inline" id="lobby-phases"></footer>
   </div>
 
   <!-- Game Screen -->
   <div id="game-screen" class="screen hidden">
+    <div class="speed-lines" aria-hidden="true"></div>
+    <header class="tv-topbar" id="game-topbar"></header>
     <div class="game-container">
-      <div class="wheel-container" id="main-wheel-container">
-        <div class="wheel-bezel" aria-hidden="true"></div>
-        <div class="wheel-indicator" id="main-wheel-indicator" style="display: none;"></div>
-        <canvas id="main-wheel-canvas"></canvas>
+      <div class="game-left">
+        <div class="wheel-container" id="main-wheel-container">
+          <div class="wheel-bezel" aria-hidden="true"></div>
+          <div class="wheel-indicator" id="main-wheel-indicator" style="display: none;"></div>
+          <canvas id="main-wheel-canvas"></canvas>
+        </div>
+        <div class="wheel-modules">
+          <div class="wm-mod wm-mod--wedge"><span class="lab">Spicchio</span><b id="mod-wedge">—</b></div>
+          <div class="wm-mod"><span class="lab">Lettera</span><b id="mod-letter">—</b></div>
+          <div class="wm-mod"><span class="lab">Occorrenze</span><b id="mod-count">—</b></div>
+        </div>
+        <div class="express-mod" id="express-mod">
+          <div class="ex-head">
+            <span class="lab">Modalit&agrave; express attiva</span>
+            <span class="who" id="ex-who"></span>
+          </div>
+          <div class="ex-value"><b id="ex-value">500</b><span>per ogni occorrenza</span></div>
+          <p class="ex-risk">Lettera assente o soluzione sbagliata: <b>bancarotta totale</b> &mdash; turno e banca a zero.</p>
+        </div>
+        <div class="giramoe-mods" id="giramoe-mods">
+          <div class="gm-mod gm-mult">
+            <span class="lab">Moltiplicatore V</span>
+            <div class="val"><b id="gi-mult">&mdash;</b><span>&times; occorrenze</span></div>
+          </div>
+          <div class="gm-mod gm-info">
+            <span class="lab">Giro unico</span>
+            <p>Girato dall&rsquo;host. Nessuno spicchio speciale.</p>
+          </div>
+        </div>
       </div>
       <div class="game-right">
-        <div class="category-banner glass-panel" id="category-banner"></div>
+        <div class="game-head">
+          <div class="category">
+            <span class="lab">Categoria</span>
+            <span class="name" id="category-banner"></span>
+          </div>
+          <div class="turn-pill" id="turn-pill" hidden><span class="dot"></span><span id="turn-pill-text"></span></div>
+          <div class="buzz-window" id="buzz-window">
+            <div class="bw-text">
+              <span class="lab">Finestra prenotazione</span>
+              <span class="who" id="bw-who"></span>
+            </div>
+            <div class="bw-ring" id="bw-ring"><span class="bw-disc" id="bw-count">5</span></div>
+          </div>
+        </div>
         <div class="board-status hidden" id="board-status"></div>
         <div class="board-grid" id="board-grid"></div>
-        <div class="players-bar" id="players-bar"></div>
+        <div class="express-boxes" id="express-boxes">
+          <div class="ex-box"><span class="lab">Raffica</span><b class="is-letters" id="ex-raffica">&mdash;</b></div>
+          <div class="ex-box"><span class="lab">Occorrenze totali</span><b id="ex-occ">0</b></div>
+          <div class="ex-box is-express"><span class="lab">Punti express accumulati</span><b id="ex-points">0</b></div>
+        </div>
       </div>
     </div>
+    <footer class="tv-players" id="players-bar"></footer>
 
     <div class="result-overlay" id="result-overlay">
       <div class="result-text" id="result-text"></div>
@@ -90,20 +154,42 @@
 
   <!-- Triplete: board -->
   <div id="triplete-screen" class="screen hidden">
-    <div class="game-container">
-      <div class="triplete-tag glass-panel" id="triplete-board-tag">IL TRIPLETE</div>
-      <div class="category-banner glass-panel" id="triplete-category"></div>
-      <div class="board-grid" id="triplete-board-grid"></div>
-      <div class="players-bar" id="triplete-players-bar"></div>
+    <header class="tv-topbar" id="triplete-topbar"></header>
+    <div class="tri-container">
+      <aside class="tri-rules">
+        <div class="tri-head">
+          <span class="eyebrow">Bonus round</span>
+          <span class="wm tri-wm">IL<br>TRIPLETE</span>
+          <span class="tri-hair"></span>
+        </div>
+        <div class="tri-list">
+          <div class="tri-row"><b>1.000</b><span>per ogni tabellone risolto</span></div>
+          <div class="tri-row"><b class="is-accent">5.000</b><span>se li indovini tutti e tre</span></div>
+          <div class="tri-row"><b>1,5s</b><span>passo di comparsa delle caselle</span></div>
+        </div>
+        <div class="tri-note">
+          <span class="lab">Prenotati e dillo a voce</span>
+          <p>Chi sbaglia resta bloccato finch&eacute; non sbagliano tutti.</p>
+        </div>
+      </aside>
+      <div class="tri-board">
+        <div class="cat-spaced">
+          <span class="hair"></span><span id="triplete-category"></span><span class="hair"></span>
+        </div>
+        <div class="board-grid" id="triplete-board-grid"></div>
+        <div class="tri-status"><span class="dot"></span><span id="triplete-status"></span></div>
+      </div>
     </div>
-    <div class="buzz-banner" id="buzz-banner"><span class="buzz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span id="buzz-banner-text"></span></div>
+    <footer class="tv-players" id="triplete-players-bar"></footer>
     <div class="result-overlay" id="triplete-result-overlay">
       <div class="result-text" id="triplete-result-text"></div>
     </div>
   </div>
 
-  <!-- Finalist Screen -->
+  <!-- Finalist Screen. Sopra ci gira l'animazione di round (roundscenes.js):
+       questa è la carta d'attesa che resta quando finisce. -->
   <div id="finalist-screen" class="screen hidden">
+    <header class="tv-topbar" id="finalist-topbar"></header>
     <div class="game-container">
       <h1 class="matchend-title">Finalista</h1>
       <div class="finalist-name" id="finalist-name"></div>
@@ -113,26 +199,73 @@
 
   <!-- Final game -->
   <div id="final-screen" class="screen hidden">
-    <div class="game-container">
-      <div class="final-top">
-        <div class="category-banner glass-panel" id="final-category"></div>
-        <div class="final-timer glass-panel" id="final-timer">60</div>
+    <header class="tv-topbar" id="final-topbar"></header>
+    <div class="fin-container">
+      <aside class="fin-left">
+        <div class="fin-clock">
+          <span class="lab">Tempo rimasto</span>
+          <div class="fin-time"><b id="final-timer">60</b><span>s</span></div>
+          <div class="fin-bar"><i id="final-bar"></i></div>
+          <span class="fin-note">Un solo timer per i tre tabelloni</span>
+        </div>
+        <div class="fin-letters">
+          <span class="lab">Lettere in gioco</span>
+          <div class="tile-row" id="fin-given"></div>
+          <span class="cap" id="fin-given-cap">Regalate dal tabellone</span>
+          <div class="tile-row" id="fin-picks"></div>
+          <span class="cap" id="fin-picks-cap">Scelte dal finalista &mdash; 3 consonanti + 1 vocale</span>
+          <div class="fin-rule" id="fin-rule">
+            <span class="lab" id="fin-rule-lab"></span>
+            <p id="fin-rule-text"></p>
+          </div>
+        </div>
+      </aside>
+      <div class="fin-board">
+        <div class="cat-spaced">
+          <span class="hair"></span><span id="final-category"></span><span class="hair"></span>
+        </div>
+        <div class="board-grid" id="final-board-grid"></div>
+        <div class="fin-pill"><span class="dot"></span><span id="fin-pill-text"></span></div>
       </div>
-      <div class="triplete-tag glass-panel" id="final-board-tag">Tabellone 1/3</div>
-      <div class="board-grid" id="final-board-grid"></div>
+      <aside class="fin-boards">
+        <span class="lab">Tabelloni</span>
+        <div class="fin-cards" id="fin-cards"></div>
+        <p class="fin-foot">Ogni tabellone risolto colora una busta. Il tempo si trasporta.</p>
+      </aside>
     </div>
   </div>
 
-  <!-- Envelopes -->
+  <!-- Envelopes. Le buste le disegna public/js/fx/envelopes3d.js: qui sotto
+       .envelopes-row è il ripiego senza WebGL, il resto è la cornice. -->
   <div id="envelopes-screen" class="screen hidden">
-    <div class="game-container">
-      <h1 class="matchend-title">Le buste</h1>
-      <div class="envelopes-row" id="envelopes-row"></div>
+    <header class="tv-topbar" id="envelopes-topbar"></header>
+    <div class="env-head">
+      <h1 class="env-title">LE BUSTE</h1>
+      <p class="env-sub">Il colore dice tutto</p>
     </div>
+    <div class="envelopes-row" id="envelopes-row"></div>
+    <footer class="env-foot">
+      <div class="env-left">
+        <div class="env-block">
+          <span class="lab">Esiti del gioco finale</span>
+          <div class="env-pips" id="env-pips"></div>
+        </div>
+        <span class="env-div"></span>
+        <div class="env-block">
+          <span class="lab">Cambi rimasti</span>
+          <b id="env-changes">0</b>
+        </div>
+      </div>
+      <p class="env-note">Il finalista pu&ograve; cambiarla alla cieca dal telefono</p>
+    </footer>
   </div>
 
   <!-- Animazioni di round (Triplete / Express / Giramoe / Finalista / Buste) -->
   <div id="round-scene" aria-hidden="true"></div>
+
+  <!-- Banner "X ha prenotato": lo usano Triplete e Giramoe, quindi sta fuori
+       dalle schermate — dentro #triplete-screen nel Giramoe restava invisibile. -->
+  <div class="buzz-banner" id="buzz-banner"><span class="buzz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span id="buzz-banner-text"></span></div>
 
   <!-- Feedback bordo schermo (giusta/errata) -->
   <div class="fx-veil" id="fx-veil" aria-hidden="true"></div>

@@ -17,7 +17,10 @@ function createGiramoe(players, category, phrase) {
     ok: true,
     gi: {
       board: r.board,
-      players: players.map(p => ({ id: p.id, name: p.name, points: 0 })),
+      // lastLetter/lastCount servono solo alla console dell'admin: mostra
+      // cosa ha chiamato ciascuno e quanto ha reso, che dallo schermo grande
+      // non si ricostruisce.
+      players: players.map(p => ({ id: p.id, name: p.name, points: 0, lastLetter: null, lastCount: 0 })),
       multiplier: null,
       currentTurnIndex: 0,
       calledThisTurn: false,    // a letter must be called before buzzing
@@ -59,7 +62,10 @@ function callConsonant(gi, letter) {
     const positions = board.letterPositions(gi.board.grid, letter);
     board.revealLetter(gi.board.grid, letter);
     gi.usedLetters.push(letter);   // only a present, called letter is locked out
-    currentPlayer(gi).points += gi.multiplier * count;
+    const chiamante = currentPlayer(gi);
+    chiamante.points += gi.multiplier * count;
+    chiamante.lastLetter = letter;
+    chiamante.lastCount = count;
     gi.calledThisTurn = true; // only a present consonant opens the buzz window
     return { ok: true, present: true, count, positions };
   }
@@ -86,6 +92,8 @@ function buyVowel(gi, letter) {
     const positions = board.letterPositions(gi.board.grid, letter);
     board.revealLetter(gi.board.grid, letter);
     gi.usedLetters.push(letter);
+    p.lastLetter = letter;   // la vocale comprata non dà punti ma è pur sempre la sua mossa
+    p.lastCount = count;
     gi.calledThisTurn = true; // turn's move spent: opens the buzz window
     return { ok: true, present: true, count, positions };
   }

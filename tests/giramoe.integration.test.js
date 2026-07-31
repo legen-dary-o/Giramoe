@@ -22,13 +22,14 @@ test('giramoe: admin spin sets V, consonants score V x occ, only the winner bank
 
   const admin = connect(), main = connect();
   let adminState = null;
-  const m = { giramoeStart: null, board: null, buzzed: null, solved: null, finalist: null };
+  const m = { giramoeStart: null, board: null, buzzed: null, solved: null, finalist: null, window: null };
   admin.on('admin:state', s => { adminState = s; });
   main.on('main:giramoeStart', d => { m.giramoeStart = d; });
   main.on('main:giramoeBoard', d => { m.board = d; });
   main.on('main:giramoeBuzzed', d => { m.buzzed = d; });
   main.on('main:giramoeSolved', d => { m.solved = d; });
   main.on('main:finalist', d => { m.finalist = d; });
+  main.on('main:giramoeWindow', d => { m.window = d; });
 
   const players = [];
   try {
@@ -94,10 +95,18 @@ test('giramoe: admin spin sets V, consonants score V x occ, only the winner bank
     assert.strictEqual(adminState.giramoe.state, 'PLAYING');
     assert.strictEqual(adminState.giramoe.currentTurn, 0, 'P1 starts');
 
-    // P1 calls C (3 occurrences in "CECE BACA") -> +750.
+    // Prima della chiamata la finestra di prenotazione non esiste.
+    assert.strictEqual(m.window, null, 'nessuna finestra prima che qualcuno chiami');
+
+    // P1 calls C (3 occurrences in "CECE BACA") -> +750, e si apre la finestra.
     players[0].emit('player:giramoeLetter', { letter: 'C' });
     await wait(200);
     assert.strictEqual(adminState.giramoe.players[0].points, 750, 'C scores 250 x 3');
+    // La TV deve poter mostrare l'anello dei 5s: senza questo evento non sa
+    // nemmeno che la finestra esiste.
+    assert.ok(m.window, 'finestra di prenotazione annunciata alla TV');
+    assert.strictEqual(m.window.ms, 5000, 'la finestra dura 5s');
+    assert.strictEqual(m.window.name, 'P1', 'la finestra nomina chi ha appena chiamato');
 
     // P1 buzzes but is WRONG -> turn passes, P1 keeps the 750 (not yet banked).
     players[0].emit('player:giramoeBuzz');

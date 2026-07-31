@@ -4,119 +4,211 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Giramoe — Player</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/shell.css">
+  <link rel="stylesheet" href="/css/phone.css">
 </head>
 <body>
-  <!-- Join Form -->
+  <!-- 1a · Ingresso -->
   <div id="join-screen" class="screen">
-    <div class="mobile-container">
-      <div class="wm phone-wm">GIRAMOE</div>
+    <div class="ph-dots" aria-hidden="true"></div>
+    <div class="mobile-container ph-center">
+      <div class="join-head">
+        <span class="eyebrow">Giramoe Studio</span>
+        <div class="wm phone-wm">GIRAMOE</div>
+      </div>
       <div class="join-form">
-        <input type="text" id="nick-input" class="glass-input" placeholder="Il tuo nome" maxlength="16" autocomplete="off">
-        <button class="glass-button" id="btn-join">Entra</button>
+        <label class="lab" for="nick-input">Come ti chiami</label>
+        <input type="text" id="nick-input" placeholder="Il tuo nome" maxlength="16" autocomplete="off">
+        <button class="pbtn" id="btn-join">Entra</button>
+        <p class="join-seats" id="join-seats"></p>
       </div>
     </div>
   </div>
 
-  <!-- Reconnecting -->
+  <!-- 1m · Riconnessione -->
   <div id="reconnect-screen" class="screen hidden">
-    <div class="mobile-container">
-      <div class="wm phone-wm">GIRAMOE</div>
-      <h2>Riconnessione…</h2>
-    </div>
-  </div>
-
-  <!-- Waiting Lobby -->
-  <div id="wait-screen" class="screen hidden">
-    <div class="mobile-container">
-      <h2>In attesa dell'inizio...</h2>
-    </div>
-  </div>
-
-  <!-- Game Screen -->
-  <div id="player-game-screen" class="screen hidden">
-    <div class="mobile-container">
-      <div class="score-row">
-        <span class="score-pill">Turno: <b id="round-points">0</b></span>
-        <span class="score-pill">Banca: <b id="bank-points">0</b></span>
+    <div class="mobile-container ph-center">
+      <div class="ph-beacon is-white" aria-hidden="true"><span></span></div>
+      <div class="ph-head">
+        <h2 class="ph-title">Riconnessione&hellip;</h2>
+        <p class="ph-sub">La partita &egrave; in pausa e ti sta aspettando. Non chiudere la pagina.</p>
       </div>
-      <div class="turn-message" id="turn-message">Attendi il tuo turno</div>
+      <div class="ph-card ph-me">
+        <span class="pt-avatar" id="rc-avatar">?</span>
+        <span>Il tuo posto e i tuoi punti sono salvi</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1b · Attesa -->
+  <div id="wait-screen" class="screen hidden">
+    <div class="ph-dots" aria-hidden="true"></div>
+    <div class="mobile-container ph-center">
+      <div class="ph-beacon" aria-hidden="true"><span></span></div>
+      <div class="ph-head">
+        <h2 class="ph-title">Ci siamo quasi</h2>
+        <p class="ph-sub">L&rsquo;host avvia la partita dallo schermo grande</p>
+      </div>
+      <div class="wait-list" id="wait-list"></div>
+    </div>
+  </div>
+
+  <!-- 1c turno · 1d consonante · 1e express -->
+  <div id="player-game-screen" class="screen hidden">
+    <div class="pg-speed" aria-hidden="true"></div>
+    <div class="mobile-container">
+      <div class="ph-topbar" id="pg-topbar"></div>
+      <div class="pstats" id="pg-stats"></div>
+      <div class="pbanner" id="pg-banner" hidden></div>
+      <!-- 1e: al posto del banner, perché l'express cambia la regola del gioco -->
+      <div class="pg-warn" id="pg-warn" hidden>
+        <div class="pg-warn-t">Spara consonanti a raffica</div>
+        <p class="pg-warn-s">Lettera assente o frase sbagliata: turno e banca a zero.</p>
+      </div>
       <div class="wheel-container" id="player-wheel-container">
         <div class="wheel-indicator"></div>
         <canvas id="player-wheel-canvas"></canvas>
       </div>
-      <button class="glass-button" id="btn-spin">Gira la ruota</button>
+      <button class="pbtn" id="btn-spin">Gira la ruota</button>
       <div class="keyboard" id="keyboard"></div>
-      <button class="glass-button" id="btn-vowel" disabled>Compra vocale (500)</button>
-      <div class="vowel-picker hidden" id="vowel-picker"></div>
-      <div class="player-nick" id="player-nick-display"></div>
+      <button class="pbtn is-ghost" id="btn-vowel" disabled>Compra vocale &mdash; 500</button>
+      <div class="pg-vowels hidden" id="vowel-card">
+        <span class="lab">Quale vocale?</span>
+        <div class="vowel-picker" id="vowel-picker"></div>
+      </div>
+      <p class="pg-note" id="pg-note" hidden>Le lettere spente sono gi&agrave; state chiamate</p>
+      <div class="pg-raffica" id="pg-raffica" hidden>
+        <span class="lab">Raffica</span>
+        <span class="letters" id="pg-raffica-letters"></span>
+      </div>
     </div>
   </div>
 
-  <!-- Triplete -->
+  <!-- 1f Triplete armato · 1g Triplete bloccato -->
   <div id="player-triplete-screen" class="screen hidden">
     <div class="mobile-container">
-      <div class="score-row">
-        <span class="score-pill">Triplete: <b id="tr-points">0</b></span>
-        <span class="score-pill" id="tr-board">Tabellone 1/3</span>
-      </div>
-      <div class="turn-message" id="tr-message">Prenotati appena sai la frase!</div>
-      <button class="glass-button buzz-button" id="btn-buzz" disabled>PRENOTATI</button>
-      <div class="player-nick" id="tr-nick"></div>
+      <div class="ph-topbar" id="tr-topbar"></div>
+      <div class="pstats" id="tr-stats"></div>
+      <div class="pbanner" id="tr-banner" hidden></div>
+      <p class="tr-say" id="tr-say">Appena sai la frase, prenotati e dilla a voce</p>
+      <button class="buzz-button" id="btn-buzz" disabled>
+        <span class="bz-word">PRENOTATI</span>
+        <span class="bz-sub" id="bz-sub">Tieni premuto per sicurezza</span>
+      </button>
+      <div class="tr-pips" id="tr-pips" hidden></div>
+      <p class="pg-note" id="tr-note" hidden>Tutti e tre &rarr; 5.000 punti</p>
+      <div class="prow-list" id="tr-list" hidden></div>
     </div>
   </div>
 
-  <!-- Giramoe (final wheel board) -->
+  <!-- 1h · Giramoe -->
   <div id="player-giramoe-screen" class="screen hidden">
     <div class="mobile-container">
-      <div class="score-row">
-        <span class="score-pill">Punti: <b id="gi-points">0</b></span>
-        <span class="score-pill" id="gi-mult">×—</span>
-      </div>
-      <div class="turn-message" id="gi-message">GIRAMOE</div>
+      <div class="ph-topbar" id="gi-topbar"></div>
+      <div class="pstats" id="gi-stats"></div>
+      <div class="pbanner" id="gi-banner" hidden></div>
       <div class="keyboard" id="gi-keyboard"></div>
-      <button class="glass-button" id="btn-gi-vowel" disabled>Compra vocale (500)</button>
-      <div class="vowel-picker hidden" id="gi-vowel-picker"></div>
-      <button class="buzz-pill" id="btn-gi-buzz" disabled>PRENOTATI</button>
-      <div class="player-nick" id="gi-nick"></div>
+      <button class="pbtn is-ghost" id="btn-gi-vowel" disabled>Compra vocale &mdash; 500</button>
+      <div class="pg-vowels hidden" id="gi-vowel-card">
+        <span class="lab">Quale vocale?</span>
+        <div class="vowel-picker" id="gi-vowel-picker"></div>
+      </div>
+      <div class="gi-clock" id="gi-clock" hidden>
+        <div class="gi-ring" id="gi-ring"><span id="gi-ring-n">5</span></div>
+        <div>
+          <div class="gi-clock-t">Hai 5 secondi</div>
+          <div class="gi-clock-s">poi passa al prossimo</div>
+        </div>
+      </div>
+      <button class="pbtn is-big" id="btn-gi-buzz" disabled>Prenotati</button>
+      <p class="pg-note">Solo chi indovina incassa i propri punti</p>
     </div>
   </div>
 
-  <!-- Tie-break -->
+  <!-- 1i · Spareggio -->
   <div id="player-tiebreak-screen" class="screen hidden">
-    <div class="mobile-container">
-      <h2 class="matchend-title">Spareggio</h2>
-      <div class="turn-message" id="tb-message">Spareggio in corso…</div>
-      <button class="buzz-pill" id="btn-tb-spin" disabled>GIRA LA RUOTA</button>
+    <div class="mobile-container tb-col">
+      <div class="ph-head">
+        <span class="eyebrow">Parit&agrave; in banca</span>
+        <h2 class="tb-title">Spareggio</h2>
+        <p class="ph-sub">Un giro a testa. Vince il valore pi&ugrave; alto &mdash; i punti non contano.</p>
+      </div>
+      <div class="wheel-container" id="tb-wheel-container">
+        <div class="wheel-indicator"></div>
+        <canvas id="tb-wheel-canvas"></canvas>
+      </div>
+      <div class="prow-list" id="tb-list"></div>
+      <button class="pbtn is-big" id="btn-tb-spin" disabled>Gira la ruota</button>
     </div>
   </div>
 
-  <!-- Finalist -->
+  <!-- 1j · Esito finalista, due stati alternativi -->
   <div id="player-finalist-screen" class="screen hidden">
-    <div class="mobile-container">
-      <h2 class="matchend-title" id="player-finalist-title">—</h2>
+    <div class="ph-dots" aria-hidden="true"></div>
+    <div class="mobile-container fin-col">
+      <div class="fin-card is-win" id="fin-win" hidden>
+        <span class="fin-lab">Sei il finalista</span>
+        <span class="fin-big" id="fin-bank">0</span>
+        <span class="fin-unit">punti in banca</span>
+        <p class="fin-say">Tre tabelloni, 60 secondi in tutto. Guarda lo schermo grande.</p>
+      </div>
+      <div class="fin-card" id="fin-lose" hidden>
+        <span class="fin-lab">Fine partita</span>
+        <h2 class="fin-title" id="fin-who">&mdash;</h2>
+        <p class="fin-say" id="fin-mine">&mdash;</p>
+      </div>
     </div>
   </div>
 
-  <!-- Final game (finalist only) -->
+  <!-- 1k · Gioco finale (solo il finalista) -->
   <div id="player-final-screen" class="screen hidden">
     <div class="mobile-container">
-      <div class="turn-message" id="final-message">Gioco finale</div>
-      <div class="keyboard" id="final-keyboard"></div>
-      <div class="vowel-picker" id="final-vowels"></div>
-      <button class="buzz-pill" id="btn-final-buzz" disabled>PRENOTATI</button>
+      <div class="ph-topbar" id="fg-topbar"></div>
+      <div class="fg-clock">
+        <span class="fg-num" id="fg-num">60</span>
+        <div class="fg-meta">
+          <span class="lab" id="fg-lab">Il timer parte quando hai scelto</span>
+          <span class="fg-bar"><i id="fg-bar-fill"></i></span>
+        </div>
+      </div>
+      <div class="fg-task" id="fg-task">
+        <span class="fg-task-t" id="fg-task-t">Scegli 3 consonanti e 1 vocale</span>
+        <div class="fg-done">
+          <span class="lab">Fatte</span>
+          <span class="fg-boxes" id="fg-boxes"></span>
+        </div>
+      </div>
+      <div class="fg-group">
+        <span class="lab">Consonanti</span>
+        <div class="keyboard" id="final-keyboard"></div>
+      </div>
+      <div class="fg-group">
+        <span class="lab">Vocale</span>
+        <div class="vowel-picker" id="final-vowels"></div>
+      </div>
+      <button class="pbtn is-big is-ghost" id="btn-final-buzz" disabled>Prenotati</button>
+      <p class="pbtn-why" id="fg-why" hidden></p>
     </div>
   </div>
 
-  <!-- Envelopes -->
+  <!-- 1l · Buste -->
   <div id="player-envelopes-screen" class="screen hidden">
-    <div class="mobile-container">
-      <div class="turn-message" id="env-message">Le buste</div>
-      <div class="envelopes-row" id="player-envelopes-row"></div>
-      <div class="env-actions">
-        <button class="buzz-pill" id="btn-env-keep" style="display:none;">TIENI</button>
-        <button class="buzz-pill" id="btn-env-change" style="display:none;">CAMBIA</button>
+    <div class="mobile-container env-col">
+      <div class="ph-topbar" id="env-topbar"></div>
+      <div class="env-head">
+        <h2 class="env-title" id="env-title">Le buste</h2>
+        <p class="env-sub" id="env-sub"></p>
       </div>
+      <div class="env-open" id="env-open" hidden>
+        <span class="dots" aria-hidden="true"></span>
+        <span class="env-open-lab" id="env-open-lab">Busta 1</span>
+        <span class="env-open-prize" id="env-open-prize"></span>
+      </div>
+      <div class="env-others" id="env-others"></div>
+      <button class="pbtn is-big" id="btn-env-keep" hidden>Tieni questa</button>
+      <button class="pbtn is-big is-secondary" id="btn-env-change" hidden>Cambia</button>
+      <p class="pg-note" id="env-note" hidden>Una busta scartata non si pu&ograve; ripescare</p>
     </div>
   </div>
 
@@ -126,9 +218,29 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/wheel.js"></script>
-  <script src="/js/player.js"></script>
-  <script src="/js/samiro-faq.js"></script>
-  <script src="/js/samiro.js"></script>
+  <!-- Gli script della pagina vengono caricati da qui, in ordine, invece che con
+       quattro tag: in sviluppo `?mock=` deve installare la socket finta PRIMA di
+       player.js, e un modulo con top-level await NON blocca gli script `defer`
+       (player.js partirebbe prima e prenderebbe la socket vera). Un solo
+       percorso per entrambi i casi, così non c'è un ordine che vale solo in dev. -->
+  <script type="module">
+    // La cornice del telefono è un modulo, player.js uno script classico: si
+    // carica qui e si appende a window, un solo percorso in dev e in produzione.
+    window.PhoneShell = await import('/js/phone/shell.js');
+    let mock = null;
+    if (new URLSearchParams(location.search).has('mock')) {
+      const { installMock } = await import('/js/dev/mock.js');
+      mock = await installMock('phone', { autoStart: false });
+    }
+    for (const src of ['/js/wheel.js', '/js/player.js', '/js/samiro-faq.js', '/js/samiro.js']) {
+      await new Promise((ok, ko) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = ok; s.onerror = () => ko(new Error('script non caricato: ' + src));
+        document.head.appendChild(s);
+      });
+    }
+    // solo ora gli handler sono registrati
+    if (mock) await mock.start();
+  </script>
 </body>
 </html>

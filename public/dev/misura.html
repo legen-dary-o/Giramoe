@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8"><title>misura render</title>
+<body style="margin:0;background:#111;color:#eee;font:13px monospace">
+<script>
+// Misura l'estensione orizzontale di una banda di righe in un render di
+// riferimento: serve a confrontare le proporzioni col DOM vero invece di
+// stimarle a occhio su uno screenshot ridotto.
+window.misura = (src, y0, y1, soglia = 90) => new Promise((ok) => {
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const d = ctx.getImageData(0, 0, c.width, c.height).data;
+    let min = c.width, max = -1;
+    for (let y = y0; y < y1; y++) {
+      for (let x = 0; x < c.width; x++) {
+        const i = (y * c.width + x) * 4;
+        if (d[i] > soglia && d[i+1] > soglia && d[i+2] > soglia) {
+          if (x < min) min = x;
+          if (x > max) max = x;
+        }
+      }
+    }
+    ok({ file: src, dimensioni: [img.width, img.height], banda: [y0, y1], sinistra: min, destra: max, larghezza: max - min });
+  };
+  img.src = src;
+});
+</script>

@@ -1,0 +1,728 @@
+/* ============================================================
+   GIRAMOE — telefono del Game Master (430×932)
+   Solo admin.html. Console di regia: barra alta, schede, barra d'azione.
+   ============================================================ */
+
+/* La console non è una schermata di gioco: è un pannello che si guarda di
+   sfuggita mentre si conduce. Tre cose la distinguono dal telefono del
+   giocatore — la barra alta dice sempre in che fase siamo, le due azioni
+   stanno fisse in fondo (si premono al volo, non devono mai finire sotto la
+   piega) e i campi sono vestiti da schede. */
+
+/* === COLONNA === */
+
+.ad-col {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow-y: auto;
+  gap: 14px;
+  padding: 18px 20px 20px;
+}
+/* Le schermate con la barra d'azione le lasciano il posto: senza, l'ultima
+   scheda ci finisce sotto e non si legge. */
+.ad-col.has-bar { padding-bottom: 136px; }
+/* Un bottone solo, ma con la riga del perché sotto: è più alta, non più bassa */
+.ad-col.has-bar.is-single { padding-bottom: 146px; }
+
+/* Colonna centrata (pre-partita, tabelloni finiti, spareggio) */
+.ad-center {
+  justify-content: center;
+  align-items: center;
+  gap: 34px;
+  padding: 0 26px 60px;
+  overflow: hidden;
+}
+
+/* === BARRA ALTA === */
+
+.ad-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% + 40px);
+  margin: 0 -20px 4px;
+  padding: 2px 22px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+.ad-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ad-wm {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.ad-gm {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(48, 184, 255, 0.14);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 8.5px;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+.ad-phase-wrap { display: flex; align-items: center; gap: 10px; flex: none; }
+.ad-phase {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.ad-phase.is-accent { color: var(--accent); }
+.ad-pips { display: flex; gap: 5px; }
+.ad-pips i { width: 18px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.18); }
+.ad-pips i.is-done { background: var(--accent); }
+
+/* === BARRA D'AZIONE === */
+
+.ad-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  padding: 16px 20px calc(26px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(0deg, rgba(10, 10, 12, 0.96), rgba(10, 10, 12, 0.6));
+}
+.ad-bar[hidden] { display: none; }
+.ad-hint {
+  display: block;
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(245, 245, 247, 0.34);
+}
+.ad-btns { display: flex; gap: 12px; }
+
+/* `flex: 1` solo dentro la barra: in colonna farebbe crescere il bottone in
+   altezza fino a riempire lo schermo. */
+.ad-btns .abtn { flex: 1; }
+/* Fuori dalla barra il primario è largo quanto la colonna */
+.ad-col > .abtn { width: 100%; }
+.abtn {
+  flex: none;
+  height: 58px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font: 600 13px -apple-system, sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.2s ease;
+}
+.abtn:active:not(:disabled) { transform: scale(0.97); }
+/* L'azione principale non è mai piena: sta accanto a un'altra ugualmente
+   probabile, e una piena e una vuota farebbero sembrare la seconda sbagliata. */
+.abtn.is-accent {
+  background: rgba(48, 184, 255, 0.14);
+  border-color: rgba(48, 184, 255, 0.6);
+  color: var(--accent);
+}
+.abtn.is-plain {
+  background: none;
+  border-color: rgba(245, 245, 247, 0.4);
+  color: var(--ink);
+}
+/* Primario pieno: quando è l'unica azione della schermata */
+.abtn.is-solid {
+  height: 60px;
+  background: var(--accent);
+  color: #000;
+  letter-spacing: 3px;
+  box-shadow: 0 12px 40px rgba(48, 184, 255, 0.30);
+}
+.abtn.is-solid:disabled { background: rgba(48, 184, 255, 0.25); color: rgba(0, 0, 0, 0.55); box-shadow: none; }
+.abtn:disabled { cursor: not-allowed; }
+.abtn.is-accent:disabled, .abtn.is-plain:disabled { opacity: 0.35; }
+/* Perché è spento: sotto la barra, come i primari del telefono giocatore */
+.ad-why {
+  display: block;
+  margin-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-align: center;
+  color: rgba(245, 245, 247, 0.34);
+}
+.ad-why[hidden] { display: none; }
+
+/* === SCHEDE E CAMPI === */
+
+.acard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.acard[hidden] { display: none; }
+/* Variante spenta: le schede di sola lettura (spiegazioni, regole) */
+.acard.is-quiet { background: rgba(255, 255, 255, 0.03); padding: 16px 18px; gap: 8px; }
+/* Variante accesa: la scheda che porta l'azione del momento */
+.acard.is-accent {
+  background: linear-gradient(180deg, rgba(48, 184, 255, 0.12), var(--panel));
+  border-color: rgba(48, 184, 255, 0.5);
+}
+
+.alab {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.acard-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.acard-head .val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+
+/* 16px e non i 14,5 del handoff: sotto i 16 iOS zooma la pagina al fuoco del
+   campo, e su una console che si usa in piedi è peggio del disallineamento. */
+.afield {
+  width: 100%;
+  padding: 15px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font: 500 16px -apple-system, sans-serif;
+  line-height: 1.35;
+  color: var(--ink);
+  outline: none;
+  resize: none;
+}
+.afield::placeholder { color: rgba(245, 245, 247, 0.32); font-weight: 400; }
+/* Campo bloccato: resta leggibile, smette di sembrare toccabile */
+.afield:disabled { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08); color: var(--ink-soft); opacity: 1; }
+.afield:focus { border-color: rgba(48, 184, 255, 0.55); }
+/* Campo numerato: il numero fuori, il campo dentro */
+.afield-n { display: flex; align-items: center; gap: 12px; }
+.afield-n .n {
+  flex: none;
+  min-width: 22px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: rgba(48, 184, 255, 0.9);
+}
+
+/* Esito della verifica della frase: verde quando ci sta, bianco quando no.
+   Il rosso non esiste in questa palette — l'errore lo dice il testo. */
+.acheck {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--accent);
+  min-height: 16px;
+}
+.acheck[hidden] { display: none; }
+.acheck .mark {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+}
+.acheck.is-bad { color: var(--ink); }
+
+/* === RIGHE GIOCATORE === */
+
+.arow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+}
+.ar-name { font: 600 15px -apple-system, sans-serif; color: rgba(245, 245, 247, 0.7); }
+.ar-right {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: rgba(245, 245, 247, 0.5);
+}
+.ar-right b { color: var(--ink); font-weight: 700; }
+.ar-right b.acc { color: var(--accent); }
+.arow.is-accent {
+  background: rgba(48, 184, 255, 0.08);
+  border-color: rgba(48, 184, 255, 0.3);
+}
+.arow.is-accent .ar-name { color: var(--ink); }
+.arow.is-accent .ar-right { color: rgba(245, 245, 247, 0.6); }
+.arow.is-dim { opacity: 0.55; }
+/* Slot ancora libero in lobby */
+.arow.is-free { background: none; border: 1px dashed rgba(255, 255, 255, 0.16); }
+.arow.is-free .ar-name { color: rgba(245, 245, 247, 0.3); font-weight: 500; }
+
+.ar-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+.arow.is-free .ar-dot, .ar-dot.is-off { background: rgba(255, 255, 255, 0.16); }
+
+.ar-kick {
+  flex: none;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 245, 247, 0.45);
+  background: none;
+  color: var(--ink);
+  font: 700 13px var(--font-mono);
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.ar-kick:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.14); }
+
+/* Pillola di stato accanto al nome di turno */
+.atag {
+  flex: none;
+  margin-left: auto;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(48, 184, 255, 0.12);
+  border: 1px solid rgba(48, 184, 255, 0.35);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.atag.is-plain { background: rgba(255, 255, 255, 0.05); border-color: rgba(245, 245, 247, 0.3); color: var(--ink-soft); }
+.aturn { display: flex; align-items: center; gap: 10px; }
+.aturn .nome { font: 600 16px -apple-system, sans-serif; }
+
+/* Primario dentro una scheda: più basso, perché la scheda gli fa già da
+   cornice e a 60px sembrerebbe la barra d'azione finita nel posto sbagliato. */
+.abtn.is-card {
+  width: 100%;
+  height: 52px;
+  background: var(--accent);
+  color: #000;
+  letter-spacing: 2.5px;
+  font-size: 14px;
+}
+.abtn.is-card:disabled { background: rgba(48, 184, 255, 0.25); color: rgba(0, 0, 0, 0.55); }
+.abtn.is-mono { font: 700 16px var(--font-mono); letter-spacing: 3px; text-transform: none; }
+
+/* Nota e regola dentro una scheda: la prima è una postilla, la seconda una
+   frase da leggere. Stessa famiglia, corpo diverso. */
+.ad-rule {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* I gruppi di schede si impilano come la colonna: senza, i due blocchi
+   alternativi di una schermata (setup / live) collasserebbero senza spazio. */
+#triplete-setup, #triplete-live { display: flex; flex-direction: column; gap: 14px; }
+#triplete-setup.hidden, #triplete-live.hidden { display: none; }
+
+/* === 1s · TRIPLETE LIVE === */
+
+/* La scheda d'allarme: bianca e non ciano, perché non è un'informazione ma
+   un'interruzione — qualcuno ha schiacciato e la rivelazione si è fermata. */
+.acard.is-alert {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: rgba(40, 40, 44, 0.9);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.08);
+}
+/* Da ferma (nessuno prenotato) resta una scheda come le altre */
+.acard.is-alert.is-idle {
+  background: var(--panel);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: none;
+}
+.acard.is-alert .bell { flex: none; display: inline-flex; width: 26px; height: 26px; color: var(--ink); }
+.acard.is-alert.is-idle .bell { color: var(--ink-faint); }
+.acard.is-alert .bell svg { width: 100%; height: 100%; }
+.acard.is-alert .tx { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.acard.is-alert .t { font: 600 19px -apple-system, sans-serif; }
+.acard.is-alert.is-idle .t { font-size: 17px; color: var(--ink-soft); }
+.acard.is-alert .s { font-family: var(--font-mono); font-size: 11.5px; color: rgba(245, 245, 247, 0.5); }
+
+#triplete-scores { display: flex; flex-direction: column; gap: 10px; }
+/* Punti del Triplete: numero grosso a destra, come sulla TV */
+.ar-pts {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+}
+/* Chi ha schiacciato: bordo chiaro, non ciano — il ciano qui è del turno, e
+   nel Triplete il turno non esiste. */
+.arow.is-buzzed { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.28); }
+.arow.is-buzzed .ar-name { color: var(--ink); }
+.arow.is-locked { opacity: 0.45; }
+.ar-locked {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 2px;
+  color: rgba(245, 245, 247, 0.5);
+}
+.ar-locked + .ar-pts { margin-left: 12px; }
+
+/* === 1t · GIRAMOE === */
+
+#giramoe-live { display: flex; flex-direction: column; gap: 14px; }
+#giramoe-live.hidden, #giramoe-setup.hidden { display: none; }
+.gi-mult {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--accent);
+}
+.ad-note.is-center { text-align: center; }
+/* L'ultima mossa: `L ×2 · 1.000`. Il moltiplicatore è uguale per tutti, quindi
+   il numero che conta è quante volte la lettera c'era. */
+.ar-move { margin-left: auto; font-family: var(--font-mono); font-size: 12.5px; color: rgba(245, 245, 247, 0.5); }
+.ar-move b { color: var(--accent); font-weight: 700; }
+
+/* === 1u · SPAREGGIO === */
+
+.ad-h.is-tb { font-size: 40px; letter-spacing: -0.02em; }
+.tb-list { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.tb-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+/* Chi ha già girato ha il bordo ciano: il suo numero è quello da battere */
+.tb-card.is-done { border-color: rgba(48, 184, 255, 0.45); }
+.tb-av {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 600 18px -apple-system, sans-serif;
+  background: linear-gradient(150deg, #3c3c40, #232327);
+}
+.tb-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tb-who .nome { font: 600 17px -apple-system, sans-serif; }
+.tb-who .st { font-family: var(--font-mono); font-size: 11.5px; color: rgba(245, 245, 247, 0.45); }
+.tb-card.is-done .tb-who .st { color: var(--accent); }
+.tb-val {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  color: rgba(245, 245, 247, 0.3);
+}
+.tb-card.is-done .tb-val { color: var(--accent); }
+
+/* === 1v · FINALISTA + SETUP DEL FINALE === */
+
+.acard.fin-who { flex-direction: row; align-items: center; gap: 14px; }
+.fin-who-tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fin-who-tx .nome { font: 600 19px -apple-system, sans-serif; }
+.fin-bank {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+/* Tre passi: il form ha sette campi e senza un indicatore non si capisce a che
+   punto si è. Si accendono guardando i campi, non un payload. */
+.fin-steps { display: flex; gap: 8px; }
+.fin-steps span {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(245, 245, 247, 0.4);
+}
+.fin-steps span.is-done {
+  background: rgba(48, 184, 255, 0.14);
+  border-color: rgba(48, 184, 255, 0.5);
+  color: var(--accent);
+}
+/* Le buste si numerano in mono: sono etichette, non una sequenza da leggere */
+.afield-n.is-env .n { font: 700 15px var(--font-mono); color: var(--accent); }
+
+/* === 1w · GIOCO FINALE LIVE === */
+
+.acard.fg-clock { flex-direction: row; align-items: center; gap: 18px; padding: 22px; border-radius: 20px; }
+.fg-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 64px;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+.fg-meta { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fg-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.fg-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 14px rgba(48, 184, 255, 0.6);
+  transition: width 0.3s linear;
+}
+
+/* I tre tabelloni: quadrati, perché a colpo d'occhio conta lo stato, non il testo */
+.fg-tiles { display: flex; gap: 12px; }
+.fg-tiles .tile {
+  flex: 1;
+  aspect-ratio: 1;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.fg-tiles .n { font-family: var(--font-display); font-weight: 800; font-size: 32px; color: rgba(245, 245, 247, 0.28); }
+.fg-tiles .st {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.3);
+}
+.fg-tiles .tile.is-now { background: rgba(48, 184, 255, 0.1); border-color: rgba(48, 184, 255, 0.6); }
+.fg-tiles .tile.is-now .n, .fg-tiles .tile.is-now .st { color: var(--accent); }
+.fg-tiles .tile.is-ok .n, .fg-tiles .tile.is-ok .st { color: var(--ink); }
+.fg-tiles .tile.is-ok { border-color: rgba(245, 245, 247, 0.35); }
+
+.fg-group { display: flex; flex-direction: column; gap: 9px; }
+.fg-group.is-split { padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.10); }
+.fg-keys { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Regalate: tessere bianche. Chiamate: ciano — chi le ha volute è il giocatore */
+.fg-keys .k {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font: 700 17px var(--font-mono);
+  background: rgba(255, 255, 255, 0.9);
+  color: #000;
+}
+.fg-keys .k.is-pick {
+  background: rgba(48, 184, 255, 0.14);
+  border: 1px solid rgba(48, 184, 255, 0.6);
+  color: var(--accent);
+}
+/* Una lettera chiamata che nella frase non c'era: spenta, così si vede subito
+   quante ne ha buttate via. */
+.fg-keys .k.is-miss { background: none; border: 1px solid rgba(255, 255, 255, 0.16); color: rgba(245, 245, 247, 0.3); }
+.fg-keys:empty::after {
+  content: 'nessuna';
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(245, 245, 247, 0.3);
+}
+
+.fg-live {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(48, 184, 255, 0.1);
+  border: 1px solid rgba(48, 184, 255, 0.45);
+  font: 600 15px -apple-system, sans-serif;
+  color: var(--accent);
+}
+.fg-live[hidden] { display: none; }
+.fg-live .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: liveBlink 1.2s ease-in-out infinite; }
+
+/* === 1x · BUSTE === */
+
+.env-pips { display: flex; gap: 9px; margin-top: 2px; }
+.env-pips i { flex: 1; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); }
+.env-pips i.is-ok { background: var(--accent); box-shadow: 0 0 12px rgba(48, 184, 255, 0.6); }
+.env-pips i.is-ko { background: rgba(245, 245, 247, 0.35); }
+
+#admin-envelopes-list { display: flex; flex-direction: column; gap: 12px; }
+.env-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+}
+.env-row .n { flex: none; min-width: 20px; font: 700 20px var(--font-mono); color: rgba(245, 245, 247, 0.6); }
+.env-row .tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.env-row .tx .t { font: 600 15px -apple-system, sans-serif; }
+.env-row .tx .s {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.45);
+}
+.env-row.is-open { background: rgba(48, 184, 255, 0.08); border-color: rgba(48, 184, 255, 0.55); }
+.env-row.is-open .n, .env-row.is-open .tx .s { color: var(--accent); }
+.env-row.is-red { border-color: rgba(245, 245, 247, 0.28); }
+.env-row.is-red .tx .t { color: var(--ink-soft); }
+.env-row.is-green { border: 1px dashed rgba(48, 184, 255, 0.4); }
+.env-row.is-green .n, .env-row.is-green .tx .s { color: rgba(48, 184, 255, 0.8); }
+.env-row.is-green .tx .t { color: var(--ink-soft); }
+.env-row.is-gone { opacity: 0.4; }
+.env-reveal {
+  margin-left: auto;
+  flex: none;
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: none;
+  border: 1px solid rgba(245, 245, 247, 0.45);
+  font: 600 11px var(--font-mono);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+}
+.env-reveal:active { transform: scale(0.96); }
+.acard.env-left { flex-direction: row; align-items: center; justify-content: space-between; }
+
+/* === 1q · TRE TABELLONI FATTI === */
+
+.ad-pips.is-big i { width: 44px; height: 6px; border-radius: 3px; }
+.ad-head { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.ad-h { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1.1; }
+.ad-sub { font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; color: var(--ink-soft); }
+
+/* Classifica delle banche: nome a sinistra, numero grosso a destra */
+.astand { width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.10); }
+.astand .srow {
+  display: flex;
+  align-items: center;
+  padding: 15px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+.astand .srow .nome { font: 600 15px -apple-system, sans-serif; }
+.astand .srow .val {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+}
+
+/* === 1n · PRE-PARTITA === */
+
+.ad-dots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle 1.6px at 50% 50%, rgba(255, 255, 255, 0.55) 99%, transparent 100%);
+  background-size: 7px 7px;
+  opacity: 0.40;
+  -webkit-mask-image: radial-gradient(ellipse 74% 28% at 50% 44%, transparent 62%, #000 96%);
+  mask-image: radial-gradient(ellipse 74% 28% at 50% 44%, transparent 62%, #000 96%);
+}
+#admin-pregame .wm { font-size: 44px; letter-spacing: -0.03em; }
+.ad-brand { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.ad-chip {
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(48, 184, 255, 0.5);
+  background: rgba(48, 184, 255, 0.1);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+/* I tre passi: dicono in che ordine si fanno le cose, non sono decorazione */
+.ad-steps { width: 100%; margin: 0; padding: 0; border-top: 1px solid rgba(255, 255, 255, 0.10); }
+.ad-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 16px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  list-style: none;
+}
+.ad-steps .n {
+  flex: none;
+  min-width: 38px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+}
+.ad-steps .t { font-family: var(--font-mono); font-size: 13px; line-height: 1.4; color: var(--ink-soft); }
+
+/* === 1o · LOBBY === */
+
+#admin-players, #admin-scores { display: flex; flex-direction: column; gap: 12px; }
+
+.ad-link {
+  font: 700 15px var(--font-mono);
+  color: var(--accent);
+  word-break: break-all;
+}
+.ad-note {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(245, 245, 247, 0.34);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abtn { transition: none; }
+}

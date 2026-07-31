@@ -4,163 +4,301 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Giramoe — Admin</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/shell.css">
+  <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
-  <!-- Pre-game -->
+  <!-- 1n · Pre-partita -->
   <div id="admin-pregame" class="screen">
-    <div class="mobile-container">
-      <div class="wm phone-wm">GIRAMOE</div>
-      <h1 style="font-size: 13px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-faint); margin: 8px 0 24px;">Game Master</h1>
-      <button class="glass-button" id="btn-inizia">Inizia</button>
+    <div class="ad-dots" aria-hidden="true"></div>
+    <div class="ad-col ad-center">
+      <div class="ad-brand">
+        <div class="wm">GIRAMOE</div>
+        <span class="ad-chip">Game master</span>
+      </div>
+      <ol class="ad-steps">
+        <li><span class="n">1</span><span class="t">Premi Inizia: sulla TV compare il QR</span></li>
+        <li><span class="n">2</span><span class="t">I 3 giocatori lo inquadrano ed entrano</span></li>
+        <li><span class="n">3</span><span class="t">Da qui imposti categoria e frasi</span></li>
+      </ol>
+      <button class="abtn is-solid" id="btn-inizia">Inizia</button>
     </div>
   </div>
 
-  <!-- Lobby -->
+  <!-- 1o · Sala d'attesa -->
   <div id="admin-lobby" class="screen hidden">
-    <div class="admin-container">
-      <h1>Giramoe</h1>
-      <div class="admin-section">
-        <h2>Giocatori</h2>
-        <div class="admin-player-list" id="admin-players"></div>
+    <div class="ad-col has-bar is-single">
+      <div class="ad-topbar" id="lobby-topbar"></div>
+      <div class="acard">
+        <div class="acard-head">
+          <span class="alab">Giocatori</span>
+          <span class="val" id="lobby-count">0 / 3</span>
+        </div>
+        <div id="admin-players"></div>
       </div>
-      <button class="glass-button" id="btn-avvia" disabled>Avvia partita</button>
+      <div class="acard is-quiet">
+        <span class="alab">Link giocatori</span>
+        <span class="ad-link" id="lobby-link">&mdash;</span>
+        <span class="ad-note">Lo stesso URL del QR sulla TV</span>
+      </div>
+    </div>
+    <div class="ad-bar">
+      <div class="ad-btns">
+        <button class="abtn is-solid" id="btn-avvia" disabled>Avvia partita</button>
+      </div>
+      <span class="ad-why" id="lobby-why">Serve il terzo giocatore</span>
     </div>
   </div>
 
-  <!-- Game -->
+  <!-- 1p · Partita: imposta il tabellone e governa il turno -->
   <div id="admin-game" class="screen hidden">
-    <div class="admin-container">
-      <h1>Giramoe</h1>
-      <div class="admin-section">
-        <h2 id="admin-board-counter">Tabellone</h2>
-        <input type="text" id="cat-input" class="glass-input" placeholder="Categoria" autocomplete="off">
-        <input type="text" id="phrase-input" class="glass-input" placeholder="Frase" autocomplete="off" style="margin-top:8px;">
-        <button class="glass-button" id="btn-set-board" style="margin-top:8px;">Avvia tabellone</button>
-        <div class="board-error" id="board-error"></div>
+    <div class="ad-col has-bar">
+      <div class="ad-topbar" id="game-topbar"></div>
+      <div class="acard">
+        <div class="acard-head">
+          <span class="alab" id="admin-board-counter">Tabellone</span>
+          <span class="val" id="board-status"></span>
+        </div>
+        <input type="text" id="cat-input" class="afield" placeholder="Categoria" autocomplete="off">
+        <textarea id="phrase-input" class="afield" rows="2" placeholder="Frase" autocomplete="off"></textarea>
+        <p class="acheck" id="board-msg" hidden></p>
+        <button class="abtn is-card" id="btn-set-board">Avvia tabellone</button>
       </div>
-      <div class="admin-section">
-        <h2>Turno: <span id="admin-turn-name">—</span> <span id="admin-turn-state" class="turn-state-tag"></span></h2>
-        <div class="admin-player-list" id="admin-scores"></div>
-      </div>
-      <div class="admin-section admin-actions">
-        <button class="glass-button" id="btn-solve">Frase indovinata</button>
-        <button class="glass-button" id="btn-pass">Passa turno</button>
+      <div class="acard">
+        <div class="aturn">
+          <span class="alab">Turno</span>
+          <span class="nome" id="admin-turn-name">&mdash;</span>
+          <span class="atag" id="admin-turn-state" hidden></span>
+        </div>
+        <div id="admin-scores"></div>
       </div>
     </div>
+    <div class="ad-bar" id="game-actions"></div>
   </div>
 
-  <!-- Triplete: ready (button appears after the 3 wheel boards) -->
+  <!-- 1q · Tre tabelloni fatti -->
   <div id="admin-tripleteready" class="screen hidden">
-    <div class="admin-container">
-      <h1>Tabelloni finiti!</h1>
-      <p style="margin-bottom: 22px; color: var(--ink-soft);">Pronti per il gioco finale.</p>
-      <button class="glass-button" id="btn-go-triplete">IL TRIPLETE</button>
+    <div class="ad-dots" aria-hidden="true"></div>
+    <div class="ad-col ad-center">
+      <div class="ad-pips is-big"><i class="is-done"></i><i class="is-done"></i><i class="is-done"></i></div>
+      <div class="ad-head">
+        <h2 class="ad-h">Tre tabelloni fatti</h2>
+        <p class="ad-sub">Si passa al bonus round. Prepara un argomento e tre frasi.</p>
+      </div>
+      <div class="astand" id="ready-standings"></div>
+      <button class="abtn is-solid is-mono" id="btn-go-triplete">IL TRIPLETE</button>
     </div>
   </div>
 
-  <!-- Triplete: control -->
+  <!-- 1r setup · 1s live -->
   <div id="admin-triplete" class="screen hidden">
-    <div class="admin-container">
-      <h1>IL TRIPLETE</h1>
-      <div class="admin-section" id="triplete-setup">
-        <h2>Argomento e 3 frasi</h2>
-        <input type="text" id="tr-title" class="glass-input" placeholder="Titolo / argomento" autocomplete="off">
-        <input type="text" id="tr-phrase-1" class="glass-input" placeholder="Frase 1" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="tr-phrase-2" class="glass-input" placeholder="Frase 2" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="tr-phrase-3" class="glass-input" placeholder="Frase 3" autocomplete="off" style="margin-top:8px;">
-        <button class="glass-button" id="btn-triplete-start" style="margin-top:10px;">Avvia il Triplete</button>
-        <div class="board-error" id="triplete-error"></div>
+    <div class="ad-col has-bar">
+      <div class="ad-topbar" id="tr-topbar"></div>
+
+      <!-- 1r · argomento e tre frasi -->
+      <div id="triplete-setup">
+        <div class="acard">
+          <span class="alab">Argomento &mdash; uguale per tutti</span>
+          <input type="text" id="tr-title" class="afield" placeholder="Saggezza popolare" autocomplete="off">
+        </div>
+        <div class="acard">
+          <span class="alab">Le tre frasi &mdash; 1.000 ciascuna</span>
+          <div class="afield-n"><span class="n">1</span><input type="text" id="tr-phrase-1" class="afield" placeholder="Prima frase" autocomplete="off"></div>
+          <div class="afield-n"><span class="n">2</span><input type="text" id="tr-phrase-2" class="afield" placeholder="Seconda frase" autocomplete="off"></div>
+          <div class="afield-n"><span class="n">3</span><input type="text" id="tr-phrase-3" class="afield" placeholder="Terza frase" autocomplete="off"></div>
+          <p class="ad-note">Tutte e tre indovinate: 5.000 invece di 3.000</p>
+        </div>
+        <div class="acard is-quiet">
+          <span class="alab">Come si rivela</span>
+          <p class="ad-rule">Tabelloni 1 e 2: caselle a caso ogni 1,5s. Tabellone 3: lettere che lampeggiano.</p>
+        </div>
       </div>
-      <div class="admin-section hidden" id="triplete-live">
-        <h2 id="triplete-board-counter">Tabellone 1 / 3</h2>
-        <div class="admin-player-list" id="triplete-scores"></div>
-      </div>
-      <div class="admin-section admin-actions hidden" id="triplete-actions">
-        <button class="glass-button" id="btn-triplete-correct" disabled>Frase indovinata</button>
-        <button class="glass-button" id="btn-triplete-wrong" disabled>Frase sbagliata</button>
+
+      <!-- 1s · partita in corso -->
+      <div id="triplete-live" class="hidden">
+        <div class="acard is-alert" id="tr-alert">
+          <span class="bell" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          </span>
+          <div class="tx">
+            <span class="t" id="tr-alert-t">Rivelazione in corso</span>
+            <span class="s" id="tr-alert-s">nessuno si è ancora prenotato</span>
+          </div>
+        </div>
+        <div class="acard">
+          <span class="alab">Punti Triplete</span>
+          <div id="triplete-scores"></div>
+        </div>
+        <div class="acard is-quiet">
+          <span class="alab">Se sbaglia</span>
+          <p class="ad-rule">Resta bloccato e la rivelazione riprende da dov&rsquo;era, senza azzerarsi.</p>
+        </div>
       </div>
     </div>
+    <div class="ad-bar" id="triplete-actions"></div>
   </div>
 
-  <!-- Giramoe (final wheel board) -->
+  <!-- 1t · Giramoe: il giro lo fa l'admin -->
   <div id="admin-giramoe" class="screen hidden">
-    <div class="admin-container">
-      <h1>GIRAMOE</h1>
-      <div class="admin-section" id="giramoe-setup">
-        <h2>Tabellone finale</h2>
-        <input type="text" id="gi-cat" class="glass-input" placeholder="Categoria" autocomplete="off">
-        <input type="text" id="gi-phrase" class="glass-input" placeholder="Frase" autocomplete="off" style="margin-top:8px;">
-        <button class="glass-button" id="btn-giramoe-setboard" style="margin-top:8px;">Avvia tabellone</button>
-        <div class="board-error" id="giramoe-error"></div>
+    <div class="ad-col has-bar">
+      <div class="ad-topbar" id="gi-topbar"></div>
+      <div class="acard" id="giramoe-setup">
+        <span class="alab">Tabellone finale</span>
+        <input type="text" id="gi-cat" class="afield" placeholder="Categoria" autocomplete="off">
+        <textarea id="gi-phrase" class="afield" rows="2" placeholder="Frase" autocomplete="off"></textarea>
+        <p class="acheck" id="giramoe-error" hidden></p>
+        <button class="abtn is-card" id="btn-giramoe-setboard">Avvia tabellone</button>
       </div>
-      <div class="admin-section hidden" id="giramoe-live">
-        <button class="glass-button" id="btn-giramoe-spin">Gira la ruota</button>
-        <h2 style="margin-top:12px;">Turno: <span id="gi-turn-name">—</span> <span id="gi-mult-tag" class="turn-state-tag"></span></h2>
-        <div class="admin-player-list" id="giramoe-scores"></div>
-      </div>
-      <div class="admin-section admin-actions hidden" id="giramoe-actions">
-        <button class="glass-button" id="btn-giramoe-correct" disabled>Frase indovinata</button>
-        <button class="glass-button" id="btn-giramoe-wrong" disabled>Frase sbagliata</button>
+      <div id="giramoe-live" class="hidden">
+        <div class="acard is-accent">
+          <div class="acard-head">
+            <span class="alab">Moltiplicatore V</span>
+            <span class="gi-mult" id="gi-mult">&mdash;</span>
+          </div>
+          <button class="abtn is-card" id="btn-giramoe-spin">Gira la ruota</button>
+          <p class="ad-note" id="gi-spin-note">Un solo giro, poi vale per tutti</p>
+        </div>
+        <div class="acard">
+          <div class="aturn">
+            <span class="alab">Turno</span>
+            <span class="nome" id="gi-turn-name">&mdash;</span>
+            <span class="atag" id="gi-turn-tag" hidden></span>
+          </div>
+          <div id="giramoe-scores"></div>
+        </div>
       </div>
     </div>
+    <div class="ad-bar" id="giramoe-actions"></div>
   </div>
 
-  <!-- Tie-break -->
+  <!-- 1u · Spareggio: qui l'admin non fa niente -->
   <div id="admin-tiebreak" class="screen hidden">
-    <div class="admin-container">
-      <h1>Spareggio</h1>
-      <p style="margin-bottom: 16px; color: var(--ink-soft);">I concorrenti girano la ruota dal telefono.</p>
-      <div class="admin-player-list" id="admin-tiebreak-list"></div>
+    <div class="ad-dots" aria-hidden="true"></div>
+    <div class="ad-col ad-center">
+      <div class="ad-head">
+        <span class="eyebrow">Parit&agrave; in banca</span>
+        <h2 class="ad-h is-tb">Spareggio</h2>
+        <p class="ad-sub">I concorrenti girano la ruota dal telefono. Non serve fare nulla.</p>
+      </div>
+      <div class="tb-list" id="admin-tiebreak-list"></div>
+      <p class="ad-note is-center">Questi punti non vengono aggiunti alla banca.<br>Se resta parit&agrave; si rigira.</p>
     </div>
   </div>
 
-  <!-- Finalist -->
+  <!-- 1v · Finalista + setup del gioco finale -->
   <div id="admin-finalist" class="screen hidden">
-    <div class="admin-container">
-      <h1>Finalista</h1>
-      <div class="admin-player-item glass-panel" id="admin-finalist-name"></div>
-      <div class="admin-section" style="margin-top:16px;">
-        <h2>Gioco finale</h2>
-        <input type="text" id="fin-topic" class="glass-input" placeholder="Argomento" autocomplete="off">
-        <input type="text" id="fin-phrase-1" class="glass-input" placeholder="Frase 1" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-phrase-2" class="glass-input" placeholder="Frase 2" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-phrase-3" class="glass-input" placeholder="Frase 3" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-env-1" class="glass-input" placeholder="Busta 1 (testo)" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-env-2" class="glass-input" placeholder="Busta 2 (testo)" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="fin-env-3" class="glass-input" placeholder="Busta 3 (testo)" autocomplete="off" style="margin-top:8px;">
-        <button class="glass-button" id="btn-start-final" style="margin-top:10px;">Inizia il finale</button>
-        <div class="board-error" id="final-error"></div>
+    <div class="ad-col has-bar is-single">
+      <div class="ad-topbar" id="fin-topbar"></div>
+      <div class="acard is-accent fin-who">
+        <span class="tb-av" id="fin-av">?</span>
+        <div class="fin-who-tx">
+          <span class="alab">Finalista</span>
+          <span class="nome" id="fin-name">&mdash;</span>
+        </div>
+        <span class="fin-bank" id="fin-bank">0</span>
       </div>
+      <div class="fin-steps" id="fin-steps">
+        <span data-step="topic">1 Argomento</span>
+        <span data-step="phrases">2 Frasi</span>
+        <span data-step="env">3 Buste</span>
+      </div>
+      <div class="acard">
+        <span class="alab">Argomento</span>
+        <input type="text" id="fin-topic" class="afield" placeholder="Canzoni italiane" autocomplete="off">
+      </div>
+      <div class="acard">
+        <span class="alab">Tre frasi</span>
+        <div class="afield-n"><span class="n">1</span><input type="text" id="fin-phrase-1" class="afield" placeholder="Prima frase" autocomplete="off"></div>
+        <div class="afield-n"><span class="n">2</span><input type="text" id="fin-phrase-2" class="afield" placeholder="Seconda frase" autocomplete="off"></div>
+        <div class="afield-n"><span class="n">3</span><input type="text" id="fin-phrase-3" class="afield" placeholder="Terza frase" autocomplete="off"></div>
+      </div>
+      <div class="acard">
+        <span class="alab">Contenuto delle tre buste</span>
+        <div class="afield-n is-env"><span class="n">1</span><input type="text" id="fin-env-1" class="afield" placeholder="Premio della prima" autocomplete="off"></div>
+        <div class="afield-n is-env"><span class="n">2</span><input type="text" id="fin-env-2" class="afield" placeholder="Premio della seconda" autocomplete="off"></div>
+        <div class="afield-n is-env"><span class="n">3</span><input type="text" id="fin-env-3" class="afield" placeholder="Premio della terza" autocomplete="off"></div>
+        <p class="ad-note">Il colore lo decide il gioco: qui scrivi solo il contenuto</p>
+      </div>
+    </div>
+    <div class="ad-bar">
+      <div class="ad-btns">
+        <button class="abtn is-solid" id="btn-start-final" disabled>Inizia il finale</button>
+      </div>
+      <span class="ad-why" id="final-error"></span>
     </div>
   </div>
 
-  <!-- Final control -->
+  <!-- 1w · Gioco finale live -->
   <div id="admin-final" class="screen hidden">
-    <div class="admin-container">
-      <h1>Gioco finale</h1>
-      <div class="admin-section">
-        <h2><span id="fin-board-counter">Tabellone 1 / 3</span> · <span id="fin-timer">60s</span></h2>
-        <div class="admin-player-list" id="fin-results"></div>
-        <div id="fin-state" class="turn-state-tag" style="margin-top:8px;"></div>
+    <div class="ad-col has-bar">
+      <div class="ad-topbar" id="fg-topbar"></div>
+      <div class="acard fg-clock">
+        <span class="fg-num" id="fin-timer">60</span>
+        <div class="fg-meta">
+          <span class="alab" id="fin-board-counter">Tabellone 1 di 3</span>
+          <span class="fg-bar"><i id="fin-bar"></i></span>
+          <span class="ad-note">il tempo si trasporta</span>
+        </div>
       </div>
-      <div class="admin-section admin-actions">
-        <button class="glass-button" id="btn-final-correct" disabled>Frase indovinata</button>
-        <button class="glass-button" id="btn-final-wrong" disabled>Frase sbagliata</button>
+      <div class="fg-tiles" id="fin-results"></div>
+      <div class="acard">
+        <div class="fg-group">
+          <span class="alab">Regalate dal tabellone</span>
+          <div class="fg-keys" id="fin-given"></div>
+        </div>
+        <div class="fg-group is-split">
+          <span class="alab">Chiamate dal giocatore</span>
+          <div class="fg-keys" id="fin-picks"></div>
+        </div>
       </div>
+      <div class="fg-live" id="fin-state" hidden><span class="dot"></span><span class="tx"></span></div>
     </div>
+    <div class="ad-bar" id="final-actions"></div>
   </div>
 
-  <!-- Envelopes -->
+  <!-- 1x · Buste -->
   <div id="admin-envelopes" class="screen hidden">
-    <div class="admin-container">
-      <h1>Buste</h1>
-      <p style="margin-bottom: 12px; color: var(--ink-soft);">Il finalista apre/cambia le verdi. Le rosse le riveli tu.</p>
-      <div class="admin-player-list" id="admin-envelopes-list"></div>
+    <div class="ad-col">
+      <div class="ad-topbar" id="env-topbar"></div>
+      <div class="acard is-quiet">
+        <span class="alab">Esiti del gioco finale</span>
+        <div class="env-pips" id="env-pips"></div>
+        <p class="ad-rule" id="env-recap"></p>
+      </div>
+      <div class="acard">
+        <span class="alab">Stato delle buste</span>
+        <div id="admin-envelopes-list"></div>
+      </div>
+      <div class="acard is-quiet env-left">
+        <span class="alab">Cambi rimasti</span>
+        <span class="gi-mult" id="env-changes">0</span>
+      </div>
+      <p class="ad-note is-center">Il cambio lo fa il finalista dal suo telefono</p>
     </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/admin.js"></script>
+  <!-- admin.js caricato da qui: in sviluppo `?mock=` deve installare la socket
+       finta prima, e un modulo con top-level await non blocca gli script `defer`.
+       Vedi play.html per la spiegazione lunga. -->
+  <script type="module">
+    // La cornice della console è un modulo, admin.js uno script classico: si
+    // carica qui e si appende a window, un solo percorso in dev e in produzione.
+    window.AdminShell = await import('/js/admin/shell.js');
+    let mock = null;
+    if (new URLSearchParams(location.search).has('mock')) {
+      const { installMock } = await import('/js/dev/mock.js');
+      mock = await installMock('admin', { autoStart: false });
+    }
+    await new Promise((ok, ko) => {
+      const s = document.createElement('script');
+      s.src = '/js/admin.js'; s.onload = ok;
+      s.onerror = () => ko(new Error('script non caricato: /js/admin.js'));
+      document.head.appendChild(s);
+    });
+    // solo ora gli handler sono registrati
+    if (mock) await mock.start();
+  </script>
 </body>
 </html>

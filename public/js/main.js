@@ -3,8 +3,13 @@ import { Wheel3D } from './fx/wheel3d.js';
 import { HomeWheel } from './fx/homewheel.js';
 import { Stage3D } from './fx/stage3d.js';
 import { RoundScenes } from './fx/roundscenes.js';
+import { renderTopBar, renderPlayersBar, renderPhaseStrip, num } from './tv/shell.js';
+import * as callout from './tv/callout.js';
+import * as express from './tv/express.js';
 
 initCursor();
+// Le sei fasi della schermata iniziale: contenuto fisso, nessun payload.
+renderPhaseStrip(document.getElementById('intro-phases'), 1);
 // Animazioni di round a schermo intero (sostituiscono la vecchia title animation
 // nei cinque stacchi: Triplete, Express, Giramoe, Finalista, Buste).
 const scenes = new RoundScenes(document.getElementById('round-scene'));
@@ -26,7 +31,12 @@ try {
 }
 window.addEventListener('resize', () => { if (home) home.resize(); if (stage) stage.resize(); });
 
-const socket = io();
+// In sviluppo, `?mock=<id>` sostituisce la socket con una finta che rigioca i
+// payload d'esempio (public/js/dev/mock.js, servito solo fuori produzione).
+// Due await: uno per l'import dinamico, uno per installMock che è async.
+const socket = new URLSearchParams(location.search).has('mock')
+  ? await (await import('./dev/mock.js')).installMock('tv')
+  : io();
 let wheel = null;
 let started = false;
 let currentPhase = 'video'; // il server chiama ancora 'video' la fase pre-lobby
@@ -48,6 +58,7 @@ function showScreen(id) {
       'envelopes-screen': 'envelopes'
     };
     stage.setMode(modes[id] || 'hidden');
+    stage.setScreen(id);
   }
 }
 
@@ -99,9 +110,15 @@ socket.on('main:state', ({ phase }) => {
 
 socket.on('main:showLobby', ({ url, players }) => {
   currentPhase = 'lobby';
+  // 375px e correzione 'H': la pastiglia col marchio al centro copre dei
+  // moduli, e con la correzione di default il codice smetterebbe di leggersi.
   QRCode.toCanvas(document.getElementById('qr-canvas'), url, {
-    width: 220, margin: 2, color: { dark: '#000000', light: '#f5f5f7' }
+    width: 375, margin: 1, errorCorrectionLevel: 'H',
+    color: { dark: '#000000', light: '#f5f5f7' }
   });
+  // Senza schema: da tre metri "192.168.1.72:3000" si copia, "http://" e' rumore.
+  document.getElementById('lobby-url').textContent = url.replace(/^https?:\/\//, '');
+  renderPhaseStrip(document.getElementById('lobby-phases'), 1, { inline: true });
   updatePlayerSlots(players);
   applyPhaseScreen();
 });
@@ -112,19 +129,33 @@ socket.on('main:startGame', () => { currentPhase = 'playing'; applyPhaseScreen()
 
 socket.on('main:gameState', (g) => {
   if (currentPhase !== 'express') currentPhase = 'playing';
-  if (!wheel) initMainWheel(g.segments);
-  else updateWheelLabels(g.segments);
+  ensureWheel(g.segments);
   document.getElementById('main-wheel-indicator').style.display = '';
-  document.getElementById('category-banner').textContent = g.board.category;
+  setCategory(g.board.category);
+  gameMeta = {
+    boardNumber: g.boardNumber, totalBoards: g.totalBoards,
+    expressValue: g.expressValue != null ? g.expressValue : gameMeta.expressValue
+  };
+  express.value(gameMeta.expressValue);
+  setGiramoeSkin(false); // si gioca di nuovo a tabelloni: via i moduli del Giramoe
+  setTiebreakSkin(false);
+  applyExpressState(g.expressActive, g.scores, g.currentTurn);
   renderBoard(g.board.grid);
   renderScores(g.scores, g.currentTurn);
+  // Dopo un refresh lo spicchio a schermo tornerebbe vuoto: il server lo manda
+  // nello stato, cosi' la schermata si ricostruisce intera da un solo payload.
+  callout.showWedge(g.currentWedge == null ? null : g.currentWedge);
   applyPhaseScreen();
 });
 
-socket.on('main:scores', ({ scores, currentTurn }) => renderScores(scores, currentTurn));
+socket.on('main:scores', ({ scores, currentTurn, expressActive }) => {
+  applyExpressState(expressActive, scores, currentTurn);
+  renderScores(scores, currentTurn);
+});
 
 socket.on('main:spin', ({ winningSegment, spins, value }) => {
   if (stage) stage.pulse('spin');
+  callout.showWedge(wedgeLabel(value));
   if (!wheel) return;
   setWheelZoom(true);
   Sfx.startSpin();
@@ -137,21 +168,92 @@ socket.on('main:spin', ({ winningSegment, spins, value }) => {
   setTimeout(() => { Sfx.stopSpin(); setWheelZoom(false); }, 6800); // fallback se rAF è stato throttlato
 });
 
+// Gli spicchi speciali non hanno un numero: nel modulo va il loro simbolo, lo
+// stesso che portano sulla ruota (public/js/fx/wheel3d.js).
+const WEDGE_SYMBOL = { bancarotta: '✕', next: '→', raddoppia: '×2', express: '»' };
+function wedgeLabel(value) {
+  return WEDGE_SYMBOL[value] != null ? WEDGE_SYMBOL[value] : value;
+}
+
+// La categoria e la sua etichetta stanno o cadono insieme: senza nome, il blocco
+// mostrerebbe un "Categoria" appeso al nulla.
+function setCategory(text) {
+  document.getElementById('category-banner').textContent = text || '';
+  document.querySelector('#game-screen .category').hidden = !text;
+}
+
+// In raffica il nome sta già nel modulo sotto la ruota e nella barra bassa: la
+// pillola serve a dire che regola vale adesso, non di chi è il turno.
+function setTurnPill(name, isExpress = false) {
+  const pill = document.getElementById('turn-pill');
+  document.getElementById('turn-pill-text').textContent =
+    !name ? '' : isExpress ? 'Consonanti a raffica' : `Turno di ${name}`;
+  pill.classList.toggle('is-express', isExpress);
+  pill.hidden = !name;
+}
+
+// Pelle magenta della 1f. Segue turnState === 'EXPRESS' (campo `expressActive`
+// dello stato), non la fase: la fase 'express' dura tre tabelloni durante i
+// quali si gioca normalmente, e colorarla tutta direbbe una cosa falsa.
+let expressActive = false;
+function setExpressSkin(on) {
+  expressActive = !!on;
+  document.getElementById('game-screen').classList.toggle('is-express', expressActive);
+}
+
+// Numero del tabellone e prezzo della lettera: la barra alta si ridisegna anche
+// su main:scores — è lì che arriva l'ingresso in raffica — e quel payload non
+// li porta. Restano qui fra un gameState e l'altro.
+let gameMeta = { boardNumber: 1, totalBoards: 3, expressValue: 500 };
+
+function applyExpressState(active, scores, currentTurn) {
+  const before = expressActive;
+  setExpressSkin(active);
+  // Chi entra in raffica parte da zero: senza questo le lettere del giocatore
+  // prima resterebbero appese a quello dopo.
+  if (expressActive && !before) {
+    express.reset();
+    express.player(scores && scores[currentTurn] ? scores[currentTurn].name : '');
+  }
+  renderGameTopBar();
+}
+
+function renderGameTopBar() {
+  renderTopBar(document.getElementById('game-topbar'), expressActive
+    // In raffica la barra alta dice quanto vale una lettera: è l'unica cosa che
+    // serve sapere in quel momento, e le sei fasi tornano appena finisce.
+    ? { pill: { name: 'EXPRESS', note: `${gameMeta.expressValue} a lettera` },
+        accent: 'express',
+        board: { number: gameMeta.boardNumber, total: gameMeta.totalBoards, label: 'Fase 03', pips: false } }
+    : { phase: currentPhase === 'express' ? 3 : 1,
+        accent: currentPhase === 'express' ? 'express' : 'accent',
+        board: { number: gameMeta.boardNumber, total: gameMeta.totalBoards } });
+}
+
+// La barra bassa sta fuori dal .game-container, quindi la classe di stato va
+// anche sulla schermata: due elementi, un solo punto che li imposta.
 function setWheelZoom(on) {
+  const screen = document.getElementById('game-screen');
   const c = document.querySelector('#game-screen .game-container');
-  if (on) {
-    c.classList.remove('wheel-unzoom');
-    c.classList.add('wheel-zoom');
-  } else if (c.classList.contains('wheel-zoom')) {
-    c.classList.remove('wheel-zoom');
-    c.classList.add('wheel-unzoom'); // flip di ritorno; nessuna animazione al primo load
+  for (const el of [c, screen]) {
+    if (on) {
+      el.classList.remove('wheel-unzoom');
+      el.classList.add('wheel-zoom');
+    } else if (el.classList.contains('wheel-zoom')) {
+      el.classList.remove('wheel-zoom');
+      el.classList.add('wheel-unzoom'); // flip di ritorno; nessuna animazione al primo load
+    }
   }
 }
 
 // Una lettera è stata chiamata (consonante o vocale): la mostro a schermo come per i
 // punti, così anche chi non gioca quel turno vede la lettera (poi se presente si rivela
 // sul tabellone). Attivo in ruota/express/giramoe, non nel triplete né nel finale.
-socket.on('main:letterCalled', ({ letter }) => showResult(String(letter).toUpperCase()));
+socket.on('main:letterCalled', ({ letter }) => {
+  showResult(String(letter).toUpperCase());
+  callout.showLetter(String(letter).toUpperCase());
+  if (expressActive) express.letter(letter);
+});
 
 // "CONSONANTI/VOCALI FINITE": tutte quelle presenti nel tabellone sono state chiamate.
 socket.on('main:boardStatus', updateBoardStatus);
@@ -165,11 +267,22 @@ function updateBoardStatus(st) {
   el.classList.toggle('hidden', tags.length === 0);
 }
 
-socket.on('main:revealLetter', ({ positions }) => revealSequence(positions));
+socket.on('main:revealLetter', ({ positions }) => {
+  revealSequence(positions);
+  callout.showOccurrences(positions.length);
+  if (expressActive) express.occurrence(positions.length);
+});
 
 socket.on('main:solved', () => { if (stage) stage.pulse('correct'); Sfx.play('correct'); fxVeil('correct'); });
 
-socket.on('main:wrong', () => { if (stage) stage.pulse('wrong'); Sfx.play('wrong'); fxVeil('wrong'); });
+socket.on('main:wrong', () => {
+  if (stage) stage.pulse('wrong');
+  Sfx.play('wrong');
+  fxVeil('wrong');
+  // La lettera non c'e': sul tabellone non compare niente, e senza questo `×0`
+  // il giocatore dopo la richiamerebbe.
+  callout.showOccurrences(0);
+});
 
 // --- Feedback bordo schermo: velo verde/rosso + shake sull'errore ---
 function fxVeil(kind) {
@@ -189,9 +302,17 @@ function fxVeil(kind) {
 // --- Tie-break + finalist ---
 socket.on('main:tiebreakStart', ({ segments, contenders }) => {
   currentPhase = 'tiebreak';
-  if (wheel) updateWheelLabels(segments);
+  ensureWheel(segments);
   document.getElementById('main-wheel-indicator').style.display = '';
-  document.getElementById('category-banner').textContent = 'SPAREGGIO';
+  setCategory('SPAREGGIO');
+  setTurnPill(null);
+  setExpressSkin(false);
+  setGiramoeSkin(false);
+  setTiebreakSkin(true);
+  renderTopBar(document.getElementById('game-topbar'), {
+    left: 'Fase 04 · Spareggio', leftTone: 'accent',
+    right: 'Gira chi è in parità'
+  });
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear();
   updateBoardStatus(null);
@@ -205,6 +326,9 @@ socket.on('main:finalist', ({ name, standings }) => {
   const entering = currentPhase !== 'finalist'; // su riconnessione non si rigioca l'animazione
   currentPhase = 'finalist';
   document.getElementById('finalist-name').textContent = name;
+  renderTopBar(document.getElementById('finalist-topbar'), {
+    left: 'Fase 05 · Gioco finale', leftTone: 'dim', right: 'Finalista', strong: name
+  });
   showScreen('finalist-screen');
   if (entering) scenes.play('finalista', { name, standings });
 });
@@ -214,15 +338,133 @@ socket.on('main:finalBoard', (b) => {
   currentPhase = 'final';
   hideBuzz();
   document.getElementById('final-category').textContent = b.category;
-  document.getElementById('final-board-tag').textContent = `Tabellone ${b.boardIndex + 1}/${b.totalBoards}`;
+  renderTopBar(document.getElementById('final-topbar'), {
+    left: 'Fase 05 · Gioco finale', leftTone: 'dim',
+    right: 'Finalista', strong: b.finalist
+  });
+  applyFinalBoard(b);
   renderFinalBoard(b.grid);
   applyPhaseScreen();
 });
 
-socket.on('main:finalTimer', ({ ms }) => {
-  const el = document.getElementById('final-timer');
-  el.textContent = Math.ceil(ms / 1000);
-  el.classList.toggle('low', ms <= 10000);
+// Le cinque vocali, scritte qui e non importate da board.js: quel modulo tira
+// dentro tutto il generatore di tabelloni per rispondere a una domanda da una
+// riga, e sulla TV non serve nient'altro di suo.
+const VOCALI = 'AEIOU';
+
+// Le tessere delle lettere: `kind` decide solo il vestito, il contenuto è la
+// lettera. `empty` è un posto ancora libero, non una lettera vuota.
+function renderTiles(host, items) {
+  host.innerHTML = '';
+  items.forEach((it) => {
+    const el = document.createElement('span');
+    el.className = 'tile is-' + it.kind;
+    if (it.letter) el.textContent = it.letter;
+    host.appendChild(el);
+  });
+}
+
+const FINAL_DETAILS = ['N R T E + 4', 'prima e ultima', 'vuoto · −3s'];
+
+function renderFinalCards(boardIndex, results) {
+  const host = document.getElementById('fin-cards');
+  host.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const done = i < boardIndex;
+    const stato = done ? (results[i] ? 'Risolto' : 'Perso')
+      : i === boardIndex ? 'In corso' : 'Da giocare';
+    const card = document.createElement('div');
+    card.className = 'fin-card'
+      + (i === boardIndex ? ' is-now' : done ? (results[i] ? ' is-won' : ' is-lost') : '');
+    const n = document.createElement('b');
+    n.textContent = '0' + (i + 1);
+    const info = document.createElement('div');
+    const s = document.createElement('span');
+    s.className = 'stato';
+    s.textContent = stato;
+    const d = document.createElement('span');
+    d.className = 'dett';
+    d.textContent = FINAL_DETAILS[i];
+    info.append(s, d);
+    card.append(n, info);
+    host.appendChild(card);
+  }
+}
+
+const FINAL_PILL = {
+  PICKING: 'Scegli 3 consonanti e 1 vocale',
+  RUNNING: 'Prenotati per rispondere',
+  BUZZED: 'Risposta in corso'
+};
+
+// I tre tabelloni si giocano in modo diverso, e la colonna di sinistra lo dice
+// cambiando contenuto invece che posto: 1 lettere regalate + 4 scelte, 2 la
+// regola (non si sceglie niente), 3 le chiamate senza limite di posti.
+const FINAL_RULES = [
+  null,
+  { lab: 'Prima e ultima', text: 'Prima e ultima lettera di ogni parola. Nessuna scelta: si va a colpo d’occhio.' },
+  { lab: 'Ogni errore', text: 'Una lettera assente costa 3 secondi.' }
+];
+const FINAL_PICK_CAP = [
+  'Scelte dal finalista — 3 consonanti + 1 vocale',
+  '',
+  'Chiamate dal finalista — consonanti illimitate + 1 vocale'
+];
+
+function applyFinalBoard(b) {
+  const given = document.getElementById('fin-given');
+  const givenCap = document.getElementById('fin-given-cap');
+  const picksRow = document.getElementById('fin-picks');
+  const picksCap = document.getElementById('fin-picks-cap');
+  const rule = document.getElementById('fin-rule');
+  const board1 = b.boardIndex === 0;
+  const board2 = b.boardIndex === 1;
+
+  renderTiles(given, (b.given || []).map(l => ({ letter: l, kind: 'given' })));
+  given.hidden = !board1;
+  givenCap.hidden = !board1;
+
+  const picks = (b.picks || []).map(p => ({
+    letter: p.letter,
+    kind: p.present ? (VOCALI.includes(p.letter) ? 'vowel' : 'pick') : 'wrong'
+  }));
+  // Quattro posti fissi solo sul tabellone 1: i buchi si vedono, così si capisce
+  // quante scelte restano senza doverle contare. Sul 3 non c'è un numero.
+  if (board1) while (picks.length < 4) picks.push({ kind: 'empty' });
+  renderTiles(picksRow, picks);
+  picksRow.hidden = board2;
+  picksCap.textContent = FINAL_PICK_CAP[b.boardIndex] || '';
+  picksCap.hidden = board2 || !picks.length;
+
+  const r = FINAL_RULES[b.boardIndex];
+  rule.hidden = !r;
+  if (r) {
+    document.getElementById('fin-rule-lab').textContent = r.lab;
+    document.getElementById('fin-rule-text').textContent = r.text;
+  }
+
+  renderFinalCards(b.boardIndex, b.results || []);
+  document.getElementById('fin-pill-text').textContent = FINAL_PILL[b.state] || '';
+}
+
+// La penalità del tabellone 3: il numero scatta e passa al magenta insieme alla
+// barra. Tre secondi in meno su un display che scorre non si vedrebbero.
+socket.on('main:finalPenalty', () => {
+  const clock = document.querySelector('#final-screen .fin-clock');
+  if (!clock) return;
+  clock.classList.remove('is-penalty');
+  void clock.offsetWidth; // riavvia l'animazione se due errori arrivano vicini
+  clock.classList.add('is-penalty');
+  // `&freeze=penalita` la lascia accesa: serve all'harness per fotografarla.
+  if (new URLSearchParams(location.search).get('freeze') === 'penalita') return;
+  setTimeout(() => clock.classList.remove('is-penalty'), 420);
+});
+
+socket.on('main:finalTimer', ({ ms, total }) => {
+  document.getElementById('final-timer').textContent = Math.ceil(ms / 1000);
+  const quota = total ? Math.max(0, Math.min(1, ms / total)) : 1;
+  document.getElementById('final-bar').style.width = (quota * 100).toFixed(1) + '%';
+  document.querySelector('#final-screen .fin-clock').classList.toggle('is-low', ms <= 10000);
 });
 
 socket.on('main:finalReveal', ({ positions }) => {
@@ -245,10 +487,29 @@ socket.on('main:envelopes', (view) => {
   const entering = currentPhase !== 'envelopes'; // solo la prima volta: poi sono aggiornamenti
   currentPhase = 'envelopes';
   hideBuzz();
+  renderTopBar(document.getElementById('envelopes-topbar'), {
+    left: 'Fase 06 · Le buste', leftTone: 'dim',
+    right: 'Finalista', strong: view.finalist
+  });
   renderEnvelopes(document.getElementById('envelopes-row'), view);
+  renderEnvelopeFoot(view);
   applyPhaseScreen();
   if (entering) scenes.play('buste');
 });
+
+// La barra bassa delle buste: gli esiti dei tre tabelloni e i cambi rimasti.
+// Gli esiti non hanno un campo loro, ma il colore delle buste è già quello —
+// una busta verde per ogni tabellone risolto.
+function renderEnvelopeFoot(view) {
+  const pips = document.getElementById('env-pips');
+  pips.innerHTML = '';
+  view.envelopes.forEach((e) => {
+    const pip = document.createElement('span');
+    if (e.color === 'green') pip.className = 'is-won';
+    pips.appendChild(pip);
+  });
+  document.getElementById('env-changes').textContent = String(view.changesLeft);
+}
 
 // Render display-only delle 3 buste (la TV principale).
 function renderEnvelopes(row, view) {
@@ -287,18 +548,12 @@ function renderFinalBoard(grid) {
 }
 
 function renderTiebreak(contenders, current) {
-  const bar = document.getElementById('players-bar');
-  bar.innerHTML = '';
-  contenders.forEach((c, i) => {
-    const el = document.createElement('div');
-    el.className = 'player-name glass-panel' + (i === current ? ' active' : '');
-    el.innerHTML = `<div class="pn-avatar">${c.name.charAt(0).toUpperCase()}</div>
-      <div class="pn-info">
-        <div class="pn-name">${c.name}</div>
-        <div class="pn-score">${c.value != null ? c.value : '—'}</div>
-      </div>`;
-    bar.appendChild(el);
-  });
+  renderPlayersBar(document.getElementById('players-bar'), contenders.map((c, i) => ({
+    name: c.name,
+    values: [c.value != null ? c.value : '—'],
+    state: i === current ? 'Al turno' : 'In attesa',
+    tone: i === current ? 'active' : null
+  })), ['Ruota']);
 }
 
 socket.on('main:playerDisconnected', () =>
@@ -308,18 +563,50 @@ socket.on('main:playerReconnected', () =>
 
 // --- rendering helpers ---
 
+const MAX_PLAYERS = 3;
+
 function updatePlayerSlots(players) {
-  for (let i = 0; i < 3; i++) {
-    const slot = document.getElementById(`slot-${i}`);
+  const host = document.getElementById('lobby-slots');
+  host.innerHTML = '';
+  let collegati = 0;
+
+  for (let i = 0; i < MAX_PLAYERS; i++) {
     const p = players[i];
-    slot.innerHTML = `${p ? p.name : '—'}<span class="slot-idx">P${i + 1}</span>`;
-    if (p) {
-      slot.classList.add('filled');
-      slot.classList.toggle('reconnecting', p.connected === false);
-    } else {
-      slot.classList.remove('filled', 'reconnecting');
-    }
+    const away = p && p.connected === false;
+    if (p && !away) collegati++;
+
+    const slot = document.createElement('div');
+    slot.className = 'lslot' + (p ? (away ? ' is-away' : '') : ' is-free');
+
+    const av = document.createElement('div');
+    av.className = 'av';
+    if (p) av.textContent = p.name.charAt(0).toUpperCase();
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    const nome = document.createElement('span');
+    nome.className = 'nome';
+    nome.textContent = p ? p.name : 'In attesa…'; // i nomi li scrivono i giocatori
+    const stato = document.createElement('span');
+    stato.className = 'stato';
+    // Il mockup scrive COLLEGATO / COLLEGATA, cioè decide il genere dal nome:
+    // sbaglia appena il nome non è quello che si aspetta. "IN LINEA" è
+    // invariabile e dice la stessa cosa.
+    stato.textContent = !p ? 'SLOT LIBERO' : away ? 'RICONNESSIONE…' : 'IN LINEA';
+    info.append(nome, stato);
+
+    const idx = document.createElement('span');
+    idx.className = 'idx';
+    idx.textContent = 'P' + (i + 1);
+
+    slot.append(av, info, idx);
+    host.append(slot);
   }
+
+  renderTopBar(document.getElementById('lobby-topbar'), {
+    left: "Sala d'attesa",
+    right: `${collegati} di ${MAX_PLAYERS} collegati`
+  });
 }
 
 function initMainWheel(segments) {
@@ -334,7 +621,19 @@ function initMainWheel(segments) {
   }
   window.__wheel = wheel; // hook di verifica manuale
   lastSegmentsKey = (segments || []).join('|');
+  // La ghiera si aggancia a --disc-cx/cy/r, che esistono solo da qui in poi:
+  // prima resterebbe disegnata alla misura di ripiego, un anello vuoto grande
+  // quanto tutta la canvas.
+  document.querySelector('#main-wheel-container .wheel-bezel').style.display = '';
   window.addEventListener('resize', () => wheel.resize());
+}
+
+// La ruota va creata anche entrando da Giramoe o spareggio: chi ricarica la TV
+// in quelle fasi riceve solo giramoeStart/tiebreakStart, e prima di questa
+// funzione restava senza ruota fino alla partita dopo.
+function ensureWheel(segments) {
+  if (!wheel) initMainWheel(segments);
+  else updateWheelLabels(segments);
 }
 
 // Il round express cambia le etichette della ruota (un PASSA diventa EXPRESS); ridisegna solo se cambiano.
@@ -387,20 +686,29 @@ function revealSequence(positions) {
   });
 }
 
+let lastTurn = null;
+
 function renderScores(scores, currentTurn) {
-  const bar = document.getElementById('players-bar');
-  bar.innerHTML = '';
-  scores.forEach((s, i) => {
-    const el = document.createElement('div');
-    el.className = 'player-name glass-panel' + (i === currentTurn ? ' active' : '');
-    el.innerHTML = `<div class="pn-avatar">${s.name.charAt(0).toUpperCase()}</div>
-      <div class="pn-info">
-        <div class="pn-name">${s.name}</div>
-        <div class="pn-score">Turno: ${s.roundPoints}</div>
-        <div class="pn-bank">Banca: ${s.bank}</div>
-      </div>`;
-    bar.appendChild(el);
-  });
+  // Cambio di turno: i tre moduli sotto la ruota ripartono da vuoti, spicchio
+  // compreso — il valore del giro precedente non vale piu' per chi entra ora.
+  if (lastTurn !== null && currentTurn !== lastTurn) callout.reset();
+  lastTurn = currentTurn;
+
+  renderPlayersBar(document.getElementById('players-bar'), scores.map((s, i) => ({
+    name: s.name,
+    values: [s.roundPoints, s.bank],
+    // "Raffica" e non "In express": la colonna dello stato è larga quanto avanza
+    // dopo due punteggi a quattro cifre, e "In express" ci finiva sopra.
+    state: i === currentTurn ? (expressActive ? 'Raffica' : 'Al turno') : 'In attesa',
+    tone: i === currentTurn ? (expressActive ? 'express' : 'active') : null
+  })), ['Turno', 'Banca']);
+
+  const now = scores[currentTurn];
+  setTurnPill(now ? now.name : null, expressActive);
+  if (expressActive && now) {
+    express.player(now.name);
+    express.points(num(now.roundPoints));
+  }
 }
 
 function showResult(text) {
@@ -429,21 +737,27 @@ socket.on('main:expressRound', ({ segments }) => {
   currentPhase = 'express';
   updateWheelLabels(segments);
   document.getElementById('main-wheel-indicator').style.display = '';
-  document.getElementById('category-banner').textContent = '';
+  setCategory('');
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear(); // via le tessere del Triplete, non c'è più il suo tabellone
   updateBoardStatus(null);
+  setExpressSkin(false); // il round comincia normale: la pelle arriva con la raffica
+  express.reset();
   if (!entering) return applyPhaseScreen();
   showTitleCard('EXPRESS');
   scenes.play('expressWheel').then(() => { if (currentPhase === 'express') showScreen('game-screen'); });
 });
 
+// La pelle magenta la accende `main:gameState` col campo `expressActive`: qui
+// c'è solo lo stacco. Il broadcast dei punteggi che segue porta lo stato vero.
 socket.on('main:expressStart', () => {
   showTitleCard('EXPRESS');
   scenes.play('express').then(() => { if (currentPhase === 'express') showScreen('game-screen'); });
 });
 
 socket.on('main:expressBankrupt', () => {
+  setExpressSkin(false);
+  express.reset();
   if (stage) stage.pulse('wrong');
   Sfx.play('wrong');
   fxVeil('wrong');
@@ -454,12 +768,15 @@ socket.on('main:expressBankrupt', () => {
 socket.on('main:giramoeStart', ({ segments }) => {
   const entering = currentPhase !== 'giramoe'; // su riconnessione il server rimanda l'evento
   currentPhase = 'giramoe';
-  if (wheel) updateWheelLabels(segments);
+  ensureWheel(segments);
   document.getElementById('main-wheel-indicator').style.display = '';
-  document.getElementById('category-banner').textContent = '';
+  setCategory('');
   document.getElementById('board-grid').innerHTML = '';
   if (stage) stage.board.clear();
   updateBoardStatus(null);
+  setExpressSkin(false); // dal round express si esce: via la pelle magenta
+  setTiebreakSkin(false);
+  setGiramoeSkin(true);
   if (!entering) return applyPhaseScreen();
   showTitleCard('GIRAMOE');
   scenes.play('giramoe').then(() => { if (currentPhase === 'giramoe') showScreen('game-screen'); });
@@ -467,60 +784,128 @@ socket.on('main:giramoeStart', ({ segments }) => {
 
 socket.on('main:giramoeBoard', (b) => {
   currentPhase = 'giramoe';
-  document.getElementById('category-banner').textContent = b.category;
+  setGiramoeSkin(true);
+  setCategory(b.category);
+  renderTopBar(document.getElementById('game-topbar'), {
+    left: 'Fase 04 · Tabellone finale', leftTone: 'accent',
+    right: 'Un solo tabellone · una consonante a testa'
+  });
   renderBoard(b.grid);
   applyPhaseScreen();
 });
 
-socket.on('main:giramoeScores', ({ scores, currentTurn }) => renderGiramoeScores(scores, currentTurn));
+socket.on('main:giramoeScores', ({ scores, currentTurn, multiplier }) => {
+  document.getElementById('gi-mult').textContent = multiplier != null ? num(multiplier) : '—';
+  renderGiramoeScores(scores, currentTurn);
+});
 
 socket.on('main:giramoeBuzzed', ({ name }) => {
   Sfx.play('buzzer');
   showBuzz(`${name} risponde!`);
+  closeBuzzWindow();
 });
 
-socket.on('main:giramoeResume', () => hideBuzz());
+socket.on('main:giramoeResume', () => { hideBuzz(); closeBuzzWindow(); });
 
 socket.on('main:giramoeSolved', ({ name, points }) => {
   if (stage) stage.pulse('correct');
   hideBuzz();
+  closeBuzzWindow();
   fxVeil('correct');
   showResult(`${name} +${points}`);
 });
 
+// La finestra di prenotazione: 5 secondi in cui chiunque può risolvere.
+socket.on('main:giramoeWindow', ({ ms, total, name }) => openBuzzWindow(ms, total, name));
+
+function setGiramoeSkin(on) {
+  document.getElementById('game-screen').classList.toggle('is-giramoe', on);
+  if (!on) closeBuzzWindow();
+}
+
+// Nello spareggio si gira e basta: nessuno chiama lettere, e i due moduli
+// Lettera/Occorrenze resterebbero vuoti per tutta la durata della schermata.
+function setTiebreakSkin(on) {
+  document.getElementById('game-screen').classList.toggle('is-tiebreak', on);
+}
+
+let windowTimer = null;
+function openBuzzWindow(ms, total, name) {
+  clearInterval(windowTimer);
+  const screen = document.getElementById('game-screen');
+  const ring = document.getElementById('bw-ring');
+  const count = document.getElementById('bw-count');
+  document.getElementById('bw-who').textContent = name ? `${name} può risolvere` : '';
+  screen.classList.add('is-window');
+  const end = Date.now() + ms;
+  const paint = () => {
+    const left = end - Date.now();
+    if (left <= 0) return closeBuzzWindow();
+    // L'anello si svuota: la parte piena è il tempo che resta sul totale.
+    ring.style.setProperty('--deg', (360 * left / total).toFixed(1) + 'deg');
+    count.textContent = String(Math.ceil(left / 1000));
+  };
+  paint();
+  // `&freeze=finestra` tiene l'anello fermo dov'è: serve all'harness, che
+  // altrimenti avrebbe 5 secondi per fare lo scatto (vedi callout.js).
+  if (new URLSearchParams(location.search).get('freeze') === 'finestra') return;
+  windowTimer = setInterval(paint, 50);
+}
+
+function closeBuzzWindow() {
+  clearInterval(windowTimer);
+  windowTimer = null;
+  document.getElementById('game-screen').classList.remove('is-window');
+}
+
+// Colonne "Giramoe" e "Banca". `Usata`/`Prenotabile` si deducono dal turno:
+// giramoeScores() non porta un flag per giocatore, e chi è di turno è
+// esattamente chi non ha ancora speso la sua consonante.
 function renderGiramoeScores(scores, currentTurn) {
-  const bar = document.getElementById('players-bar');
-  bar.innerHTML = '';
-  scores.forEach((s, i) => {
-    const el = document.createElement('div');
-    el.className = 'player-name glass-panel' + (i === currentTurn ? ' active' : '');
-    el.innerHTML = `<div class="pn-avatar">${s.name.charAt(0).toUpperCase()}</div>
-      <div class="pn-info">
-        <div class="pn-name">${s.name}</div>
-        <div class="pn-score">Punti: ${s.points}</div>
-        <div class="pn-bank">Banca: ${s.bank != null ? s.bank : 0}</div>
-      </div>`;
-    bar.appendChild(el);
-  });
+  renderPlayersBar(document.getElementById('players-bar'), scores.map((s, i) => ({
+    name: s.name,
+    values: [s.points, s.bank != null ? s.bank : 0],
+    state: i === currentTurn ? 'Prenotabile' : 'Usata',
+    tone: i === currentTurn ? 'active' : null
+  })), ['Giramoe', 'Banca']);
+  const now = scores[currentTurn];
+  setTurnPill(now ? now.name : null);
 }
 
 socket.on('main:tripleteBoard', (b) => {
   currentPhase = 'triplete';
   tripleteBoardReady = true;
   document.getElementById('triplete-category').textContent = b.category;
-  document.getElementById('triplete-board-tag').textContent = `IL TRIPLETE · ${b.boardNumber}/${b.totalBoards}`;
+  // "Bonus round" e non "Triplete": il nome del round e' gia' scritto grande
+  // nella colonna di sinistra, ripeterlo in barra alta non aggiunge niente.
+  renderTopBar(document.getElementById('triplete-topbar'), {
+    left: 'Fase 02 · Bonus round', leftTone: 'dim',
+    board: { number: b.boardNumber, total: b.totalBoards }
+  });
   renderTripleteBoard(b.grid);
   hideBuzz();
+  setTripleteStatus(false);
   applyPhaseScreen();
 });
+
+// Riga sotto il tabellone: dice sempre cosa sta facendo la rivelazione, perche'
+// da lontano la differenza fra "ferma" e "lenta" non si vede.
+function setTripleteStatus(paused) {
+  document.getElementById('triplete-status').textContent = paused
+    ? 'Rivelazione in pausa — prenotazione in corso'
+    : 'Rivelazione in corso';
+}
 
 socket.on('main:tripleteReveal', ({ cell }) => revealTripleteCell(cell));
 socket.on('main:tripleteFlash', ({ cell, ms }) => flashTripleteCell(cell, ms));
 socket.on('main:tripleteScores', ({ scores }) => renderTripleteScores(scores));
 
+// "ha prenotato" e non "si è prenotato/a": il nome di chi gioca non dice il
+// genere, e la TV non deve tirare a indovinare davanti a tutti.
 socket.on('main:tripleteBuzzed', ({ name }) => {
   Sfx.play('buzzer');
-  showBuzz(`${name} si è prenotato!`);
+  showBuzz(`${name} ha prenotato!`);
+  setTripleteStatus(true);
 });
 
 socket.on('main:tripleteResume', () => {
@@ -528,6 +913,7 @@ socket.on('main:tripleteResume', () => {
   Sfx.play('wrong');
   fxVeil('wrong');
   hideBuzz();
+  setTripleteStatus(false);
 });
 
 socket.on('main:tripleteSolved', ({ board, name, points }) => {
@@ -620,23 +1006,16 @@ function flashTripleteCell(cell, ms) {
   }, ms);
 }
 
+// Una sola colonna: nel Triplete la banca non si muove, il numero che cambia è
+// il punteggio del round. Gli stati sono invariabili di proposito: da un nome
+// non si deduce il genere di chi gioca.
 function renderTripleteScores(scores) {
-  const bar = document.getElementById('triplete-players-bar');
-  bar.innerHTML = '';
-  scores.forEach((s) => {
-    const el = document.createElement('div');
-    let cls = 'player-name glass-panel';
-    if (s.buzzed) cls += ' buzzed';
-    else if (s.locked) cls += ' locked';
-    el.className = cls;
-    el.innerHTML = `<div class="pn-avatar">${s.name.charAt(0).toUpperCase()}</div>
-      <div class="pn-info">
-        <div class="pn-name">${s.name}</div>
-        <div class="pn-score">Triplete: ${s.points}</div>
-        <div class="pn-bank">Banca: ${s.bank}</div>
-      </div>`;
-    bar.appendChild(el);
-  });
+  renderPlayersBar(document.getElementById('triplete-players-bar'), scores.map((s) => ({
+    name: s.name,
+    values: [s.points],
+    state: s.buzzed ? 'Ha prenotato' : s.locked ? 'Prenotazione bloccata' : 'Può prenotarsi',
+    tone: s.buzzed ? 'buzzed' : s.locked ? 'locked' : null
+  })), ['Triplete']);
 }
 
 function showBuzz(text) {
