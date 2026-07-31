@@ -51,20 +51,12 @@
 .glass-input:focus { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.07); }
 .glass-input::placeholder { color: var(--ink-faint); }
 
-/* Telefoni: i pulsanti d'azione primaria (avvio/giro) sono pieni ciano.
-   Fuori da questa lista i bottoni del giocatore, che ora sono `.pbtn` e hanno
-   tre stati: un selettore con l'id vinceva sempre e li teneva ciano anche da
-   spenti. */
-#btn-set-board, #btn-go-triplete, #btn-triplete-start, #btn-giramoe-setboard,
-#btn-giramoe-spin, #btn-start-final {
-  background: var(--accent);
-  color: #000;
-  border-color: var(--accent);
-}
-#btn-set-board:hover, #btn-go-triplete:hover, #btn-triplete-start:hover, #btn-giramoe-setboard:hover,
-#btn-giramoe-spin:hover, #btn-start-final:hover {
-  background: var(--accent); color: #000; border-color: var(--accent);
-}
+/* Qui c'era una lista di id che rendeva ciano pieno i pulsanti d'azione
+   primaria. Un selettore con l'id batte qualunque classe: quei bottoni
+   restavano accesi anche da spenti, e la cosa è saltata fuori tre volte in
+   tre schermate diverse. Ora il colore lo decidono le classi — `.pbtn` sul
+   telefono del giocatore, `.abtn` sulla console — che sanno anche stare
+   spente. */
 
 .hairline { height: 1px; background: var(--hairline); border: none; }
 

@@ -6,6 +6,7 @@ const socket = window.__mockSocket || io();
 // La cornice comune della console: caricata come modulo da admin.html e appesa
 // a window, perché questo file è uno script classico (vedi js/admin/shell.js).
 const AdminShell = window.AdminShell;
+const pad2 = (n) => String(n).padStart(2, '0');
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -59,16 +60,35 @@ socket.on('admin:phraseCheck', (r) => {
 
 // --- Triplete ---
 document.getElementById('btn-go-triplete').addEventListener('click', () => socket.emit('admin:startTriplete'));
-document.getElementById('btn-triplete-start').addEventListener('click', () => {
-  const title = document.getElementById('tr-title').value.trim();
-  const phrases = [1, 2, 3].map(i => document.getElementById(`tr-phrase-${i}`).value.trim());
-  if (!title || phrases.some(p => !p)) { showTripleteError('Inserisci il titolo e tutte e 3 le frasi'); return; }
-  showTripleteError('');
-  socket.emit('admin:tripleteStart', { title, phrases });
-});
-document.getElementById('btn-triplete-correct').addEventListener('click', () => socket.emit('admin:tripleteCorrect'));
-document.getElementById('btn-triplete-wrong').addEventListener('click', () => socket.emit('admin:tripleteWrong'));
+function tripleteFields() {
+  return {
+    title: document.getElementById('tr-title').value.trim(),
+    phrases: [1, 2, 3].map(i => document.getElementById(`tr-phrase-${i}`).value.trim())
+  };
+}
+
+// Il bottone lo costruisce renderTriplete dentro la barra d'azione: qui c'è
+// solo quello che riguarda i campi, che invece stanno nell'HTML.
 socket.on('admin:tripleteError', (err) => showTripleteError(err));
+
+// Il bottone dice sempre cosa manca, e si accende da solo appena i campi sono
+// pieni: senza, l'unico modo di scoprire che manca una frase è premere e
+// leggere un errore.
+['tr-title', 'tr-phrase-1', 'tr-phrase-2', 'tr-phrase-3'].forEach(id => {
+  document.getElementById(id).addEventListener('input', refreshTripleteSetup);
+});
+
+function refreshTripleteSetup() {
+  const { title, phrases } = tripleteFields();
+  const vuote = phrases.filter(p => !p).length;
+  const pronto = !!title && vuote === 0;
+  const btn = document.getElementById('btn-triplete-start');
+  if (btn) btn.disabled = !pronto;
+  showTripleteError(pronto ? ''
+    : !title ? 'Manca l’argomento'
+      : vuote === 1 ? `Manca la ${['prima', 'seconda', 'terza'][phrases.findIndex(p => !p)]} frase`
+        : `Mancano ${vuote} frasi`);
+}
 
 // --- Giramoe ---
 document.getElementById('btn-giramoe-setboard').addEventListener('click', () => {
@@ -363,7 +383,10 @@ function renderAdminEnvelopes(view) {
 }
 
 function showTripleteError(msg) {
-  document.getElementById('triplete-error').textContent = msg;
+  const why = document.getElementById('tr-why');
+  if (!why) return;
+  why.textContent = msg;
+  why.hidden = !msg;
 }
 
 function renderGiramoe(gr) {
@@ -412,38 +435,70 @@ function renderGiramoe(gr) {
 function renderTriplete(tr) {
   const setup = document.getElementById('triplete-setup');
   const live = document.getElementById('triplete-live');
-  const actions = document.getElementById('triplete-actions');
+  const bar = document.getElementById('triplete-actions');
+  const started = !!(tr && tr.started);
 
-  if (!tr || !tr.started) {
-    setup.classList.remove('hidden');
-    live.classList.add('hidden');
-    actions.classList.add('hidden');
+  setup.classList.toggle('hidden', started);
+  live.classList.toggle('hidden', !started);
+
+  AdminShell.renderTopBar(document.getElementById('tr-topbar'), {
+    title: 'IL TRIPLETE',
+    phase: started ? `${pad2(tr.boardNumber)}/${pad2(tr.totalBoards)}` : 'Fase 02 · setup',
+    pips: started ? { done: tr.boardNumber, total: tr.totalBoards } : null
+  });
+
+  if (!started) {
+    AdminShell.renderActions(bar, {
+      buttons: [{ id: 'btn-triplete-start', label: 'Avvia il Triplete', tone: 'solid' }]
+    });
+    const why = document.createElement('span');
+    why.className = 'ad-why';
+    why.id = 'tr-why';
+    bar.append(why);
+    document.getElementById('btn-triplete-start').addEventListener('click', () => {
+      const { title, phrases } = tripleteFields();
+      if (!title || phrases.some(p => !p)) return;
+      socket.emit('admin:tripleteStart', { title, phrases });
+    });
+    refreshTripleteSetup();
     return;
   }
 
-  setup.classList.add('hidden');
-  live.classList.remove('hidden');
-  actions.classList.remove('hidden');
-
-  document.getElementById('triplete-board-counter').textContent =
-    `Tabellone ${tr.boardNumber} / ${tr.totalBoards}` + (tr.title ? ` — ${tr.title}` : '');
-
-  const buzzed = tr.buzzedBy != null;
-  document.getElementById('btn-triplete-correct').disabled = !buzzed;
-  document.getElementById('btn-triplete-wrong').disabled = !buzzed;
+  const chi = tr.buzzedBy != null ? tr.players.find(p => p.id === tr.buzzedBy) : null;
+  const alert = document.getElementById('tr-alert');
+  alert.classList.toggle('is-idle', !chi);
+  document.getElementById('tr-alert-t').textContent =
+    chi ? `${chi.name} si è prenotato` : 'Rivelazione in corso';
+  document.getElementById('tr-alert-s').textContent = chi
+    ? 'rivelazione in pausa'
+    : (tr.boardNumber === 3 ? 'lettere che lampeggiano' : 'caselle a caso ogni 1,5s');
 
   const list = document.getElementById('triplete-scores');
   list.innerHTML = '';
   tr.players.forEach((p) => {
-    const item = document.createElement('div');
-    item.className = 'admin-player-item glass-panel';
-    if (p.buzzed) {
-      item.style.border = '1px solid rgba(245, 179, 1, 0.7)';
-      item.style.boxShadow = '0 0 12px rgba(245, 179, 1, 0.3)';
+    const pts = document.createElement('span');
+    pts.className = 'ar-pts';
+    pts.textContent = AdminShell.num(p.points);
+    const row = AdminShell.playerRow({ name: p.name });
+    if (p.locked) {
+      const tag = document.createElement('span');
+      tag.className = 'ar-locked';
+      tag.textContent = 'Bloccata';
+      row.append(tag);
+      row.classList.add('is-locked');
     }
-    const tag = p.buzzed ? ' 🔔' : (p.locked ? ' ⛔' : '');
-    item.innerHTML = `<span>${p.name}${tag}</span>
-      <span class="admin-scorenums">P: <b>${p.points}</b> · B: <b>${p.bank}</b></span>`;
-    list.appendChild(item);
+    row.append(pts);
+    if (p.buzzed) row.classList.add('is-buzzed');
+    list.append(row);
   });
+
+  AdminShell.renderActions(bar, {
+    hint: chi ? `${chi.name} ha detto la frase` : 'Aspetta che qualcuno si prenoti',
+    buttons: [
+      { id: 'btn-triplete-correct', label: 'Indovinata', tone: 'accent', disabled: !chi },
+      { id: 'btn-triplete-wrong', label: 'Sbagliata', tone: 'plain', disabled: !chi }
+    ]
+  });
+  document.getElementById('btn-triplete-correct').addEventListener('click', () => socket.emit('admin:tripleteCorrect'));
+  document.getElementById('btn-triplete-wrong').addEventListener('click', () => socket.emit('admin:tripleteWrong'));
 }

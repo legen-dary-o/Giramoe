@@ -91,28 +91,52 @@
     </div>
   </div>
 
-  <!-- Triplete: control -->
+  <!-- 1r setup · 1s live -->
   <div id="admin-triplete" class="screen hidden">
-    <div class="admin-container">
-      <h1>IL TRIPLETE</h1>
-      <div class="admin-section" id="triplete-setup">
-        <h2>Argomento e 3 frasi</h2>
-        <input type="text" id="tr-title" class="glass-input" placeholder="Titolo / argomento" autocomplete="off">
-        <input type="text" id="tr-phrase-1" class="glass-input" placeholder="Frase 1" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="tr-phrase-2" class="glass-input" placeholder="Frase 2" autocomplete="off" style="margin-top:8px;">
-        <input type="text" id="tr-phrase-3" class="glass-input" placeholder="Frase 3" autocomplete="off" style="margin-top:8px;">
-        <button class="glass-button" id="btn-triplete-start" style="margin-top:10px;">Avvia il Triplete</button>
-        <div class="board-error" id="triplete-error"></div>
+    <div class="ad-col has-bar">
+      <div class="ad-topbar" id="tr-topbar"></div>
+
+      <!-- 1r · argomento e tre frasi -->
+      <div id="triplete-setup">
+        <div class="acard">
+          <span class="alab">Argomento &mdash; uguale per tutti</span>
+          <input type="text" id="tr-title" class="afield" placeholder="Saggezza popolare" autocomplete="off">
+        </div>
+        <div class="acard">
+          <span class="alab">Le tre frasi &mdash; 1.000 ciascuna</span>
+          <div class="afield-n"><span class="n">1</span><input type="text" id="tr-phrase-1" class="afield" placeholder="Prima frase" autocomplete="off"></div>
+          <div class="afield-n"><span class="n">2</span><input type="text" id="tr-phrase-2" class="afield" placeholder="Seconda frase" autocomplete="off"></div>
+          <div class="afield-n"><span class="n">3</span><input type="text" id="tr-phrase-3" class="afield" placeholder="Terza frase" autocomplete="off"></div>
+          <p class="ad-note">Tutte e tre indovinate: 5.000 invece di 3.000</p>
+        </div>
+        <div class="acard is-quiet">
+          <span class="alab">Come si rivela</span>
+          <p class="ad-rule">Tabelloni 1 e 2: caselle a caso ogni 1,5s. Tabellone 3: lettere che lampeggiano.</p>
+        </div>
       </div>
-      <div class="admin-section hidden" id="triplete-live">
-        <h2 id="triplete-board-counter">Tabellone 1 / 3</h2>
-        <div class="admin-player-list" id="triplete-scores"></div>
-      </div>
-      <div class="admin-section admin-actions hidden" id="triplete-actions">
-        <button class="glass-button" id="btn-triplete-correct" disabled>Frase indovinata</button>
-        <button class="glass-button" id="btn-triplete-wrong" disabled>Frase sbagliata</button>
+
+      <!-- 1s · partita in corso -->
+      <div id="triplete-live" class="hidden">
+        <div class="acard is-alert" id="tr-alert">
+          <span class="bell" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          </span>
+          <div class="tx">
+            <span class="t" id="tr-alert-t">Rivelazione in corso</span>
+            <span class="s" id="tr-alert-s">nessuno si è ancora prenotato</span>
+          </div>
+        </div>
+        <div class="acard">
+          <span class="alab">Punti Triplete</span>
+          <div id="triplete-scores"></div>
+        </div>
+        <div class="acard is-quiet">
+          <span class="alab">Se sbaglia</span>
+          <p class="ad-rule">Resta bloccato e la rivelazione riprende da dov&rsquo;era, senza azzerarsi.</p>
+        </div>
       </div>
     </div>
+    <div class="ad-bar" id="triplete-actions"></div>
   </div>
 
   <!-- Giramoe (final wheel board) -->

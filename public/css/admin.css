@@ -332,6 +332,71 @@
 .abtn.is-card:disabled { background: rgba(48, 184, 255, 0.25); color: rgba(0, 0, 0, 0.55); }
 .abtn.is-mono { font: 700 16px var(--font-mono); letter-spacing: 3px; text-transform: none; }
 
+/* Nota e regola dentro una scheda: la prima è una postilla, la seconda una
+   frase da leggere. Stessa famiglia, corpo diverso. */
+.ad-rule {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* I gruppi di schede si impilano come la colonna: senza, i due blocchi
+   alternativi di una schermata (setup / live) collasserebbero senza spazio. */
+#triplete-setup, #triplete-live { display: flex; flex-direction: column; gap: 14px; }
+#triplete-setup.hidden, #triplete-live.hidden { display: none; }
+
+/* === 1s · TRIPLETE LIVE === */
+
+/* La scheda d'allarme: bianca e non ciano, perché non è un'informazione ma
+   un'interruzione — qualcuno ha schiacciato e la rivelazione si è fermata. */
+.acard.is-alert {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: rgba(40, 40, 44, 0.9);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.08);
+}
+/* Da ferma (nessuno prenotato) resta una scheda come le altre */
+.acard.is-alert.is-idle {
+  background: var(--panel);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: none;
+}
+.acard.is-alert .bell { flex: none; display: inline-flex; width: 26px; height: 26px; color: var(--ink); }
+.acard.is-alert.is-idle .bell { color: var(--ink-faint); }
+.acard.is-alert .bell svg { width: 100%; height: 100%; }
+.acard.is-alert .tx { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.acard.is-alert .t { font: 600 19px -apple-system, sans-serif; }
+.acard.is-alert.is-idle .t { font-size: 17px; color: var(--ink-soft); }
+.acard.is-alert .s { font-family: var(--font-mono); font-size: 11.5px; color: rgba(245, 245, 247, 0.5); }
+
+#triplete-scores { display: flex; flex-direction: column; gap: 10px; }
+/* Punti del Triplete: numero grosso a destra, come sulla TV */
+.ar-pts {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+}
+/* Chi ha schiacciato: bordo chiaro, non ciano — il ciano qui è del turno, e
+   nel Triplete il turno non esiste. */
+.arow.is-buzzed { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.28); }
+.arow.is-buzzed .ar-name { color: var(--ink); }
+.arow.is-locked { opacity: 0.45; }
+.ar-locked {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 2px;
+  color: rgba(245, 245, 247, 0.5);
+}
+.ar-locked + .ar-pts { margin-left: 12px; }
+
 /* === 1q · TRE TABELLONI FATTI === */
 
 .ad-pips.is-big i { width: 44px; height: 6px; border-radius: 3px; }

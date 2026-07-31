@@ -184,7 +184,7 @@ in Space Mono 700 16px ls 3px.
 
 **Files:** `public/admin.html`, `public/css/admin.css`, `public/js/admin.js`, `fixtures.mjs`
 
-- [ ] **Step 1: `1r`**
+- [x] **Step 1: `1r`**
 
 Barra alta `IL TRIPLETE` / `Fase 02 · setup`. Scheda argomento (`ARGOMENTO — UGUALE PER
 TUTTI`), scheda con le tre frasi numerate (numero Syne 20px ciano + campo) e la nota
@@ -192,7 +192,7 @@ TUTTI`), scheda con le tre frasi numerate (numero Syne 20px ciano + campo) e la 
 spiegazione dei tre tabelloni. Barra in basso: `AVVIA IL TRIPLETE` spento con la nota che
 dice cosa manca (`Manca la terza frase`) — calcolata sui campi vuoti, non un testo fisso.
 
-- [ ] **Step 2: `1s`**
+- [x] **Step 2: `1s`**
 
 Scheda di notifica con la campanella: `Marco si è prenotato` + `rivelazione in pausa`
 (quando nessuno è prenotato, la scheda dice a che punto è la rivelazione).
@@ -201,7 +201,7 @@ bloccato è spento e ha la pillola `BLOCCATA`, il punteggio è Syne 800 22px.
 Scheda `SE SBAGLIA` con la regola. Barra in basso: `INDOVINATA` + `SBAGLIATA`, sopra
 `MARCO HA DETTO LA FRASE`; entrambi spenti finché nessuno è prenotato.
 
-- [ ] **Step 3: verifica `?mock=1r`, `1s`; test verdi; commit**
+- [x] **Step 3: verifica `?mock=1r`, `1s`; test verdi; commit**
 
 ---
 

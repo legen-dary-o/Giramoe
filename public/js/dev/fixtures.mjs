@@ -391,7 +391,7 @@ const ADMIN = {
   '1s': () => [['admin:state', admin({
     phase: 'triplete',
     triplete: {
-      started: true, title: 'SAGGEZZA POPOLARE', boardNumber: 1, totalBoards: 3,
+      started: true, title: 'SAGGEZZA POPOLARE', boardNumber: 2, totalBoards: 3,
       state: 'BUZZED', buzzedBy: 0,
       players: [
         { id: 0, name: 'Marco',  points: 1000, bank: 3200, locked: false, buzzed: true },
