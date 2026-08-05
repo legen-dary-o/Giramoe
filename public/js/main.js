@@ -155,17 +155,27 @@ socket.on('main:scores', ({ scores, currentTurn, expressActive }) => {
 
 socket.on('main:spin', ({ winningSegment, spins, value }) => {
   if (stage) stage.pulse('spin');
-  callout.showWedge(wedgeLabel(value));
-  if (!wheel) return;
-  setWheelZoom(true);
-  Sfx.startSpin();
-  wheel.onSpinEnd = () => {
+  // L'atterraggio: tutto quello che si può sapere del giro si scrive QUI, quando
+  // la ruota si è fermata. Lo spicchio stava all'arrivo dell'evento, cioè sei
+  // secondi prima: restava a schermo per tutta l'animazione e diceva in anticipo
+  // dove la ruota stava per fermarsi.
+  let landed = false;
+  const land = () => {
+    if (landed) return; // ci arrivano sia onSpinEnd sia la scadenza di scorta
+    landed = true;
     Sfx.stopSpin();
     setWheelZoom(false); // si torna al tabellone quando la ruota si ferma
+    callout.showWedge(wedgeLabel(value));
     showResult(String(value).toUpperCase());
   };
+  if (!wheel) return land(); // niente WebGL: nessuna animazione da aspettare
+  setWheelZoom(true);
+  Sfx.startSpin();
+  wheel.onSpinEnd = land;
   wheel.spinTo(winningSegment, spins, 6000);
-  setTimeout(() => { Sfx.stopSpin(); setWheelZoom(false); }, 6800); // fallback se rAF è stato throttlato
+  // Scadenza di scorta: se rAF è stato throttlato (scheda in secondo piano)
+  // onSpinEnd non parte mai, e senza questa lo spicchio non comparirebbe più.
+  setTimeout(land, 6800);
 });
 
 // Gli spicchi speciali non hanno un numero: nel modulo va il loro simbolo, lo

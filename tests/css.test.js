@@ -158,3 +158,90 @@ test('le pagine non caricano più style.css', () => {
   }
   assert.ok(!fs.existsSync(path.join(PUBLIC, 'css', 'style.css')), 'style.css esiste ancora');
 });
+
+// Terzo modo di sbagliare invisibile, e il più cattivo perché si vede solo su un
+// telefono: `background:` in forma abbreviata con dentro SOLO dei gradienti
+// azzera `background-color` a `transparent`. Il fondo della pagina (la "canvas")
+// prende il colore dell'elemento radice e lo stende su TUTTA la superficie, ma
+// le immagini di sfondo no: quelle restano incollate al riquadro di html, alto
+// `100%`. Fuori da quel riquadro non resta niente da dipingere e il browser usa
+// il suo bianco. Su desktop e su Android non si nota; su iPhone quel "fuori"
+// esiste sempre — le due strisce in cima e in fondo, dove Safari apre e chiude
+// le sue barre — ed erano bianche.
+// I commenti vanno via prima di leggere i selettori: `([^{}]+){` prende tutto
+// quello che precede la graffa, commento compreso, e "/* … */ html, body" non è
+// uguale a "html, body".
+const senzaCommenti = (css) => css.replace(/\/\*[\s\S]*?\*\//g, ' ');
+
+function blocchiDi(css, selettore) {
+  const out = [];
+  for (const m of senzaCommenti(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (norm(m[1]) === selettore) out.push(m[2]);
+  }
+  return out;
+}
+
+test('la radice ha un colore di fondo, non solo dei gradienti', () => {
+  const css = fs.readFileSync(path.join(PUBLIC, 'css', 'tokens.css'), 'utf8');
+  const blocchi = blocchiDi(css, 'html, body');
+  assert.ok(blocchi.length, 'tokens.css non ha più un blocco `html, body`');
+  for (const decl of blocchi) {
+    const abbreviata = decl.match(/(?:^|[;{])\s*background\s*:([^;}]+)/);
+    assert.ok(!abbreviata || /#|rgb|hsl|var\(--bg/.test(abbreviata[1]),
+      '`background:` abbreviata senza colore: azzera background-color e la canvas resta bianca');
+    assert.ok(/background-color\s*:/.test(decl),
+      'html, body senza `background-color`: su iPhone la canvas fuori dal riquadro resta bianca');
+  }
+});
+
+test('ogni pagina dice a Safari di che colore sono le sue barre', () => {
+  for (const page of PAGES) {
+    const html = fs.readFileSync(path.join(PUBLIC, page), 'utf8');
+    assert.match(html, /<meta\s+name="theme-color"/,
+      `${page} non ha <meta name="theme-color">: su iPhone le barre di Safari restano chiare`);
+  }
+});
+
+// Quarto modo di sbagliare invisibile su uno schermo grande: in una colonna
+// flex `flex-shrink` vale 1 di default. Quando il contenuto supera l'altezza del
+// contenitore i figli si schiacciano INVECE di far comparire la barra di
+// scorrimento, e il deficit non si spalma: la ruota (aspect-ratio) e la tastiera
+// (griglia) hanno un'altezza minima pari alla loro, quindi non cedono niente, e
+// tutto finisce sui due bottoni — gli unici la cui altezza minima automatica (una
+// riga di testo) sta molto sotto quella dichiarata. Su un iPhone in Safari, dove
+// le barre si mangiano ~150px, "Gira la ruota" passava da 58px a 17px.
+// A 812px di finestra non succede: solo un test sul sorgente lo tiene fermo.
+test('le schermate telefono che scorrono non schiacciano i propri figli', () => {
+  const css = senzaCommenti(fs.readFileSync(path.join(PUBLIC, 'css', 'phone.css'), 'utf8'));
+  const regole = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+  // Solo le colonne delle schermate: `.samiro-body` scorre anche lei, ma è un
+  // pannello di testo dove restringersi è quello che deve fare.
+  const contenitori = new Set();
+  for (const m of regole) {
+    if (!/overflow-y\s*:\s*auto/.test(m[2])) continue;
+    for (const s of m[1].split(',')) {
+      if (/\.mobile-container|-col$/.test(norm(s))) contenitori.add(norm(s));
+    }
+  }
+  assert.ok(contenitori.size, 'phone.css non ha più colonne che scorrono');
+  for (const sel of contenitori) {
+    const figli = new RegExp('^' + sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*>\\s*\\*$');
+    const regola = regole.find(m =>
+      m[1].split(',').some(s => figli.test(norm(s))) &&
+      /flex-shrink\s*:\s*0|flex\s*:\s*none/.test(m[2]));
+    assert.ok(regola,
+      `"${sel}" scorre ma non blocca il restringimento dei figli: i bottoni si schiacciano`);
+  }
+});
+
+// La pillola di Samiro è `position: fixed`: sta fuori dal flusso, quindi da sola
+// non spinge via niente e copre l'ultima cosa della colonna — sul tabellone era
+// "Compra vocale". Lo spazio se lo deve riservare il contenitore.
+test('la colonna del telefono lascia posto alla pillola di Samiro', () => {
+  const css = fs.readFileSync(path.join(PUBLIC, 'css', 'phone.css'), 'utf8');
+  assert.match(css, /--dock-space\s*:/,
+    'phone.css non definisce --dock-space: l\'ingombro della pillola fissa non è riservato da nessuno');
+  const usa = [...css.matchAll(/padding[^;}]*var\(--dock-space\)/g)];
+  assert.ok(usa.length >= 1,
+    'nessun contenitore usa --dock-space nel proprio padding: la pillola copre l\'ultimo bottone');
+});
