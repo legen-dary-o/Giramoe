@@ -68,15 +68,28 @@
   box-sizing: border-box;
 }
 
+/* `background-color` separato dai gradienti, e non una `background:` abbreviata
+   che li contenga tutti: l'abbreviata azzera il colore a `transparent`, e il
+   fondo della pagina prende dall'elemento radice il COLORE su tutta la
+   superficie ma le IMMAGINI solo dentro il riquadro di html, alto `100%`. Fuori
+   da quel riquadro non restava niente da dipingere e usciva il bianco di
+   default. Su desktop e su Android non si vede; su iPhone quel fuori c'è
+   sempre — Safari apre e chiude le sue barre sopra e sotto la pagina — ed erano
+   due strisce bianche, su tutte e tre le pagine. Il colore è lo stesso a cui
+   arriva il gradiente al 64%, quindi la giunzione non si vede. */
 html, body {
   width: 100%;
   height: 100%;
   font-family: var(--font-mono);
-  background:
+  background-color: var(--bg);
+  background-image:
     radial-gradient(85% 65% at 50% -8%, rgba(48, 56, 74, 0.32), transparent 62%),
     linear-gradient(180deg, var(--bg-2), var(--bg) 64%);
   color: var(--ink);
   overflow: hidden;
+  /* Il rimbalzo elastico di iOS scopre la canvas oltre il riquadro: senza
+     questo la striscia riappare per il tempo del rimbalzo. */
+  overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
 }
 

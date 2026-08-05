@@ -7,6 +7,30 @@
    delle schermate del telefono. Sono selettori con l'id, quindi vincono sulla
    regola generica indipendentemente dall'ordine di caricamento dei file. */
 
+/* Ingombro della pillola di Samiro, che è `position: fixed` e quindi non spinge
+   via niente da sola: 44px di pillola + 18px di stacco dal basso + la tacca del
+   telefono. Le colonne che arrivano fino in fondo se lo devono riservare, o la
+   pillola copre l'ultima cosa della schermata. */
+:root { --dock-space: calc(72px + env(safe-area-inset-bottom)); }
+
+/* I figli delle colonne che scorrono non si schiacciano. In una colonna flex
+   `flex-shrink` vale 1 di default: quando il contenuto supera l'altezza, i figli
+   si stringono INVECE di far scorrere il contenitore, e il deficit non si spalma
+   in parti uguali. La ruota (aspect-ratio) e la tastiera (griglia) hanno
+   un'altezza minima pari alla loro e non cedono niente: cede solo chi ha
+   un'altezza minima automatica molto più bassa di quella dichiarata, cioè i
+   bottoni, alti quanto una riga di testo. Su un iPhone in Safari, dove le barre
+   si mangiano ~150px di schermo, "Gira la ruota" scendeva da 58px a 17px e
+   "Compra vocale" da 56px a 19px. Bloccato il restringimento, il contenuto
+   eccede davvero e `overflow-y: auto` fa quello per cui era stato messo. */
+#player-game-screen .mobile-container > *,
+#player-giramoe-screen .mobile-container > *,
+#player-triplete-screen .mobile-container > *,
+#player-final-screen .mobile-container > *,
+.env-col > *,
+.tb-col > *,
+.fin-col > * { flex-shrink: 0; }
+
 /* The game screen stacks the wheel, spin button, full keyboard, the "Compra
    vocale" button AND the vowel picker — taller than a short phone. Anchor it to
    the top and let it scroll so the vowel button and picker are never clipped
@@ -15,7 +39,7 @@
   justify-content: flex-start;
   overflow-y: auto;
   gap: 16px;
-  padding: 18px 20px 20px;
+  padding: 18px 20px var(--dock-space);
 }
 #player-game-screen #player-wheel-container { width: 196px; margin: 0; }
 
@@ -28,7 +52,7 @@
   overflow-y: auto;
   gap: 12px;
   padding-top: 16px;
-  padding-bottom: 20px;
+  padding-bottom: var(--dock-space);
 }
 
 /* === CORNICE COMUNE DEL TELEFONO ===
@@ -565,7 +589,7 @@
   justify-content: flex-start;
   overflow-y: auto;
   gap: 26px;
-  padding: 24px 20px;
+  padding: 24px 20px var(--dock-space);
 }
 #player-triplete-screen .ph-topbar,
 #player-giramoe-screen .ph-topbar {
@@ -643,7 +667,7 @@
   justify-content: flex-start;
   overflow-y: auto;
   gap: 16px;
-  padding: 18px 20px 20px;
+  padding: 18px 20px var(--dock-space);
 }
 
 /* Scheda del conto alla rovescia: l'anello è un conic-gradient sul contenitore
@@ -685,7 +709,16 @@
 
 /* === 1i · SPAREGGIO === */
 
-.tb-col { gap: 32px; padding: 0 24px 70px; }
+/* Ruota + lista + bottone grosso: su un telefono corto eccedono, e da colonna
+   centrata senza scorrimento l'unico sfogo era stringere il bottone (62px → 30px,
+   per giunta sotto la pillola di Samiro). Stesso trattamento delle altre
+   schermate diverse: ancorata in alto, scorre, e i figli non si schiacciano. */
+.tb-col {
+  justify-content: flex-start;
+  overflow-y: auto;
+  gap: 32px;
+  padding: 24px 24px var(--dock-space);
+}
 .tb-title {
   font-family: var(--font-display);
   font-weight: 800;
@@ -699,7 +732,9 @@
    Una schermata, due esiti che non convivono mai: vinto è una scheda ciano col
    numero grande, perso è la stessa scheda spenta. */
 
-.fin-col { justify-content: center; gap: 40px; padding: 0 24px 40px; }
+/* Resta centrata: la scheda è una sola e ci sta. Il fondo però lascia posto
+   alla pillola, che prima le arrivava addosso. */
+.fin-col { justify-content: center; gap: 40px; padding: 0 24px var(--dock-space); }
 #player-finalist-screen .ph-dots {
   -webkit-mask-image: radial-gradient(ellipse 72% 24% at 50% 32%, transparent 62%, #000 96%);
   mask-image: radial-gradient(ellipse 72% 24% at 50% 32%, transparent 62%, #000 96%);
@@ -765,7 +800,7 @@
   justify-content: flex-start;
   overflow-y: auto;
   gap: 16px;
-  padding: 18px 20px 20px;
+  padding: 18px 20px var(--dock-space);
 }
 #player-final-screen .ph-topbar {
   width: calc(100% + 40px);
@@ -838,7 +873,7 @@
   justify-content: flex-start;
   overflow-y: auto;
   gap: 20px;
-  padding: 22px 20px 20px;
+  padding: 22px 20px var(--dock-space);
 }
 #player-envelopes-screen .ph-topbar {
   width: calc(100% + 40px);
